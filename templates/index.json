@@ -9272,6 +9272,48 @@
         "subheading_text",
         "cta_button"
       ]
+    },
+    "shop_by_craving": {
+      "type": "shop-by-craving",
+      "settings": {
+        "color_scheme": "scheme-1",
+        "heading": "Shop by Craving",
+        "padding-block-start": 40,
+        "padding-block-end": 40,
+        "padding-inline-start": 0,
+        "padding-inline-end": 0
+      },
+      "blocks": {
+        "craving_chocolate": {
+          "type": "craving-item",
+          "settings": {
+            "category_name": "Chocolate Lover",
+            "tagline": "Indulge in rich, velvety chocolate arrangements.",
+            "cta_label": "Shop Chocolate"
+          }
+        },
+        "craving_fruit": {
+          "type": "craving-item",
+          "settings": {
+            "category_name": "Fresh & Fruity",
+            "tagline": "Brighten any occasion with fresh fruit delights.",
+            "cta_label": "Shop Fruit"
+          }
+        },
+        "craving_savory": {
+          "type": "craving-item",
+          "settings": {
+            "category_name": "Savory Treats",
+            "tagline": "Savory bites perfect for any celebration.",
+            "cta_label": "Shop Savory"
+          }
+        }
+      },
+      "block_order": [
+        "craving_chocolate",
+        "craving_fruit",
+        "craving_savory"
+      ]
     }
   },
   "order": [
@@ -9294,6 +9336,7 @@
     "section_DLq8B3",
     "section_CTXzxf",
     "blog_article_list_pgWUAa",
-    "hero_banner_main"
+    "hero_banner_main",
+    "shop_by_craving"
   ]
 }
