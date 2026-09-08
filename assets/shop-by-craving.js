@@ -1,14 +1,17 @@
 /**
- * ShopByCraving — hover-to-expand on pointer devices, tap-to-expand on touch.
+ * ShopByCraving — hover-to-expand (desktop) / tap-to-expand (touch).
+ *
+ * Auto-rotation interval is driven by data-auto-interval (seconds) on the
+ * custom element, set from the section's auto_rotation_interval schema setting.
  *
  * Behaviours:
- *  - Desktop (pointer: fine / hover: hover): mouseenter on any panel opens it.
- *    The trigger button covers the full tile so the whole tile is the hit zone.
- *  - Touch / mobile: clicking the trigger bar toggles the panel.
+ *  - Desktop (pointer: fine): mouseenter on any panel opens it.
+ *  - Touch / mobile: clicking the trigger bar opens the panel.
  *  - Focus (keyboard): focusing a trigger opens its panel on any device.
- *  - Auto-rotation: cycles panels every 4 500 ms when idle; pauses on any
- *    hover/focus/interaction and restarts after the user leaves.
- *  - prefers-reduced-motion: disables auto-rotation (CSS handles scale).
+ *  - Auto-rotation: cycles every N seconds when idle; pauses on hover /
+ *    focus / interaction; restarts 2 s after the pointer leaves.
+ *  - prefers-reduced-motion: auto-rotation is skipped entirely (CSS handles
+ *    disabling blur/scale transitions).
  */
 
 class ShopByCraving extends HTMLElement {
@@ -18,45 +21,42 @@ class ShopByCraving extends HTMLElement {
     this._resumeTimer = null;
     this._activeIndex = 0;
     this._reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    // pointer: fine = mouse/trackpad with hover capability
     this._isPointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    // Interval in ms from schema setting (seconds); fall back to 5 s
+    this._intervalMs = (parseInt(this.dataset.autoInterval, 10) || 5) * 1000;
 
     this._panels.forEach((panel, index) => {
       const trigger = panel.querySelector('[data-craving-trigger]');
       if (!trigger) return;
 
       if (this._isPointer) {
-        // Hover opens the panel — whole tile is the hit zone via CSS
         panel.addEventListener('mouseenter', () => {
           this._pauseAuto();
           this._openPanel(index);
         });
       } else {
-        // Touch: tap the trigger bar to expand
         trigger.addEventListener('click', () => {
           this._pauseAuto();
           this._openPanel(index);
         });
       }
 
-      // Keyboard: focusing the trigger opens the panel on any device
+      // Keyboard: focus opens the panel on any device
       trigger.addEventListener('focus', () => {
         this._pauseAuto();
         this._openPanel(index);
       });
     });
 
-    // Resume auto-rotation when the pointer leaves the component entirely
     if (this._isPointer) {
       this.addEventListener('mouseleave', () => this._scheduleResume());
     }
 
-    // Open the first panel immediately
+    // First panel open by default
     if (this._panels.length > 0) {
       this._openPanel(0);
     }
 
-    // Start idle auto-rotation (skipped for reduced-motion users)
     if (!this._reducedMotion) {
       this._startAuto();
     }
@@ -86,7 +86,7 @@ class ShopByCraving extends HTMLElement {
     this._autoTimer = setInterval(() => {
       this._activeIndex = (this._activeIndex + 1) % this._panels.length;
       this._openPanel(this._activeIndex);
-    }, 4500);
+    }, this._intervalMs);
   }
 
   _stopAuto() {
