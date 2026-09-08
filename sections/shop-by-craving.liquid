@@ -164,12 +164,13 @@
   position: absolute;
   inset: 0;
   z-index: 1;
-  background: rgba(0, 0, 0, 0.45);
+  /* Use shadow token (dark-on-dark overlay) — falls back to a safe semi-opaque black */
+  background: rgb(var(--color-shadow-rgb, 0 0 0) / 0.45);
   transition: background 0.4s ease;
 }
 
 .shop-by-craving__panel[data-open="true"] .shop-by-craving__overlay {
-  background: rgba(0, 0, 0, 0.3);
+  background: rgb(var(--color-shadow-rgb, 0 0 0) / 0.3);
 }
 
 /* ---- Trigger button ---- */
@@ -320,7 +321,6 @@
 {% schema %}
 {
   "name": "Shop by Craving",
-  "tag": null,
   "class": "section",
   "settings": [
     {
