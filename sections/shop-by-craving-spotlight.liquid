@@ -17,7 +17,7 @@
     {%- endif -%}
 
     {%- comment -%} ——— Spotlight card: slides stack absolutely, crossfade via opacity ——— {%- endcomment -%}
-    <div class="sbc-spotlight__card">
+    <div class="sbc-spotlight__card sbc-spotlight__card--{{ section.settings.card_height }}">
       {%- assign cat_index = 0 -%}
       {%- for block in section.blocks -%}
         {%- if block.type == 'craving-category' -%}
@@ -57,9 +57,20 @@
             <div class="sbc-spotlight__scrim" aria-hidden="true"></div>
 
             <div class="sbc-spotlight__content">
+              {%- comment -%} Label displayed on the spotlight image {%- endcomment -%}
+              {%- if block.settings.label != blank -%}
+                <p
+                  class="sbc-spotlight__label-on-image tw-text-{{ block.settings.label_type_preset }} sbc-pos--{{ block.settings.label_position }}"
+                  {%- unless block.settings.label_color == blank -%}
+                    style="color: {{ block.settings.label_color }};"
+                  {%- endunless -%}
+                >
+                  {{- block.settings.label | escape -}}
+                </p>
+              {%- endif -%}
               {%- if block.settings.tagline != blank -%}
                 <p
-                  class="sbc-spotlight__tagline tw-text-{{ block.settings.tagline_type_preset }}"
+                  class="sbc-spotlight__tagline tw-text-{{ block.settings.tagline_type_preset }} sbc-pos--{{ block.settings.tagline_position }}"
                   {%- unless block.settings.tagline_color == blank -%}
                     style="color: {{ block.settings.tagline_color }};"
                   {%- endunless -%}
@@ -68,12 +79,14 @@
                 </p>
               {%- endif -%}
               {%- if block.settings.cta_label != blank -%}
-                <a
-                  class="sbc-spotlight__cta button"
-                  href="{{ block.settings.cta_url | default: '#' }}"
-                >
-                  {{- block.settings.cta_label | escape -}}
-                </a>
+                <div class="sbc-pos--{{ block.settings.label_position }}">
+                  <a
+                    class="sbc-spotlight__cta button"
+                    href="{{ block.settings.cta_url | default: '#' }}"
+                  >
+                    {{- block.settings.cta_label | escape -}}
+                  </a>
+                </div>
               {%- endif -%}
             </div>
           </div>
@@ -158,11 +171,15 @@
    ============================================================ */
 .sbc-spotlight__card {
   position: relative;
-  aspect-ratio: 16 / 7;
   overflow: hidden;
   border-radius: 8px;
   background-color: var(--color-border);
 }
+
+/* Card height variants */
+.sbc-spotlight__card--small  { aspect-ratio: 21 / 6; }
+.sbc-spotlight__card--medium { aspect-ratio: 16 / 7; }
+.sbc-spotlight__card--large  { aspect-ratio: 16 / 9; }
 
 /* Each slide sits absolutely on top of each other; crossfade via opacity */
 .sbc-spotlight__slide {
@@ -210,7 +227,7 @@
   );
 }
 
-/* ---- Slide content: tagline + CTA ---- */
+/* ---- Slide content: label + tagline + CTA ---- */
 .sbc-spotlight__content {
   position: absolute;
   inset-block-end: 0;
@@ -219,9 +236,23 @@
   z-index: 2;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 16px;
+  /* align-items: stretch so each child can set its own text-align */
+  align-items: stretch;
+  gap: 12px;
   padding: 36px 40px;
+}
+
+/* Per-element position helpers (applied via sbc-pos--* classes) */
+.sbc-pos--left   { text-align: left; }
+.sbc-pos--center { text-align: center; }
+.sbc-pos--right  { text-align: right; }
+
+/* Label rendered on the spotlight image */
+.sbc-spotlight__label-on-image {
+  color: white;
+  margin: 0;
+  line-height: 1.2;
+  font-weight: 700;
 }
 
 .sbc-spotlight__tagline {
@@ -316,14 +347,15 @@
    Mobile
    ============================================================ */
 @media screen and (max-width: 749px) {
-  .sbc-spotlight__card {
-    aspect-ratio: 4 / 3;
-    border-radius: 4px;
-  }
+  .sbc-spotlight__card--small  { aspect-ratio: 16 / 9; }
+  .sbc-spotlight__card--medium { aspect-ratio: 4 / 3; }
+  .sbc-spotlight__card--large  { aspect-ratio: 3 / 2; }
+
+  .sbc-spotlight__card { border-radius: 4px; }
 
   .sbc-spotlight__content {
-    padding: 20px 20px;
-    gap: 12px;
+    padding: 20px;
+    gap: 10px;
   }
 
   .sbc-spotlight__inner {
@@ -387,6 +419,17 @@
         { "value": "h6", "label": "H6" }
       ],
       "default": "h2"
+    },
+    {
+      "type": "select",
+      "id": "card_height",
+      "label": "Card height",
+      "options": [
+        { "value": "small", "label": "Small" },
+        { "value": "medium", "label": "Medium" },
+        { "value": "large", "label": "Large" }
+      ],
+      "default": "medium"
     },
     {
       "type": "range",
@@ -503,6 +546,32 @@
           "type": "url",
           "id": "cta_url",
           "label": "Button link"
+        },
+        {
+          "type": "header",
+          "content": "Content position"
+        },
+        {
+          "type": "select",
+          "id": "label_position",
+          "label": "Label position",
+          "options": [
+            { "value": "left", "label": "Left" },
+            { "value": "center", "label": "Center" },
+            { "value": "right", "label": "Right" }
+          ],
+          "default": "left"
+        },
+        {
+          "type": "select",
+          "id": "tagline_position",
+          "label": "Tagline position",
+          "options": [
+            { "value": "left", "label": "Left" },
+            { "value": "center", "label": "Center" },
+            { "value": "right", "label": "Right" }
+          ],
+          "default": "left"
         }
       ]
     }
