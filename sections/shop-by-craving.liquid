@@ -120,6 +120,7 @@
   flex-direction: column;
   width: 100%;
   overflow: hidden;
+  gap: 8px;
 }
 
 /* ---- Individual panel ---- */
@@ -131,7 +132,7 @@
    * Matches .shop-by-craving__trigger height below.
    */
   max-height: 64px;
-  transition: max-height 0.4s ease, flex 0.4s ease;
+  transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), flex-grow 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .shop-by-craving__panel[data-open="true"] {
@@ -150,6 +151,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
   display: block;
 }
 
@@ -159,18 +161,18 @@
   background-color: var(--color-border);
 }
 
-/* ---- Overlay ---- */
+/* ---- Overlay — gradient scrim for text legibility ---- */
 .shop-by-craving__overlay {
   position: absolute;
   inset: 0;
   z-index: 1;
-  /* Use shadow token (dark-on-dark overlay) — falls back to a safe semi-opaque black */
-  background: rgb(var(--color-shadow-rgb, 0 0 0) / 0.45);
-  transition: background 0.4s ease;
+  /* Bottom-weighted gradient so label text is always readable */
+  background: linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.28) 50%, rgba(0,0,0,0.06) 100%);
+  transition: background 0.35s ease;
 }
 
 .shop-by-craving__panel[data-open="true"] .shop-by-craving__overlay {
-  background: rgb(var(--color-shadow-rgb, 0 0 0) / 0.3);
+  background: linear-gradient(to top, rgba(0,0,0,0.68) 0%, rgba(0,0,0,0.22) 50%, rgba(0,0,0,0.06) 100%);
 }
 
 /* ---- Trigger button ---- */
@@ -237,7 +239,7 @@
    */
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.3s ease 0.1s;
+  transition: opacity 0.25s ease 0.08s;
 }
 
 .shop-by-craving__panel[data-open="true"] .shop-by-craving__content {
@@ -271,11 +273,10 @@
   }
 
   .shop-by-craving__panel {
-    /* Reset mobile max-height; desktop uses flex for expansion */
+    /* Reset mobile max-height; desktop uses flex-grow for expansion */
     max-height: none;
     flex: 1;
-    /* Transition flex for smooth horizontal expansion */
-    transition: flex 0.4s ease;
+    transition: flex-grow 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .shop-by-craving__panel[data-open="true"] {
