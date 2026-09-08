@@ -114,9 +114,18 @@
             type="button"
           >
             <span class="sbc-spotlight__thumb-circle">
-              {%- if block.settings.image != blank -%}
+              {%- liquid
+                if block.settings.thumb_image != blank
+                  assign thumb_src = block.settings.thumb_image
+                elsif block.settings.image != blank
+                  assign thumb_src = block.settings.image
+                else
+                  assign thumb_src = nil
+                endif
+              -%}
+              {%- if thumb_src != nil -%}
                 {{
-                  block.settings.image
+                  thumb_src
                   | image_url: width: 200
                   | image_tag:
                     class: 'sbc-spotlight__thumb-img',
@@ -129,12 +138,7 @@
                 <div class="sbc-spotlight__thumb-img-placeholder"></div>
               {%- endif -%}
             </span>
-            <span
-              class="sbc-spotlight__thumb-label tw-text-{{ block.settings.label_type_preset }}"
-              {%- unless block.settings.label_color == blank -%}
-                style="color: {{ block.settings.label_color }};"
-              {%- endunless -%}
-            >
+            <span class="sbc-spotlight__thumb-label tw-text-{{ block.settings.thumb_label_preset }}">
               {{- block.settings.label | default: 'Category' | escape -}}
             </span>
           </button>
@@ -546,6 +550,35 @@
           "type": "url",
           "id": "cta_url",
           "label": "Button link"
+        },
+        {
+          "type": "header",
+          "content": "Thumbnail"
+        },
+        {
+          "type": "image_picker",
+          "id": "thumb_image",
+          "label": "Thumbnail image",
+          "info": "Optional — uses the main image if blank."
+        },
+        {
+          "type": "select",
+          "id": "thumb_label_preset",
+          "label": "Thumbnail label style",
+          "options": [
+            { "value": "display", "label": "Display" },
+            { "value": "h1", "label": "H1" },
+            { "value": "h2", "label": "H2" },
+            { "value": "h3", "label": "H3" },
+            { "value": "h4", "label": "H4" },
+            { "value": "h5", "label": "H5" },
+            { "value": "h6", "label": "H6" },
+            { "value": "body-regular", "label": "Body regular" },
+            { "value": "body-small", "label": "Body small" },
+            { "value": "label", "label": "Label" },
+            { "value": "tag", "label": "Tag" }
+          ],
+          "default": "tag"
         },
         {
           "type": "header",
