@@ -1,0 +1,451 @@
+{% liquid
+  assign sticky = 'always'
+
+  capture logo
+    content_for 'block', type: '_header-logo', id: 'header-logo'
+  endcapture
+
+  capture menu
+    content_for 'block', type: '_header-nav', id: 'header-navigation'
+  endcapture
+
+  capture actions
+    render 'header-actions', section: section
+  endcapture
+
+  capture country_selector
+    content_for 'block', type: 'country-selector', id: 'country-selector'
+  endcapture
+%}
+
+{% style %}
+  /* If the header overlap is true, set the height of the header to 0 */
+  body:has(#MainContent [data-header-overlap=true]) .silent-header-container {
+    height: 0;
+  }
+
+  #shopify-section-{{ section.id }} .header-wrapper {
+    {% if section.settings.header_wrapper_drop_shadow == 'sm' %}
+      box-shadow: 0 2px 8px rgb(var(--color-shadow-rgb) / var(--opacity-10-25));
+    {% elsif section.settings.header_wrapper_drop_shadow == 'md' %}
+      box-shadow: var(--shadow-popover);
+    {% endif %}
+  }
+{% endstyle %}
+
+{% comment %}
+  Organization JSON-LD moved to snippets/structured-data.liquid (rendered from
+  layout/theme.liquid) so it is emitted only on the homepage, matching the
+  legacy ediblearrangements.com structured data.
+{% endcomment %}
+
+<div class="silent-header-container">
+  <header-component
+    id="header-component"
+    class="header tw-p-4"
+    {% if sticky %}
+      sticky="{{ sticky }}"
+    {% endif %}
+    data-skip-node-update
+    data-scroll-direction="none"
+  >
+    <div
+      class="js-nav-backdrop nav-backdrop tw-fixed tw-inset-0 tw-z-10 tw-hidden tw-bg-black/50 tw-opacity-0 tw-transition-opacity tw-duration-300 tw-ease-in-out [&.open+.header-wrapper]:tw-z-20 [&.open]:!tw-block [&.open]:tw-opacity-100"
+    ></div>
+    <div class="header-wrapper tw-relative tw-rounded-lg tw-bg-white has-[.desktop-menu-item:open]:tw-rounded-b-none has-[.js-mobile-nav.--is-open]:tw-rounded-b-none has-[.js-search-drawer.--is-open]:tw-rounded-b-none">
+      {%- if request.page_type == 'index' -%}
+        <h1 class="visually-hidden">{{ shop.name }}</h1>
+      {%- endif -%}
+      <div
+        class="header-inner-wrapper tw-p-4 lg:tw-px-4 lg:tw-py-2"
+        ref="headerRowTop"
+      >
+        <div class="header__item-wrapper tw-grid tw-grid-cols-2 tw-items-center tw-justify-between tw-gap-2 lg:tw-grid-cols-[1fr_auto_1fr]">
+          {{ menu }}
+          <div class="hi -tw-my-[3.5px] tw-flex tw-items-center tw-justify-start lg:-tw-order-1 lg:tw-my-0 2lg:tw-order-none xl:tw-justify-center">
+            {{ logo }}
+          </div>
+          <div class="tw-flex tw-items-center tw-justify-end tw-gap-2">
+            {{ country_selector }}
+            {{ actions }}
+          </div>
+
+          {% content_for 'block', type: '_search-drawer', id: 'search-drawer' %}
+        </div>
+      </div>
+    </div>
+  </header-component>
+</div>
+
+<script
+  src="{{ 'header.js' | asset_url }}"
+  type="module"
+></script>
+
+{% stylesheet %}
+  body {
+    --header-height: 60px;
+    --header-group-height: var(--header-height);
+  }
+
+  .header {
+    /* Set header paddings based on height setting */
+    --header-padding: var(--padding-sm);
+    --font-paragraph--line-height: 1;
+    --header-content-transition-timing: 0s;
+
+    display: block;
+    /* contain: layout style; */
+    background: transparent;
+
+    a,
+    .button,
+    .button-secondary,
+    .header-actions__action {
+      /* reset style from base.css */
+      transition:
+        color var(--header-content-transition-timing),
+        border-color var(--header-content-transition-timing);
+    }
+  }
+
+  #header-component .header-menu {
+    display: none;
+  }
+
+  @media screen and (min-width: 750px) {
+    #header-component[data-menu-style='menu'] .header-menu {
+      display: flex;
+    }
+  }
+
+  #header-component[data-menu-style='drawer'] .header__column {
+    display: contents;
+  }
+
+  @media screen and (min-width: 750px) {
+    #header-component[data-menu-style='menu'] .header__navigation-bar-row {
+      display: none;
+    }
+  }
+
+  .header-section {
+    position: relative;
+    z-index: var(--layer-heightened);
+  }
+
+  /* need default values for non-flash transitions on first overflow menu open */
+  #header-component {
+    --submenu-height: 0px;
+    --full-open-header-height: 0px;
+  }
+
+  #header-group:has(#header-component[sticky]) {
+    display: contents;
+  }
+
+  .header-section:has(.silent-header-container > #header-component[sticky='always']) {
+    position: sticky;
+
+    /* Use -1 instead of 0 so intersection observer can track sticky state */
+    top: -1px;
+    z-index: var(--layer-sticky);
+  }
+
+  .header[data-sticky-state='active'] {
+    view-transition-name: sticky-header;
+  }
+
+  :active-view-transition-type(empty-cart-drawer) {
+    .header[data-sticky-state='active'] {
+      view-transition-name: none;
+    }
+  }
+
+  .header__row {
+    /* The account component uses a different color scheme, but we need to override it to inherit the color of the header row */
+    --color-account-icon: var(--color-foreground);
+
+    position: relative;
+
+    background-color: transparent;
+
+    &:has(.mega-menu__list:hover),
+    &:has(.menu-list__link[aria-haspopup]:is(:hover, [aria-expanded='true'])),
+    &:has(.menu-list__list-item[slot='overflow'] .menu-list__link:is(:hover, [aria-expanded='true'])) {
+      /* Only elevate the row when the submenu is open to avoid overlapping other elevated content */
+      z-index: var(--layer-heightened);
+    }
+  }
+
+  .header__row--top:not(.divider--page-width),
+  .header__row--top.divider--page-width .header__columns,
+  .header__row--bottom {
+    border-bottom: var(--border-bottom-width) solid var(--color-border);
+  }
+
+  @media screen and (max-width: 749px) {
+    .header__row--top:not(.divider--page-width),
+    .header__row--top.divider--page-width .header__columns {
+      border-bottom-width: var(--border-bottom-width-mobile);
+    }
+  }
+
+  #header-component[data-menu-style='drawer'] .header__row--top:not(.divider--page-width),
+  #header-component[data-menu-style='drawer'] .header__row--top.divider--page-width .header__columns {
+    border-bottom-width: var(--border-bottom-width-mobile);
+  }
+
+  .header__row.divider--page-width:not(.section--page-width) .header__columns {
+    @media screen and (min-width: 750px) {
+      padding-inline-start: 0;
+      padding-inline-end: 0;
+      margin-inline-start: var(--page-margin);
+      margin-inline-end: var(--page-margin);
+    }
+  }
+
+  .header__column {
+    display: flex;
+    align-items: center;
+
+    /* on mobile, header__column nodes are ignored to create a new grid-template-area based on all visible content */
+    @media screen and (max-width: 749px) {
+      display: contents;
+    }
+  }
+
+  .header__column--left,
+  .header__column--center {
+    gap: var(--gap-xl);
+    grid-area: left;
+  }
+
+  .header__column--center {
+    justify-content: center;
+    grid-area: center;
+
+    header-menu:only-child .overflow-menu::part(list) {
+      justify-content: center;
+    }
+  }
+
+  .header__column--right {
+    gap: var(--gap-xl);
+    justify-content: flex-end;
+    grid-area: right;
+
+    .overflow-menu::part(list) {
+      justify-content: flex-end;
+    }
+  }
+
+  .header__columns {
+    /* Three column layout */
+    --header-left: 1fr;
+    --header-center: auto;
+    --header-right: 1fr;
+    --header-template-columns: var(--header-left) var(--header-center) var(--header-right);
+
+    /* Mobile layout */
+    --header-mobile-bookend: 44px;
+
+    display: grid;
+    grid-template-areas: 'left center right';
+    grid-gap: var(--gap-xl);
+    grid-template-columns: var(--header-template-columns);
+
+    /* If menu is in center column */
+    &:has(.header__column--center header-menu) {
+      --header-center: auto;
+      --header-left: minmax(max-content, 1fr);
+      --header-right: minmax(max-content, 1fr);
+    }
+
+    /* If there is no center column, make the column the menu is in grow eagerly */
+    &:where(:not(:has(.header__column--center))) {
+      @media screen and (min-width: 750px) {
+        --header-template-columns: var(--header-left) var(--header-right);
+
+        grid-template-areas: 'left right';
+      }
+
+      /* If the header-menu is in the right column */
+      &:has(.header__column--right header-menu) {
+        --header-right: auto;
+        --header-left: minmax(max-content, 1fr);
+      }
+
+      /* If the header-menu is in the left column */
+      &:has(.header__column--left header-menu) {
+        --header-left: auto;
+        --header-right: minmax(max-content, 1fr);
+      }
+    }
+
+    @media screen and (max-width: 749px) {
+      --header-template-columns: var(--header-mobile-bookend) var(--header-mobile-bookend) 1fr
+        var(--header-mobile-bookend) var(--header-mobile-bookend);
+
+      grid-template-areas: 'leftA leftB center rightA rightB';
+      grid-column: span 3;
+      column-gap: 0;
+      align-items: center;
+      padding-block: 0;
+      padding-inline: 0 var(--padding-3xs);
+
+      .header-logo {
+        grid-area: center;
+      }
+
+      header-actions {
+        grid-area: rightB;
+      }
+    }
+  }
+
+  /* not ideal but we need to duplicate these styles for when touch comes into play
+    We could avoid the duplication using js to set the data-menu-style attribute on small screens instead of using @media queries */
+  #header-component[data-menu-style='drawer'] .header__columns {
+    --header-template-columns: var(--header-mobile-bookend) var(--header-mobile-bookend) 1fr
+      var(--header-mobile-bookend) var(--header-mobile-bookend);
+
+    grid-template-areas: 'leftA leftB center rightA rightB';
+    grid-column: span 3;
+    column-gap: 0;
+    align-items: center;
+    padding-block: 0;
+    padding-inline: 0 var(--padding-3xs);
+
+    .header-logo {
+      grid-area: center;
+    }
+
+    header-actions {
+      grid-area: rightB;
+    }
+  }
+
+  /* Single column layout if there are no columns within */
+  .header__columns:not(:has(.header__column)) {
+    grid-template-columns: 1fr;
+  }
+
+  /* Check for hover support to avoid unnecessary expensive recalculations when tapping on mobile */
+  @media (hover: hover) {
+    /* Column-specific dimming effect when any interactive element is hovered
+        Multiple selectors for performance: each simple :has() check is faster than one complex selector with multiple conditions */
+    .header__column:has(header-menu:hover),
+    .header__column:has(.header-actions__action:hover),
+    .header__column:has(.header__icon--menu:hover) {
+      header-menu:not(:hover),
+      .header-actions__action:not(:hover),
+      .header__icon--menu:not(:hover) {
+        opacity: var(--opacity-subdued-text);
+        transition: opacity var(--animation-speed) var(--animation-easing);
+      }
+    }
+  }
+
+  /* Ensure smooth transitions for all interactive elements */
+  header-menu,
+  .header-actions__action,
+  .header__icon--menu {
+    transition: opacity var(--animation-speed) var(--animation-easing);
+  }
+
+  /* Header action button styles */
+  .header-actions__action {
+    --button-color: var(--color-foreground);
+    color: var(--button-color);
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+
+    &:hover {
+      --button-color: var(--color-foreground);
+    }
+  }
+
+  .header-actions__action:not(.account-button) .svg-wrapper {
+    height: var(--button-size);
+    width: var(--button-size);
+  }
+
+  .header-actions__action:not(.account-button) svg {
+    width: var(--icon-size-md);
+    height: var(--icon-size-md);
+  }
+
+  .header:has(#Details-menu-drawer-container[open]) {
+    contain: style;
+  }
+
+  /* Optimize layout performance for hidden menus */
+  .header-menu .menu-list__submenu {
+    content-visibility: auto;
+    contain-intrinsic-size: 0px 500px;
+  }
+
+  /* Force visibility when open/animating and in overflow submenu to prevent layout issues */
+  .header-menu details[open] .menu-list__submenu,
+  .header-menu .menu-list__submenu[data-active],
+  .header-menu .menu-list__list-item[slot='overflow'] .menu-list__submenu {
+    content-visibility: visible;
+  }
+{% endstylesheet %}
+
+{% unless request.design_mode %}
+  <script type="module">
+    import { hydrate } from '@theme/section-hydration';
+    const url = new URL(window.location.href);
+    url.searchParams.delete('page');
+    hydrate('{{ section.id }}', url);
+  </script>
+{% endunless %}
+
+{% schema %}
+{
+  "name": "t:names.header",
+  "tag": "header",
+  "class": "header-section",
+  "blocks": [
+    {
+      "type": "_header-logo"
+    },
+    {
+      "type": "_header-nav"
+    },
+    {
+      "type": "country-selector"
+    }
+  ],
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:content.appearance"
+    },
+    {
+      "type": "select",
+      "id": "header_wrapper_drop_shadow",
+      "label": "t:settings.header_wrapper_drop_shadow",
+      "options": [
+        {
+          "value": "none",
+          "label": "t:options.none"
+        },
+        {
+          "value": "sm",
+          "label": "t:options.small"
+        },
+        {
+          "value": "md",
+          "label": "t:options.medium"
+        }
+      ],
+      "default": "none"
+    }
+  ],
+  "presets": []
+}
+{% endschema %}

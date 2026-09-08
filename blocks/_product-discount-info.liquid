@@ -1,0 +1,143 @@
+{% liquid
+  assign product = closest.product
+  assign discount_info = product.metafields.ediblearrangement.discount_info.value
+  assign color = block.settings.color
+%}
+
+{%- liquid
+  assign preset_m = block.settings.typography_mobile | default: 'body-small'
+  assign preset_d = block.settings.typography_desktop
+  if preset_d == blank
+    assign preset_d = preset_m
+  endif
+  assign fw_m = block.settings.font_weight_mobile | default: '500'
+  assign fw_d = block.settings.font_weight_desktop
+  if fw_d == blank
+    assign fw_d = fw_m
+  endif
+  assign mb_m = block.settings.margin_bottom_mobile | default: 0
+  assign mb_d = block.settings.margin_bottom_desktop | default: 0
+-%}
+
+{% if discount_info %}
+  <div
+    {{ block.shopify_attributes }}
+    style="--mb-m: {{ mb_m }}px; --mb-d: {{ mb_d }}px; --fw-m: {{ fw_m }}; --fw-d: {{ fw_d }};{% if color != blank %} color: {{ color }};{% endif %}"
+    class="tw-text-{{ preset_m }} md:tw-text-{{ preset_d }} tw-font-[number:var(--fw-m)] md:tw-font-[number:var(--fw-d)] tw-mb-[var(--mb-m)] md:tw-mb-[var(--mb-d)]"
+  >
+    {{ discount_info }}
+  </div>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Product Discount Info",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Typography"
+    },
+    {
+      "type": "select",
+      "id": "typography_mobile",
+      "label": "Preset (mobile)",
+      "options": [
+        { "value": "h1", "label": "H1" },
+        { "value": "h2", "label": "H2" },
+        { "value": "h3", "label": "H3" },
+        { "value": "h4", "label": "H4" },
+        { "value": "h5", "label": "H5" },
+        { "value": "h6", "label": "H6" },
+        { "value": "display", "label": "Display" },
+        { "value": "body-regular", "label": "Body Regular" },
+        { "value": "body-small", "label": "Body Small" },
+        { "value": "label", "label": "Label" },
+        { "value": "tag", "label": "Tag" }
+      ],
+      "default": "body-small"
+    },
+    {
+      "type": "select",
+      "id": "typography_desktop",
+      "label": "Preset (desktop)",
+      "options": [
+        { "value": "", "label": "Same as mobile" },
+        { "value": "display", "label": "Display" },
+        { "value": "h1", "label": "H1" },
+        { "value": "h2", "label": "H2" },
+        { "value": "h3", "label": "H3" },
+        { "value": "h4", "label": "H4" },
+        { "value": "h5", "label": "H5" },
+        { "value": "h6", "label": "H6" },
+        { "value": "body-regular", "label": "Body Regular" },
+        { "value": "body-small", "label": "Body Small" },
+        { "value": "label", "label": "Label" },
+        { "value": "tag", "label": "Tag" }
+      ],
+      "default": ""
+    },
+    {
+      "type": "select",
+      "id": "font_weight_mobile",
+      "label": "Font weight (mobile)",
+      "options": [
+        { "value": "400", "label": "Normal" },
+        { "value": "500", "label": "Medium" },
+        { "value": "600", "label": "Semibold" },
+        { "value": "700", "label": "Bold" }
+      ],
+      "default": "500"
+    },
+    {
+      "type": "select",
+      "id": "font_weight_desktop",
+      "label": "Font weight (desktop)",
+      "options": [
+        { "value": "", "label": "Same as mobile" },
+        { "value": "400", "label": "Normal" },
+        { "value": "500", "label": "Medium" },
+        { "value": "600", "label": "Semibold" },
+        { "value": "700", "label": "Bold" }
+      ],
+      "default": ""
+    },
+    {
+      "type": "color",
+      "id": "color",
+      "label": "Text color",
+      "default": "#6d28d9"
+    },
+    {
+      "type": "header",
+      "content": "Spacing"
+    },
+    {
+      "type": "range",
+      "id": "margin_bottom_mobile",
+      "label": "Margin bottom (mobile)",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "margin_bottom_desktop",
+      "label": "Margin bottom (desktop)",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "default": 0
+    }
+  ],
+  "presets": [
+    {
+      "name": "Product Discount Info",
+      "category": "Product"
+    }
+  ]
+}
+{% endschema %}

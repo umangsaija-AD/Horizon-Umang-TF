@@ -1,0 +1,337 @@
+<div
+  class="section-background dynamic-yield-widget__background"
+  style="background-color: {{ section.settings.background_color }};"
+></div>
+
+<div
+  class="
+    section
+    section--{{ section.settings.section_width }}
+    dynamic-yield-widget
+    spacing-style
+  "
+  style="
+    {% render 'spacing-style', settings: section.settings %}
+    --dy-widget-image-background: {% render 'product-media-gradient' %};
+    --dy-widget-highlight-color: {{ section.settings.highlight_color }};
+    --dy-widget-text-color: {{ section.settings.text_color }};
+    --dy-widget-muted-color: {{ section.settings.muted_color }};
+  "
+  {{ section.shopify_attributes }}
+>
+  <dynamic-yield-widget class="dynamic-yield-widget__behavior">
+    <div class="dynamic-yield-widget__container">
+      {{ section.settings.embed_code }}
+    </div>
+  </dynamic-yield-widget>
+</div>
+
+<script src="{{ 'dynamic-yield-widget.js' | asset_url }}" type="module" fetchpriority="low"></script>
+
+{% stylesheet %}
+  .dynamic-yield-widget {
+    position: relative;
+  }
+
+  dynamic-yield-widget.dynamic-yield-widget__behavior {
+    display: block;
+  }
+
+  .dynamic-yield-widget__container {
+    width: 100%;
+    font-family: var(--font-body--family);
+    color: var(--dy-widget-text-color, #1D1D1D);
+  }
+
+  /* =============================================
+     DY Tabbed Recommendations — Figma Overrides
+     ============================================= */
+
+  /* --- Tab container --- */
+  .dynamic-yield-widget__container [id^='tab-container-'] {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    margin-bottom: 40px;
+  }
+
+  /* --- Tab buttons (all states) --- */
+  .dynamic-yield-widget__container button[class*='tablinks_'] {
+    font-family: var(--font-heading--family);
+    font-weight: 600;
+    font-size: 24px;
+    line-height: 29px;
+    letter-spacing: -0.48px;
+    text-align: center;
+    padding: 0 16px 8px 16px;
+    margin: 0;
+    border: none;
+    border-bottom: 1px solid var(--dy-widget-muted-color, #464646);
+    border-bottom-color: color-mix(in srgb, var(--dy-widget-muted-color, #464646) 45%, transparent);
+    border-radius: 0;
+    background: transparent;
+    color: var(--dy-widget-muted-color, #464646);
+    cursor: pointer;
+    transition: color 0.2s ease, border-color 0.2s ease;
+  }
+
+  /* Active tab */
+  .dynamic-yield-widget__container button[class*='tablinks_'].active,
+  .dynamic-yield-widget__container button[class*='tablinks_'][class*='active'] {
+    color: var(--dy-widget-highlight-color, #e10600);
+    border-bottom-color: var(--dy-widget-highlight-color, #e10600);
+    border-bottom-width: 2px;
+  }
+
+  /* Hover */
+  .dynamic-yield-widget__container button[class*='tablinks_']:hover {
+    color: var(--dy-widget-highlight-color, #e10600);
+    border-bottom-color: var(--dy-widget-highlight-color, #e10600);
+  }
+
+  .dynamic-yield-widget__container button[class*='tablinks_']:focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  .dynamic-yield-widget__container button[class*='tablinks_']:focus-visible {
+    outline: var(--focus-outline-width) solid currentcolor;
+    outline-offset: var(--focus-outline-offset);
+  }
+
+  /* --- Card rail (tab content container) --- */
+  .dynamic-yield-widget__container [class*='tabcontent_'] {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 24px;
+    justify-content: flex-start;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    cursor: grab;
+  }
+
+  .section--page-width.dynamic-yield-widget .dynamic-yield-widget__container [class*='tabcontent_'] {
+    --dy-widget-page-offset: max(var(--page-margin), calc((100vw - var(--page-content-width)) / 2));
+    width: 100vw;
+    max-width: 100vw;
+    margin-left: calc(-50vw + 50%);
+    padding-inline: var(--dy-widget-page-offset);
+    scroll-padding-inline-start: var(--dy-widget-page-offset);
+  }
+
+  .dynamic-yield-widget__container [class*='tabcontent_']::-webkit-scrollbar {
+    display: none;
+  }
+
+  .dynamic-yield-widget__container [class*='tabcontent_'].is-dragging {
+    cursor: grabbing;
+    user-select: none;
+  }
+
+  /* --- Product cards --- */
+  .dynamic-yield-widget__container a[class*='tabbed-recs-card_'] {
+    flex: 0 0 336px !important;
+    width: 336px !important;
+    max-width: 336px !important;
+    scroll-snap-align: start;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 0;
+    text-decoration: none;
+    border-radius: 24px;
+  }
+
+  /* --- Product images --- */
+  .dynamic-yield-widget__container a[class*='tabbed-recs-card_'] img {
+    aspect-ratio: 1;
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+    border-radius: 8px;
+    background: var(--dy-widget-image-background, linear-gradient(180deg, #F2E7DF 0%, #F5F1F1 100%));
+  }
+
+  /* Hide missing/broken images so product text moves up naturally. */
+  .dynamic-yield-widget__container a[class*='tabbed-recs-card_'] img[src='null'],
+  .dynamic-yield-widget__container a[class*='tabbed-recs-card_'] img[src=''],
+  .dynamic-yield-widget__container a[class*='tabbed-recs-card_'] img:not([src]),
+  .dynamic-yield-widget__container a[class*='tabbed-recs-card_'] img.dy-image-error {
+    display: none;
+  }
+
+  /* --- Product title --- */
+  .dynamic-yield-widget__container [class*='tabbed_recs_product_name_'] {
+    font-family: var(--font-heading--family);
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 22px;
+    color: var(--dy-widget-text-color, #1D1D1D);
+    text-align: left;
+    padding: 0;
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  /* --- Product price --- */
+  .dynamic-yield-widget__container [class*='tabbed_recs_product_price_'] {
+    font-family: var(--font-body--family);
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--dy-widget-highlight-color, #e10600);
+    text-align: left;
+    padding: 0;
+  }
+
+  /* =============================================
+     Mobile overrides (≤749px)
+     ============================================= */
+  @media screen and (max-width: 749px) {
+    .dynamic-yield-widget__container [id^='tab-container-'] {
+      margin-bottom: 32px;
+    }
+
+    .dynamic-yield-widget__container button[class*='tablinks_'] {
+      font-size: 14px;
+      line-height: 20px;
+      letter-spacing: 0;
+    }
+
+    .dynamic-yield-widget__container a[class*='tabbed-recs-card_'] {
+      flex: 0 0 208px !important;
+      width: 208px !important;
+      max-width: 208px !important;
+    }
+
+    .dynamic-yield-widget__container [class*='tabbed_recs_product_name_'] {
+      font-size: 14px;
+      line-height: 20px;
+    }
+
+    .dynamic-yield-widget__container [class*='tabbed_recs_product_price_'] {
+      font-size: 12px;
+      line-height: 17px;
+    }
+  }
+
+  /* Override DY's mobile display:none on cards 3+ so scroll handles visibility */
+  @media screen and (max-width: 600px) {
+    .dynamic-yield-widget__container a[class*='tabbed-recs-card_']:nth-of-type(3),
+    .dynamic-yield-widget__container a[class*='tabbed-recs-card_']:nth-of-type(4) {
+      display: flex !important;
+    }
+  }
+
+  @media screen and (max-width: 400px) {
+    .dynamic-yield-widget__container a[class*='tabbed-recs-card_']:nth-of-type(3),
+    .dynamic-yield-widget__container a[class*='tabbed-recs-card_']:nth-of-type(4) {
+      display: flex !important;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Dynamic Yield widget",
+  "tag": "section",
+  "class": "dynamic-yield-widget-wrapper",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "settings": [
+    {
+      "type": "header",
+      "content": "Dynamic Yield"
+    },
+    {
+      "type": "html",
+      "id": "embed_code",
+      "label": "Embed code"
+    },
+    {
+      "type": "header",
+      "content": "t:content.layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "t:settings.width",
+      "options": [
+        {
+          "value": "page-width",
+          "label": "t:options.page"
+        },
+        {
+          "value": "full-width",
+          "label": "t:options.full"
+        }
+      ],
+      "default": "page-width"
+    },
+    {
+      "type": "header",
+      "content": "t:content.appearance"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "highlight_color",
+      "label": "Highlight color",
+      "default": "#e10600"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text color",
+      "default": "#1d1d1d"
+    },
+    {
+      "type": "color",
+      "id": "muted_color",
+      "label": "Muted color",
+      "default": "#464646"
+    },
+    {
+      "type": "header",
+      "content": "t:content.padding"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "t:settings.top",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 48
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "t:settings.bottom",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 48
+    }
+  ],
+  "presets": [
+    {
+      "name": "Dynamic Yield widget",
+      "category": "t:categories.custom"
+    }
+  ]
+}
+{% endschema %}

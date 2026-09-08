@@ -1,0 +1,1039 @@
+{% liquid
+  assign is_search = false
+  if template contains 'search'
+    assign is_search = true
+  endif
+
+  if is_search
+    assign cv_filters = search.filters
+    assign cv_sort_options = search.sort_options
+    assign cv_sort_by = search.sort_by
+    assign cv_results_count = search.results_count
+    assign cv_clear_url = routes.search_url
+    if search.terms != blank
+      assign encoded_terms = search.terms | url_encode
+      assign cv_clear_url = cv_clear_url | append: '?type=product&q=' | append: encoded_terms
+    endif
+  else
+    assign cv_filters = collection.filters
+    assign cv_sort_options = collection.sort_options
+    assign cv_sort_by = collection.sort_by
+    assign cv_results_count = collection.products_count
+    assign cv_clear_url = collection.url
+  endif
+
+  assign products_per_page = 12
+  assign desktop_columns = 3
+  assign total_promo_slots = 0
+  assign promo_render = ''
+  assign temp = products_per_page | plus: desktop_columns | minus: 1
+  assign max_product_row = temp | divided_by: desktop_columns | minus: 1
+%}
+
+{% for block in section.blocks %}
+  {% capture promo_raw %}{% render block %}{% endcapture %}
+
+  {% if promo_raw contains '<!-- settings end -->' %}
+    {% assign promo_parts = promo_raw | split: '<!-- settings end -->' %}
+    {% assign promo_data = promo_parts[0] | strip %}
+    {% assign promo_html = promo_parts[1] %}
+
+    {% assign promo_col_span = 1 %}
+    {% assign promo_row_index = 0 %}
+    {% assign promo_col_index = 0 %}
+    {% assign promo_row_index_mobile = -1 %}
+    {% assign promo_col_index_mobile = -1 %}
+
+    {% assign data_pairs = promo_data | split: '|' %}
+    {% for pair in data_pairs %}
+      {% assign kv = pair | strip | split: ':' %}
+      {% if kv[0] == 'column_span' %}
+        {% assign promo_col_span = kv[1] | strip | plus: 0 %}
+      {% elsif kv[0] == 'row_index' %}
+        {% assign promo_row_index = kv[1] | strip | plus: 0 %}
+      {% elsif kv[0] == 'column_index' %}
+        {% assign promo_col_index = kv[1] | strip | plus: 0 %}
+      {% elsif kv[0] == 'row_index_mobile' %}
+        {% assign promo_row_index_mobile = kv[1] | strip | plus: 0 %}
+      {% elsif kv[0] == 'column_index_mobile' %}
+        {% assign promo_col_index_mobile = kv[1] | strip | plus: 0 %}
+      {% endif %}
+    {% endfor %}
+
+    {% if promo_row_index <= max_product_row %}
+      {% assign total_promo_slots = total_promo_slots | plus: promo_col_span %}
+    {% endif %}
+
+    {%- comment -%} Mobile position falls back to the desktop position when not overridden (-1). {%- endcomment -%}
+    {% assign eff_mob_row = promo_row_index %}
+    {% if promo_row_index_mobile >= 0 %}
+      {% assign eff_mob_row = promo_row_index_mobile %}
+    {% endif %}
+    {% assign eff_mob_col = promo_col_index %}
+    {% if promo_col_index_mobile >= 0 %}
+      {% assign eff_mob_col = promo_col_index_mobile %}
+    {% endif %}
+
+    {% assign mob_col_start = eff_mob_col | at_most: 1 | plus: 1 %}
+    {% assign mob_col_span = promo_col_span | at_most: 2 %}
+    {% assign desk_col_start = promo_col_index | plus: 1 %}
+
+    {% capture positioned_promo %}
+      <div
+        class="promo-grid-item tw-hidden"
+        data-promo-row="{{ promo_row_index }}"
+        data-promo-row-mobile="{{ eff_mob_row }}"
+        data-promo-col-span="{{ promo_col_span }}"
+        style="--mob-col: {{ mob_col_start }} / span {{ mob_col_span }}; --desk-col: {{ desk_col_start }} / span {{ promo_col_span }}; --mob-row: {{ eff_mob_row | plus: 1 }}; --desk-row: {{ promo_row_index | plus: 1 }};"
+      >
+        {{ promo_html }}
+      </div>
+    {% endcapture %}
+
+    {% assign promo_render = promo_render | append: positioned_promo %}
+  {% endif %}
+{% endfor %}
+
+{% assign adjusted_per_page = products_per_page | minus: total_promo_slots | at_least: 1 %}
+
+<style>
+  .promo-grid-item {
+    grid-column: var(--mob-col);
+    grid-row: var(--mob-row);
+  }
+  @media (min-width: 768px) {
+    .promo-grid-item {
+      grid-column: var(--desk-col);
+      grid-row: var(--desk-row);
+    }
+  }
+  .search-no-results {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 60px 16px;
+    gap: 16px;
+  }
+  @media (min-width: 768px) {
+    .search-no-results {
+      padding: 120px 16px;
+    }
+  }
+  .search-no-results__title {
+    margin: 0;
+    font-size: 24px;
+    line-height: 1.3;
+    color: var(--color-black);
+  }
+  @media (min-width: 768px) {
+    .search-no-results__title {
+      font-size: 32px;
+    }
+  }
+  .search-no-results__text {
+    margin: 0;
+    max-width: 480px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--color-black-light);
+  }
+  .search-no-results__action {
+    margin-top: 8px;
+  }
+  .search-fallback-collection {
+    padding: 0 16px 60px;
+  }
+  @media (min-width: 768px) {
+    .search-fallback-collection {
+      padding: 0 16px 80px;
+    }
+  }
+  .search-fallback-collection__heading {
+    margin: 0 0 24px;
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--color-black);
+  }
+  @media (min-width: 768px) {
+    .search-fallback-collection__heading {
+      font-size: 24px;
+    }
+  }
+  .search-fallback-collection__grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px 12px;
+  }
+  @media (min-width: 768px) {
+    .search-fallback-collection__grid {
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px 16px;
+    }
+  }
+</style>
+
+<div class="section tw-pb-20" data-collection-section>
+  {% unless is_search %}
+  {% assign grouped_filters = collection.metafields.ediblearrangement.grouped_filters.value %}
+  {% if grouped_filters and grouped_filters.size > 0 %}
+    {%- liquid
+      assign current_filter_query = ''
+      for filter in collection.filters
+        if filter.type == 'list'
+          for value in filter.active_values
+            if current_filter_query != ''
+              assign current_filter_query = current_filter_query | append: '&'
+            endif
+            assign current_filter_query = current_filter_query | append: value.param_name | append: '=' | append: value.value
+          endfor
+        elsif filter.type == 'price_range'
+          if filter.min_value.value != null
+            assign price_gte = filter.min_value.value | divided_by: 100
+            if current_filter_query != ''
+              assign current_filter_query = current_filter_query | append: '&'
+            endif
+            assign current_filter_query = current_filter_query | append: 'filter.v.price.gte=' | append: price_gte
+          endif
+          if filter.max_value.value != null
+            assign price_lte = filter.max_value.value | divided_by: 100
+            if current_filter_query != ''
+              assign current_filter_query = current_filter_query | append: '&'
+            endif
+            assign current_filter_query = current_filter_query | append: 'filter.v.price.lte=' | append: price_lte
+          endif
+        endif
+      endfor
+      assign current_filter_query = current_filter_query | split: '&' | sort | join: '&'
+
+      assign all_is_active = true
+      if current_filter_query != ''
+        assign all_is_active = false
+      endif
+    -%}
+    <div class="-tw-mr-4 tw-flex tw-gap-2 tw-overflow-x-auto tw-pb-2 tw-pr-4">
+      <a
+        href="#"
+        data-grouped-filter
+        data-filter-query=""
+        data-gp-slug=""
+        class="tw-font-regular [&.--active]:tw-font-semibold tw-inline-flex tw-items-center tw-whitespace-nowrap tw-rounded-full tw-border tw-border-solid tw-border-brand-light-grey tw-bg-white tw-px-3 tw-py-1.5 tw-text-body-small tw-no-underline tw-transition-colors hover:tw-border-gray-500 [&.--active]:tw-border-brand-light-red [&.--active]:tw-bg-brand-lightest-red [&.--active]:tw-text-brand-red {% if all_is_active %}--active{% endif %}"
+      >
+        {{ 'collection.viewer.all_filter_label' | t }}
+      </a>
+      {% for item in grouped_filters %}
+        {%- liquid
+          assign item_url = item.filter_url.value | default: item.filter_url
+          assign item_name = item.name.value | default: item.name
+          assign normalized_url = item_url | remove: '?' | url_decode | split: '&' | sort | join: '&'
+          assign is_current = false
+          if current_filter_query == normalized_url
+            assign is_current = true
+          endif
+        -%}
+        <a
+          href="#"
+          data-grouped-filter
+          data-filter-query="{{ normalized_url }}"
+          data-gp-slug="{{ item_name | handleize }}"
+          class="tw-font-regular [&.--active]:tw-font-semibold tw-inline-flex tw-items-center tw-whitespace-nowrap tw-rounded-full tw-border tw-border-solid tw-border-brand-light-grey tw-bg-white tw-px-3 tw-py-1.5 tw-text-body-small tw-no-underline tw-transition-colors hover:tw-border-gray-500 [&.--active]:tw-border-brand-light-red [&.--active]:tw-bg-brand-lightest-red [&.--active]:tw-text-brand-red {% if is_current %}--active{% endif %}"
+        >
+          {{ item_name }}
+        </a>
+      {% endfor %}
+    </div>
+  {% endif %}
+  {% endunless %}
+
+  {%- liquid
+    assign has_active_filters = false
+    if is_search
+      for filter in cv_filters
+        if filter.active_values.size > 0
+          assign has_active_filters = true
+          break
+        endif
+        if filter.type == 'price_range'
+          if filter.min_value.value != null or filter.max_value.value != null
+            assign has_active_filters = true
+            break
+          endif
+        endif
+      endfor
+    endif
+  -%}
+  {% if is_search and cv_results_count == 0 and has_active_filters == false %}
+    <div class="search-no-results">
+      <h2 class="search-no-results__title">{{ 'collection.viewer.no_results_heading' | t }}</h2>
+      <p class="search-no-results__text">
+        {%- if search.performed and search.terms != blank -%}
+          {%- assign safe_terms = search.terms | escape -%}
+          {{ 'collection.viewer.no_results_with_terms' | t: terms: safe_terms }}
+        {%- else -%}
+          {{ 'collection.viewer.no_results_without_terms' | t }}
+        {%- endif -%}
+      </p>
+      <div class="search-no-results__action">
+        {%- assign go_home_label = 'collection.viewer.go_to_homepage' | t -%}
+        {%- render 'button',
+          element_type: 'link',
+          label: go_home_label,
+          link: '/',
+          style_class: 'button',
+          button_size: 'medium'
+        -%}
+      </div>
+    </div>
+
+    {%- if section.settings.fallback_collection != blank -%}
+      {%- assign fallback = section.settings.fallback_collection -%}
+      {%- if fallback.products_count > 0 -%}
+        <div class="search-fallback-collection">
+          {%- if section.settings.fallback_collection_heading != blank -%}
+            <h2 class="search-fallback-collection__heading">{{ section.settings.fallback_collection_heading }}</h2>
+          {%- endif -%}
+          <div class="search-fallback-collection__grid">
+            {%- for product in fallback.products limit: 4 -%}
+              {%- unless product.metafields.seo.hidden.value == 1 -%}
+                {%- render 'static-product-card', product: product -%}
+              {%- endunless -%}
+            {%- endfor -%}
+          </div>
+        </div>
+      {%- endif -%}
+    {%- endif -%}
+  {% else %}
+  <div class="tw-flex tw-flex-col tw-gap-16 lg:tw-flex-row">
+    {% if is_search %}
+      {%
+        content_for 'block',
+        type: 'filters',
+        id: 'filters',
+        results: search,
+        results_size: search.results_count
+      %}
+    {% else %}
+      {%
+        content_for 'block',
+        type: 'filters',
+        id: 'filters',
+        results: collection,
+        results_size: collection.products_count
+      %}
+    {% endif %}
+
+    <div data-collection-viewer class="tw-flex tw-grow tw-flex-col">
+      <div class="tw-flex tw-flex-col tw-gap-4 tw-pb-[45px] tw-pt-4 lg:tw-pb-5">
+        <div class="tw-flex tw-items-center tw-justify-between">
+          <p data-product-count class="tw-m-0 tw-text-body-small">
+            {{ 'collection.viewer.product_count' | t: count: cv_results_count }}
+          </p>
+
+          <div class="tw-hidden tw-items-center tw-gap-2 lg:tw-flex">
+            <label for="cv-sort-select" class="tw-text-body-small">{{ 'collection.viewer.sort_by_label' | t }}</label>
+            <select
+              id="cv-sort-select"
+              data-sort-select
+              class="tw-cursor-pointer tw-rounded tw-border tw-border-solid tw-border-gray-300 tw-bg-white tw-px-2.5 tw-py-1.5 tw-text-body-small"
+            >
+              {%- for option in cv_sort_options -%}
+                <option
+                  value="{{ option.value }}"
+                  {% if option.value == cv_sort_by %}
+                    selected
+                  {% endif %}
+                >
+                  {{ option.name }}
+                </option>
+              {%- endfor -%}
+            </select>
+          </div>
+
+          <button
+            data-mobile-filter-toggle
+            type="button"
+            class="tw-inline-flex tw-items-center tw-gap-2 tw-bg-transparent tw-text-body-small lg:tw-hidden"
+          >
+            {{ 'collection.viewer.filter_and_sort' | t }}
+            <span class="tw-inline-flex tw-h-4 tw-w-4">{{ 'icon-filter.svg' | inline_asset_content }}</span>
+          </button>
+        </div>
+
+        {% assign active_filter_count = 0 %}
+        {% for filter in cv_filters %}
+          {% for value in filter.active_values %}
+            {% assign active_filter_count = active_filter_count | plus: 1 %}
+          {% endfor %}
+          {% if filter.type == 'price_range' %}
+            {% if filter.min_value.value != null or filter.max_value.value != null %}
+              {% assign active_filter_count = active_filter_count | plus: 1 %}
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+
+        {% if active_filter_count > 0 %}
+          <div data-chips-container class="tw-flex tw-flex-wrap tw-items-center tw-gap-2">
+            {% for filter in cv_filters %}
+              {% for value in filter.active_values %}
+                <a
+                  href="{{ value.url_to_remove }}"
+                  data-filter-chip
+                  class="tw-inline-flex tw-items-center tw-gap-1 tw-rounded-full tw-bg-brand-light-tan tw-py-[2px] tw-pl-2 tw-pr-1.5 tw-text-body-small tw-text-inherit tw-no-underline hover:tw-bg-chocolate-200"
+                >
+                  {{ value.label }}
+                  <span class="tw-inline-flex tw-h-5 tw-w-5">{{ 'icon-close.svg' | inline_asset_content }}</span>
+                </a>
+              {% endfor %}
+              {% if filter.type == 'price_range' %}
+                {% if filter.min_value.value != null or filter.max_value.value != null %}
+                  {%- liquid
+                    assign price_min = filter.min_value.value | divided_by: 100
+                    assign price_max = filter.max_value.value | divided_by: 100
+                    assign chip_price_max = '$' | append: price_max
+                    if filter.min_value.value == null or price_min == 0
+                      assign price_chip_label = 'collection.price_under' | t: price: chip_price_max
+                    else
+                      assign chip_price_min = '$' | append: price_min
+                      assign price_chip_label = 'collection.price_range_label' | t: min: chip_price_min, max: chip_price_max
+                    endif
+                    assign price_range_key = price_min | append: '-' | append: price_max
+                  -%}
+                  <a
+                    href="#"
+                    data-price-chip
+                    data-range="{{ price_range_key }}"
+                    class="tw-inline-flex tw-items-center tw-gap-1 tw-rounded-full tw-bg-brand-light-tan tw-py-[2px] tw-pl-2 tw-pr-1.5 tw-text-body-small tw-text-inherit tw-no-underline hover:tw-bg-chocolate-200"
+                  >
+                    {{ price_chip_label }}
+                    <span class="tw-inline-flex tw-h-3 tw-w-3">{{ 'icon-close.svg' | inline_asset_content }}</span>
+                  </a>
+                {% endif %}
+              {% endif %}
+            {% endfor %}
+            {%- assign cv_clear_all_label = 'collection.viewer.clear_all' | t -%}
+            <span data-clear-filters data-href="{{ cv_clear_url }}">
+              {%- render 'button',
+                element_type: 'button',
+                label: cv_clear_all_label,
+                style_class: 'link',
+                button_size: 'small'
+              -%}
+            </span>
+          </div>
+        {% endif %}
+      </div>
+      {% if is_search %}
+        {% paginate search.results by adjusted_per_page %}
+          {% capture cv_grid_items %}
+            {% assign cv_products = search.results | where: 'object_type', 'product' %}
+            {% for product in cv_products %}
+              {% unless product.metafields.seo.hidden.value == 1 %}
+                {% # theme-check-disable %}
+                {% content_for 'block', type: '_product-card', id: 'product-card', closest.product: product %}
+                {% # theme-check-enable %}
+              {% endunless %}
+            {% endfor %}
+          {% endcapture %}
+          {% assign cv_current_page = paginate.current_page %}
+          {% assign cv_pages = paginate.pages %}
+          {% assign cv_items = paginate.items %}
+        {% endpaginate %}
+      {% else %}
+        {% paginate collection.products by adjusted_per_page %}
+          {% capture cv_grid_items %}
+            {% for product in collection.products %}
+              {% unless product.metafields.seo.hidden.value == 1 or cv_skip_delivery %}
+                {% # theme-check-disable %}
+                {% content_for 'block', type: '_product-card', id: 'product-card', closest.product: product %}
+                {% # theme-check-enable %}
+              {% endunless %}
+            {% endfor %}
+          {% endcapture %}
+          {% assign cv_current_page = paginate.current_page %}
+          {% assign cv_pages = paginate.pages %}
+          {% assign cv_items = paginate.items %}
+        {% endpaginate %}
+      {% endif %}
+
+      <collection-viewer
+        data-section-id="{{ section.id }}"
+        data-current-page="{{ cv_current_page }}"
+        data-total-pages="{{ cv_pages }}"
+        data-total-items="{{ cv_items }}"
+        data-page-size="{{ adjusted_per_page }}"
+      >
+        <script type="application/json" data-cv-i18n>
+          {
+            "loadMore": {{ 'collection.viewer.load_more' | t | json }},
+            "loading": {{ 'collection.viewer.loading' | t | json }},
+            "clearAll": {{ 'collection.viewer.clear_all' | t | json }},
+            "viewingCount": {{ 'collection.viewer.viewing_count' | t: from: '__FROM__', to: '__TO__', total: '__TOTAL__' | json }},
+            "productCountOne": {{ 'collection.viewer.product_count' | t: count: 1 | json }},
+            "productCountOther": {{ 'collection.viewer.product_count' | t: count: '__COUNT__' | json }},
+            "priceUnder": {{ 'collection.price_under' | t: price: '__PRICE__' | json }},
+            "priceRange": {{ 'collection.price_range_label' | t: min: '__MIN__', max: '__MAX__' | json }}
+          }
+        </script>
+        <div data-grid class="tw-grid tw-grid-cols-2 tw-gap-5 md:tw-grid-cols-3 md:tw-gap-6">
+          {{ cv_grid_items }}
+
+          {% if cv_current_page == 1 %}
+            {{ promo_render }}
+          {% endif %}
+        </div>
+
+        {% if is_search %}
+          {%- assign safe_search_terms = search.terms | escape -%}
+          <p data-search-no-results class="tw-m-0 tw-pt-4 tw-text-body-regular tw-text-brand-darkest-grey" {% if cv_results_count > 0 %}style="display:none"{% endif %}>
+            {{ 'collection.viewer.no_results_inline' | t: terms: safe_search_terms }}
+          </p>
+        {% endif %}
+
+        {% if cv_pages > 1 %}
+          {%- assign viewing_to = adjusted_per_page | at_most: cv_items -%}
+          <div data-footer class="tw-mt-10 tw-flex tw-flex-col tw-items-center tw-gap-4">
+            <button
+              data-load-more
+              type="button"
+              class="tw-border-b-solid tw-cursor-pointer tw-border-b tw-border-b-brand-red tw-bg-transparent tw-py-[3px] tw-text-body-regular tw-font-semibold tw-text-brand-red"
+            >
+              {{ 'collection.viewer.load_more' | t }}
+            </button>
+            <p data-counter class="tw-m-0 tw-text-center tw-text-body-small tw-text-brand-darkest-grey">
+              {{ 'collection.viewer.viewing_count' | t: from: 1, to: viewing_to, total: cv_items }}
+            </p>
+          </div>
+        {% endif %}
+      </collection-viewer>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% javascript %}
+  class CollectionViewer extends HTMLElement {
+    connectedCallback() {
+      this._page = parseInt(this.dataset.currentPage, 10);
+      this._totalPages = parseInt(this.dataset.totalPages, 10);
+      this._totalItems = parseInt(this.dataset.totalItems, 10);
+      this._pageSize = parseInt(this.dataset.pageSize, 10);
+      this._loading = false;
+      this._i18n = JSON.parse(this.querySelector('[data-cv-i18n]')?.textContent || '{}');
+
+      this._grid = this.querySelector('[data-grid]');
+      this._btn = this.querySelector('[data-load-more]');
+      this._counter = this.querySelector('[data-counter]');
+      this._footer = this.querySelector('[data-footer]');
+
+      if (this._btn) {
+        this._btn.addEventListener('click', () => this.loadMore());
+      }
+
+      const wrapper = this.closest('[data-collection-section]');
+      if (wrapper && !wrapper._asyncNavInit) {
+        wrapper._asyncNavInit = true;
+        CollectionViewer._setupAsyncNav(wrapper, this.dataset.sectionId, this._i18n);
+      }
+
+      this._syncPromos();
+    }
+
+    _getColumnCount() {
+      return getComputedStyle(this._grid).gridTemplateColumns.split(' ').length;
+    }
+
+    _syncPromos() {
+      const cols = this._getColumnCount();
+      const productCount = this._grid.querySelectorAll(':scope > :not(.promo-grid-item)').length;
+      const maxVisibleRow = Math.ceil(productCount / cols) - 1;
+
+      this._grid.querySelectorAll('[data-promo-row]').forEach((el) => {
+        // Use the mobile row when the grid is in its 2-column (mobile) layout.
+        const desktopRow = parseInt(el.dataset.promoRow, 10);
+        const mobileRow = parseInt(el.dataset.promoRowMobile, 10);
+        const promoRow = (cols <= 2 && !isNaN(mobileRow)) ? mobileRow : desktopRow;
+        el.classList.toggle('tw-hidden', promoRow > maxVisibleRow);
+      });
+    }
+
+    async loadMore() {
+      if (this._loading || this._page >= this._totalPages) return;
+
+      this._loading = true;
+      this._btn.disabled = true;
+      this._btn.textContent = this._i18n.loading || 'Loading...';
+
+      try {
+        const nextPage = this._page + 1;
+        const url = new URL(window.location.href);
+        url.searchParams.set('page', nextPage);
+        url.searchParams.set('section_id', this.dataset.sectionId);
+
+        const res = await fetch(url.toString());
+        const html = await res.text();
+
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const newGrid = doc.querySelector('[data-grid]');
+
+        if (newGrid) {
+          const cards = [...newGrid.querySelectorAll('.product-card')];
+          cards.forEach((card) => this._grid.appendChild(card));
+        }
+
+        this._page = nextPage;
+        this._syncPromos();
+
+        const productCount = this._grid.querySelectorAll('.product-card').length;
+        this._counter.textContent = (this._i18n.viewingCount || 'Viewing __FROM__-__TO__ of __TOTAL__').replace('__FROM__', '1').replace('__TO__', productCount).replace('__TOTAL__', this._totalItems);
+
+        if (this._page >= this._totalPages) {
+          this._footer.remove();
+        } else {
+          this._btn.disabled = false;
+          this._btn.textContent = this._i18n.loadMore || 'Load more';
+        }
+      } catch (err) {
+        console.error('Load more failed:', err);
+        this._btn.disabled = false;
+        this._btn.textContent = this._i18n.loadMore || 'Load more';
+      } finally {
+        this._loading = false;
+      }
+    }
+
+    static _setupAsyncNav(wrapper, sectionId, i18n) {
+      const isMobile = () => window.innerWidth < 1024;
+
+      function parsePriceRanges(param) {
+        if (!param) return [];
+        return param.split(',').map((r) => {
+          const [gte, lte] = r.split('-').map(Number);
+          return { gte, lte };
+        });
+      }
+
+      async function fetchAndReplace(targetUrl) {
+        const url = new URL(targetUrl, window.location.origin);
+        url.searchParams.set('section_id', sectionId);
+
+        wrapper.style.opacity = '0.5';
+        wrapper.style.pointerEvents = 'none';
+
+        try {
+          const res = await fetch(url.toString());
+          const html = await res.text();
+          const doc = new DOMParser().parseFromString(html, 'text/html');
+          const newWrapper = doc.querySelector('[data-collection-section]');
+
+          if (newWrapper) {
+            wrapper.innerHTML = newWrapper.innerHTML;
+          }
+
+          const rangesParam = url.searchParams.get('price_ranges');
+          if (rangesParam && rangesParam.includes(',')) {
+            const ranges = parsePriceRanges(rangesParam);
+            await hydrateAdditionalRanges(ranges);
+          }
+
+          activateMatchingGroupedFilter();
+        } catch (err) {
+          console.error('Async navigation failed:', err);
+          window.location.href = targetUrl;
+        } finally {
+          wrapper.style.opacity = '';
+          wrapper.style.pointerEvents = '';
+        }
+      }
+
+      function navigate(targetUrl) {
+        const url = new URL(targetUrl, window.location.origin);
+        url.searchParams.delete('section_id');
+        url.searchParams.delete('gp');
+
+        const currentUrl = new URL(window.location.href);
+        const existingRanges = currentUrl.searchParams.get('price_ranges');
+        if (existingRanges && !url.searchParams.has('price_ranges')) {
+          url.searchParams.set('price_ranges', existingRanges);
+
+          if (!url.searchParams.has('filter.v.price.lte')) {
+            const first = parsePriceRanges(existingRanges)[0];
+            if (first) {
+              if (first.gte > 0) url.searchParams.set('filter.v.price.gte', first.gte);
+              url.searchParams.set('filter.v.price.lte', first.lte);
+            }
+          }
+        }
+
+        history.pushState({}, '', url.toString());
+        fetchAndReplace(url.toString());
+      }
+
+      async function navigateWithPriceRanges(ranges, sourceUrl) {
+        const baseUrl = new URL(sourceUrl || window.location.href, window.location.origin);
+        baseUrl.searchParams.delete('filter.v.price.gte');
+        baseUrl.searchParams.delete('filter.v.price.lte');
+        baseUrl.searchParams.delete('price_ranges');
+        baseUrl.searchParams.delete('page');
+        baseUrl.searchParams.delete('gp');
+
+        if (ranges.length === 0) {
+          history.pushState({}, '', baseUrl.toString());
+          fetchAndReplace(baseUrl.toString());
+          return;
+        }
+
+        if (ranges.length === 1) {
+          const r = ranges[0];
+          if (r.gte > 0) baseUrl.searchParams.set('filter.v.price.gte', r.gte);
+          baseUrl.searchParams.set('filter.v.price.lte', r.lte);
+          baseUrl.searchParams.set('price_ranges', `${r.gte}-${r.lte}`);
+          history.pushState({}, '', baseUrl.toString());
+          fetchAndReplace(baseUrl.toString());
+          return;
+        }
+
+        const rangeKey = ranges.map((r) => `${r.gte}-${r.lte}`).join(',');
+        baseUrl.searchParams.set('price_ranges', rangeKey);
+
+        const first = ranges[0];
+        if (first.gte > 0) baseUrl.searchParams.set('filter.v.price.gte', first.gte);
+        baseUrl.searchParams.set('filter.v.price.lte', first.lte);
+
+        baseUrl.searchParams.delete('section_id');
+        history.pushState({}, '', baseUrl.toString());
+
+        wrapper.style.opacity = '0.5';
+        wrapper.style.pointerEvents = 'none';
+
+        try {
+          const primaryUrl = new URL(baseUrl.toString());
+          primaryUrl.searchParams.set('section_id', sectionId);
+          const primaryRes = await fetch(primaryUrl.toString());
+          const primaryHtml = await primaryRes.text();
+          const primaryDoc = new DOMParser().parseFromString(primaryHtml, 'text/html');
+          const newWrapper = primaryDoc.querySelector('[data-collection-section]');
+
+          if (newWrapper) {
+            wrapper.innerHTML = newWrapper.innerHTML;
+          }
+
+          await hydrateAdditionalRanges(ranges);
+        } catch (err) {
+          console.error('Multi-range price filter failed:', err);
+          window.location.href = baseUrl.toString();
+        } finally {
+          wrapper.style.opacity = '';
+          wrapper.style.pointerEvents = '';
+        }
+      }
+
+      wrapper.addEventListener('click', (e) => {
+        const groupedFilter = e.target.closest('[data-grouped-filter]');
+        if (groupedFilter) {
+          e.preventDefault();
+          wrapper.querySelectorAll('[data-grouped-filter]').forEach((el) => el.classList.remove('--active'));
+          groupedFilter.classList.add('--active');
+
+          const url = new URL(window.location.href);
+          [...url.searchParams.keys()]
+            .filter((k) => k.startsWith('filter.'))
+            .forEach((k) => url.searchParams.delete(k));
+          url.searchParams.delete('page');
+          url.searchParams.delete('price_ranges');
+          const query = groupedFilter.dataset.filterQuery;
+          if (query) {
+            const params = new URLSearchParams(query);
+            params.forEach((v, k) => url.searchParams.append(k, v));
+          }
+          const slug = groupedFilter.dataset.gpSlug;
+          if (slug) {
+            url.searchParams.set('gp', slug);
+          } else {
+            url.searchParams.delete('gp');
+          }
+          history.pushState({}, '', url.toString());
+          fetchAndReplace(url.toString());
+          return;
+        }
+
+        const filterLink = e.target.closest('[data-filter-link]');
+        if (filterLink && !isMobile()) {
+          e.preventDefault();
+          navigate(filterLink.href);
+          return;
+        }
+
+        const priceLink = e.target.closest('[data-price-link]');
+        if (priceLink && !isMobile()) {
+          e.preventDefault();
+          const allPriceLinks = wrapper.querySelectorAll('[data-price-link]');
+          const activeRanges = [];
+
+          allPriceLinks.forEach((pl) => {
+            let active = pl.dataset.active === 'true';
+            if (pl === priceLink) active = !active;
+            if (active) {
+              activeRanges.push({
+                gte: pl.dataset.priceGte ? parseInt(pl.dataset.priceGte, 10) : 0,
+                lte: parseInt(pl.dataset.priceLte, 10),
+              });
+            }
+          });
+
+          navigateWithPriceRanges(activeRanges);
+          return;
+        }
+
+        const priceChip = e.target.closest('[data-price-chip]');
+        if (priceChip) {
+          e.preventDefault();
+          const removeKey = priceChip.dataset.range;
+          if (removeKey) {
+            const remaining = [];
+            wrapper.querySelectorAll('[data-price-chip]').forEach((chip) => {
+              if (chip.dataset.range && chip.dataset.range !== removeKey) {
+                const [g, l] = chip.dataset.range.split('-').map((v) => parseInt(v, 10));
+                remaining.push({ gte: g, lte: l });
+              }
+            });
+            navigateWithPriceRanges(remaining);
+          } else {
+            navigateWithPriceRanges([]);
+          }
+          return;
+        }
+
+        const chip = e.target.closest('[data-filter-chip]');
+        if (chip) {
+          e.preventDefault();
+          navigate(chip.href);
+          return;
+        }
+
+        const clear = e.target.closest('[data-clear-filters]');
+        if (clear) {
+          e.preventDefault();
+          const drawer = wrapper.querySelector('[data-filter-drawer]');
+          if (drawer) {
+            drawer.classList.remove('--mobile-active');
+          }
+          const clearUrl = new URL(clear.dataset.href || clear.href, window.location.origin);
+          clearUrl.searchParams.delete('price_ranges');
+          clearUrl.searchParams.delete('filter.v.price.gte');
+          clearUrl.searchParams.delete('filter.v.price.lte');
+          clearUrl.searchParams.delete('gp');
+          history.pushState({}, '', clearUrl.toString());
+          fetchAndReplace(clearUrl.toString());
+          return;
+        }
+      });
+
+      wrapper.addEventListener('change', (e) => {
+        if (e.target.matches('[data-sort-select]')) {
+          const url = new URL(window.location.href);
+          url.searchParams.set('sort_by', e.target.value);
+          navigate(url.toString());
+        }
+      });
+
+      document.addEventListener('collection:navigate', (e) => {
+        if (e.detail.priceRanges) {
+          navigateWithPriceRanges(e.detail.priceRanges, e.detail.url);
+        } else {
+          navigate(e.detail.url);
+        }
+      });
+
+      const priceUnderTpl = i18n.priceUnder || 'Under __PRICE__';
+      const priceRangeTpl = i18n.priceRange || '__MIN__ - __MAX__';
+
+      async function hydrateAdditionalRanges(ranges) {
+        const additionalRanges = ranges.slice(1);
+        const grid = wrapper.querySelector('[data-grid]');
+        if (!grid || additionalRanges.length === 0) return;
+
+        const currentUrl = new URL(window.location.href);
+        const fetches = additionalRanges.map((r) => {
+          const u = new URL(currentUrl.toString());
+          u.searchParams.delete('filter.v.price.gte');
+          u.searchParams.delete('filter.v.price.lte');
+          if (r.gte > 0) u.searchParams.set('filter.v.price.gte', r.gte);
+          u.searchParams.set('filter.v.price.lte', r.lte);
+          u.searchParams.set('section_id', sectionId);
+          return fetch(u.toString()).then((res) => res.text());
+        });
+
+        const results = await Promise.all(fetches);
+
+        const existingIds = new Set();
+        grid.querySelectorAll('.product-card[data-product-id]').forEach((card) => {
+          existingIds.add(card.dataset.productId);
+        });
+
+        results.forEach((html) => {
+          const doc = new DOMParser().parseFromString(html, 'text/html');
+          const newGrid = doc.querySelector('[data-grid]');
+          if (!newGrid) return;
+          newGrid.querySelectorAll('.product-card[data-product-id]').forEach((card) => {
+            if (!existingIds.has(card.dataset.productId)) {
+              existingIds.add(card.dataset.productId);
+              grid.appendChild(card);
+            }
+          });
+        });
+
+        const totalCards = grid.querySelectorAll('.product-card').length;
+
+        const priceLinks = wrapper.querySelectorAll('[data-price-link]');
+        priceLinks.forEach((pl) => {
+          const gte = pl.dataset.priceGte ? parseInt(pl.dataset.priceGte, 10) : 0;
+          const lte = parseInt(pl.dataset.priceLte, 10);
+          const isActive = ranges.some((r) => r.gte === gte && r.lte === lte);
+          pl.dataset.active = isActive ? 'true' : 'false';
+          const icon = pl.querySelector('[data-check-icon]');
+          icon.classList.toggle('--active', isActive);
+        });
+
+        const productCount = wrapper.querySelector('[data-product-count]');
+        if (productCount) {
+          const countText = totalCards === 1
+            ? (i18n.productCountOne || '1 product')
+            : (i18n.productCountOther || '__COUNT__ products').replace('__COUNT__', totalCards);
+          productCount.textContent = countText;
+        }
+
+        const noResults = wrapper.querySelector('[data-search-no-results]');
+        if (noResults) {
+          noResults.style.display = totalCards > 0 ? 'none' : '';
+        }
+
+        const buildLabel = (r) => {
+          if (!r.gte || r.gte === 0) {
+            return priceUnderTpl.replace('__PRICE__', `$${r.lte}`);
+          }
+          return priceRangeTpl.replace('__MIN__', `$${r.gte}`).replace('__MAX__', `$${r.lte}`);
+        };
+        const chipClass =
+          'tw-inline-flex tw-items-center tw-gap-1 tw-rounded-full tw-bg-brand-light-tan tw-py-[2px] tw-pl-2 tw-pr-1.5 tw-text-body-small tw-text-inherit tw-no-underline hover:tw-bg-chocolate-200';
+        const closeIcon =
+          '<span class="tw-inline-flex tw-h-3 tw-w-3"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>';
+
+        let chipsContainer = wrapper.querySelector('[data-chips-container]');
+        if (!chipsContainer) {
+          const toolbar = wrapper.querySelector('[data-collection-viewer] > div:first-child');
+          if (toolbar) {
+            chipsContainer = document.createElement('div');
+            chipsContainer.setAttribute('data-chips-container', '');
+            chipsContainer.className = 'tw-flex tw-flex-wrap tw-items-center tw-gap-2';
+            const currentUrl = new URL(window.location.href);
+            const clearUrl = new URL(currentUrl.pathname, currentUrl.origin);
+            if (currentUrl.searchParams.has('q')) clearUrl.searchParams.set('q', currentUrl.searchParams.get('q'));
+            if (currentUrl.searchParams.has('type')) clearUrl.searchParams.set('type', currentUrl.searchParams.get('type'));
+            const clearLink = document.createElement('span');
+            clearLink.setAttribute('data-clear-filters', '');
+            clearLink.setAttribute('data-href', clearUrl.pathname + clearUrl.search);
+            clearLink.innerHTML =
+              `<button type="button" class="tw-cursor-pointer tw-border-none tw-bg-transparent tw-text-body-small tw-font-semibold tw-text-brand-red tw-underline">${i18n.clearAll || 'Clear all'}</button>`;
+            chipsContainer.appendChild(clearLink);
+            toolbar.appendChild(chipsContainer);
+          }
+        }
+
+        if (chipsContainer) {
+          chipsContainer.querySelectorAll('[data-price-chip]').forEach((c) => c.remove());
+          const clearLink = chipsContainer.querySelector('[data-clear-filters]');
+          ranges.forEach((r) => {
+            const chip = document.createElement('a');
+            chip.href = '#';
+            chip.setAttribute('data-price-chip', '');
+            chip.setAttribute('data-range', `${r.gte}-${r.lte}`);
+            chip.className = chipClass;
+            chip.innerHTML = `${buildLabel(r)} ${closeIcon}`;
+            if (clearLink) {
+              chipsContainer.insertBefore(chip, clearLink);
+            } else {
+              chipsContainer.appendChild(chip);
+            }
+          });
+        }
+
+        const counter = wrapper.querySelector('[data-counter]');
+        if (counter) {
+          counter.textContent = (i18n.viewingCount || 'Viewing __FROM__-__TO__ of __TOTAL__').replace('__FROM__', '1').replace('__TO__', totalCards).replace('__TOTAL__', totalCards);
+        }
+
+        const footer = wrapper.querySelector('[data-footer]');
+        if (footer) footer.remove();
+      }
+
+      window.addEventListener('popstate', () => {
+        if (!document.contains(wrapper)) return;
+        fetchAndReplace(window.location.href);
+      });
+
+      function activateMatchingGroupedFilter() {
+        const gpValue = new URL(window.location.href).searchParams.get('gp') || '';
+        const chips = wrapper.querySelectorAll('[data-grouped-filter]');
+
+        chips.forEach((el) => el.classList.remove('--active'));
+
+        for (const el of chips) {
+          if ((el.dataset.gpSlug ?? '') === gpValue) {
+            el.classList.add('--active');
+            break;
+          }
+        }
+      }
+
+      const initRanges = new URL(window.location.href).searchParams.get('price_ranges');
+      if (initRanges && initRanges.includes(',')) {
+        hydrateAdditionalRanges(parsePriceRanges(initRanges));
+      }
+
+      activateMatchingGroupedFilter();
+    }
+  }
+
+  if (!customElements.get('collection-viewer')) {
+    customElements.define('collection-viewer', CollectionViewer);
+  }
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "Collection Viewer",
+  "enabled_on": {
+    "templates": ["collection", "search"]
+  },
+  "settings": [
+    {
+      "type": "header",
+      "content": "No results fallback"
+    },
+    {
+      "type": "collection",
+      "id": "fallback_collection",
+      "label": "Fallback collection",
+      "info": "Shown below the no-results message when the search returns nothing (e.g. Bestsellers)"
+    },
+    {
+      "type": "text",
+      "id": "fallback_collection_heading",
+      "label": "Fallback collection heading",
+      "default": "Our Bestsellers"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "promotional-card"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Collection Viewer"
+    }
+  ]
+}
+{% endschema %}

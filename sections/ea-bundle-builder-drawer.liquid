@@ -1,0 +1,2523 @@
+{% comment %}
+  Bundle Builder Drawer Section
+  Renders a slide-in drawer for building product bundles with tiered discounts.
+  Added to header-group so it renders on every page.
+{% endcomment %}
+
+{% liquid
+  assign heading = section.settings.heading | default: 'Build your bundle'
+  assign step_1_title = section.settings.step_1_title | default: 'Choose your first item'
+  assign step_2_title = section.settings.step_2_title | default: 'Add more, save more'
+  assign step_2_subtitle = section.settings.step_2_subtitle | default: 'The more you add, the more you save.'
+  assign step_3_title = section.settings.step_3_title | default: 'Add a personal message'
+  assign step_3_subtitle = section.settings.step_3_subtitle | default: 'Make it extra special with a note or card.'
+  assign add_to_cart_text = section.settings.add_to_cart_text | default: 'Add to Cart'
+  assign total_savings_label = section.settings.total_savings_label | default: 'Total Savings'
+  assign secondary_add_text = section.settings.secondary_add_text | default: 'Add'
+  assign gift_wrap_description = section.settings.gift_wrap_description | default: 'Choose your premium gift wrapping!'
+  assign gift_wrap_learn_more_text = section.settings.gift_wrap_learn_more_text | default: 'Learn More'
+  assign gw_meta = shop.metaobjects.gift_wrap.global
+
+  # ----- Step 3: personal message (self-contained, free from product logic) -----
+  # Greeting card resolves its own product (falls back to the premium-greeting-card
+  # handle) so the card renders + commits independently of the Personalization Drawer.
+  assign gc_iframe_url = section.settings.gc_iframe_url
+  assign gc_title = section.settings.gc_title | default: 'Add a real custom greeting card'
+  assign gc_button_label = section.settings.gc_button_label | default: 'Add'
+  assign gc_product = section.settings.gc_product
+  if gc_product == blank
+    assign gc_product = all_products['premium-greeting-card']
+  endif
+  if gc_product != blank and gc_product.id == blank
+    assign gc_product = all_products[gc_product]
+  endif
+  assign gc_variant = gc_product.selected_or_first_available_variant
+  assign gc_price = 0
+  if gc_variant
+    assign gc_price = gc_variant.price
+  endif
+
+  assign gm_title = section.settings.gm_title | default: 'Send a complimentary gift message'
+  assign gm_button_label = section.settings.gm_button_label | default: 'Add - FREE'
+  assign gm_description = section.settings.gm_description | default: 'Tell your loved one how much they mean to you.'
+  assign gm_max_chars = section.settings.gm_max_characters | default: 300
+  assign gm_product = section.settings.gm_product
+  if gm_product != blank and gm_product.id == blank
+    assign gm_product = all_products[gm_product]
+  endif
+  assign gm_variant = gm_product.selected_or_first_available_variant
+
+  assign show_gc_card = false
+  if gc_iframe_url != blank
+    assign show_gc_card = true
+  endif
+  # Gift message card renders unconditionally for parity with the cart drawer.
+  # Its variant falls back to the shared config island (PD free-message product)
+  # when no Bundle Builder gift message product is set.
+  assign show_gm_card = true
+  assign show_step_3 = false
+  if show_gc_card or show_gm_card
+    assign show_step_3 = true
+  endif
+
+  # Resolve the Bundle Builder Config metaobject entry.
+  # Single source of truth: Theme settings → Bundle Discounts. Fall back to the
+  # fixed app metaobject (handle: config) so it never errors if the setting is blank.
+  assign config_entry = settings.bundle_discount_config
+  unless config_entry
+    assign config_entry = shop.metaobjects['app--385259831297--bundle_discount_config'].config
+  endunless
+  assign eligible_products = config_entry.eligible_products.value
+
+  # Resolve discount thresholds from the metaobject .data (json) field, by market.
+  # Match the active market whose country == the current country; else the 'default' market.
+  assign discount_data = config_entry.data.value
+  assign current_country = localization.country.iso_code
+  assign selected_market = nil
+  assign default_market = nil
+  if discount_data.markets
+    for m in discount_data.markets
+      unless m.active == false
+        if m.country == current_country
+          assign selected_market = m
+        endif
+        if m.key == 'default' or m.country == blank
+          assign default_market = m
+        endif
+      endunless
+    endfor
+  endif
+  unless selected_market
+    assign selected_market = default_market
+  endunless
+
+  capture discount_config_json
+    echo '{"freeDelivery":'
+    echo selected_market.freeDelivery.threshold | default: 0
+    echo ',"tiers":['
+    for t in selected_market.tiers
+      echo '{"threshold":'
+      echo t.threshold | default: 0
+      echo ',"percentage":'
+      echo t.percentage | default: 0
+      echo '}'
+      unless forloop.last
+        echo ','
+      endunless
+    endfor
+    echo ']}'
+  endcapture
+
+  # Build the dynamic tab lists from BB: product tags.
+  # Tag format: "BB:<Tab>" -> Step 1 ; "BB:Add-on:<Tab>" -> Step 2. Tab name = last segment.
+  assign step_1_tabs_raw = ''
+  assign step_2_tabs_raw = ''
+  for product in eligible_products
+    for tag in product.tags
+      assign parts = tag | split: ':'
+      if parts[0] == 'BB' and parts.size > 1
+        assign tab_name = parts | last
+        if parts contains 'Add-on'
+          assign step_2_tabs_raw = step_2_tabs_raw | append: tab_name | append: '~~'
+        else
+          assign step_1_tabs_raw = step_1_tabs_raw | append: tab_name | append: '~~'
+        endif
+      endif
+    endfor
+  endfor
+  assign step_1_tabs = step_1_tabs_raw | split: '~~' | uniq
+  assign step_2_tabs = step_2_tabs_raw | split: '~~' | uniq
+  assign badge_icon_url = 'badge-icon.svg' | asset_url
+%}
+
+<ea-bundle-builder-drawer
+  id="bundle-builder-drawer-{{ section.id }}"
+  class="bb-section"
+  data-discount-config="{{ discount_config_json | strip | escape }}"
+  data-add-to-cart-text="{{ add_to_cart_text | escape }}"
+  data-badge-icon-url="{{ 'badge-icon.svg' | asset_url }}"
+  data-variant-select-title="{{ section.settings.variant_select_title | default: 'Select your size' | escape }}"
+  data-max-quantity="{{ section.settings.max_quantity | default: 9 }}"
+  data-gc-variant-id="{{ gc_variant.id | default: 0 }}"
+  data-gc-iframe-url="{{ gc_iframe_url | escape }}"
+  data-gc-price-formatted="{{ gc_price | money | strip_html | escape }}"
+  data-gc-button-label="{{ gc_button_label | escape }}"
+  data-gm-variant-id="{{ gm_variant.id | default: 0 }}"
+  data-gm-max-chars="{{ gm_max_chars }}"
+  style="--bundle-progress-color: {{ section.settings.progress_color | default: '#E10600' }};"
+>
+  {%- comment -%} Overlay {%- endcomment -%}
+  <div ref="overlay" class="bb-overlay" style="display: none;" on:click="/handleOverlayClick"></div>
+
+  {%- comment -%} Drawer container {%- endcomment -%}
+  <div ref="drawer" class="bb-drawer" style="display: none;" role="dialog" aria-modal="true" aria-label="{{ heading | escape }}" aria-hidden="true">
+    {%- comment -%} Header {%- endcomment -%}
+    <div class="bb-header">
+      <span class="bb-header__title">{{ heading | escape }}</span>
+      <button type="button" class="bb-header__close" on:click="/handleClose" aria-label="Close drawer">
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
+        >
+          <path d="M18 6L6 18" stroke="#1D1D1D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M6 6L18 18" stroke="#1D1D1D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+
+    {%- comment -%} Progress bar (markers rendered by JS from the market discount config) {%- endcomment -%}
+    {% render 'bundle-progress-bar', mode: 'client', progress_color: section.settings.progress_color %}
+
+    {%- comment -%} Main scrollable content {%- endcomment -%}
+    <div class="bb-main">
+      <div class="bb-content">
+        <div class="bb-steps">
+          {%- comment -%} Step 1: Choose your first item {%- endcomment -%}
+          <div class="bb-step" data-step="1">
+            <div class="bb-step__header" aria-expanded="true">
+              <div class="bb-step__header-left">
+                <span class="bb-step__number">1</span>
+                <span class="bb-step__title">{{ step_1_title | escape }}</span>
+              </div>
+              {% if section.settings.step_1_shop_all_link != blank %}
+                <a href="{{ section.settings.step_1_shop_all_link }}" class="bb-step__shop-all">Shop all</a>
+              {% endif %}
+            </div>
+            <div class="bb-step__body">
+              {% if step_1_tabs.size > 0 %}
+                <div class="bb-tabs">
+                  {% for tab in step_1_tabs %}
+                    <button
+                      type="button"
+                      class="bb-tab{% if forloop.first %} bb-tab--active{% endif %}"
+                      data-active="{% if forloop.first %}true{% else %}false{% endif %}"
+                      data-tab="{{ tab | escape }}"
+                    >
+                      {{ tab | escape }}
+                    </button>
+                  {% endfor %}
+                </div>
+                <div class="bb-products">
+                  {% for tab in step_1_tabs %}
+                    <div
+                      class="bb-products__panel"
+                      data-tab-panel="{{ tab | escape }}"
+                      {% unless forloop.first %}
+                        hidden
+                      {% endunless %}
+                    >
+                      {% for product in eligible_products %}
+                        {% assign in_tab = false %}
+                        {% for tag in product.tags %}
+                          {% assign parts = tag | split: ':' %}
+                          {% if parts[0] == 'BB' and parts.size > 1 %}
+                            {% unless parts contains 'Add-on' %}
+                              {% assign last_part = parts | last %}
+                              {% if last_part == tab %}
+                                {% assign in_tab = true %}
+                              {% endif %}
+                            {% endunless %}
+                          {% endif %}
+                        {% endfor %}
+                        {% if in_tab %}
+                          {% render 'bb-product-card', product: product, badge_icon_url: badge_icon_url %}
+                        {% endif %}
+                      {% endfor %}
+                    </div>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <p class="bb-products__empty">No products available.</p>
+              {% endif %}
+            </div>
+          </div>
+
+          {%- comment -%} Step 2: Add more, save more {%- endcomment -%}
+          <div class="bb-step" data-step="2">
+            <div class="bb-step__header" data-collapsible="true" aria-expanded="true">
+              <div class="bb-step__header-left">
+                <span class="bb-step__number">2</span>
+                <div class="bb-step__title-group">
+                  <span class="bb-step__title">{{ step_2_title | escape }}</span>
+                  <span class="bb-step__subtitle">{{ step_2_subtitle | escape }}</span>
+                </div>
+              </div>
+              <svg
+                class="bb-step__chevron"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <path d="M6 9L12 15L18 9" stroke="#1D1D1D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="bb-step__body">
+              {% if step_2_tabs.size > 0 %}
+                <div class="bb-tabs">
+                  {% for tab in step_2_tabs %}
+                    <button
+                      type="button"
+                      class="bb-tab{% if forloop.first %} bb-tab--active{% endif %}"
+                      data-active="{% if forloop.first %}true{% else %}false{% endif %}"
+                      data-tab="{{ tab | escape }}"
+                    >
+                      {{ tab | escape }}
+                    </button>
+                  {% endfor %}
+                </div>
+                <div class="bb-products">
+                  {% for tab in step_2_tabs %}
+                    <div
+                      class="bb-products__panel"
+                      data-tab-panel="{{ tab | escape }}"
+                      {% unless forloop.first %}
+                        hidden
+                      {% endunless %}
+                    >
+                      {% for product in eligible_products %}
+                        {% assign in_tab = false %}
+                        {% for tag in product.tags %}
+                          {% assign parts = tag | split: ':' %}
+                          {% if parts[0] == 'BB' and parts.size > 1 and parts contains 'Add-on' %}
+                            {% assign last_part = parts | last %}
+                            {% if last_part == tab %}
+                              {% assign in_tab = true %}
+                            {% endif %}
+                          {% endif %}
+                        {% endfor %}
+                        {% if in_tab %}
+                          {% render 'bb-product-card', product: product, badge_icon_url: badge_icon_url, is_addon: true %}
+                        {% endif %}
+                      {% endfor %}
+                    </div>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <p class="bb-products__empty">No products available.</p>
+              {% endif %}
+            </div>
+          </div>
+
+          {%- comment -%}
+            Step 3: Add a personal message (free gift message + paid greeting card).
+            Cards/copy are configured by the shared personalization message config
+            island; the whole step is hidden by JS when neither card is available.
+          {%- endcomment -%}
+          {% if show_step_3 %}
+            <div class="bb-step" data-step="3" data-pm-step>
+              <div class="bb-step__header" data-collapsible="true" aria-expanded="true">
+                <div class="bb-step__header-left">
+                  <span class="bb-step__number">3</span>
+                  <div class="bb-step__title-group">
+                    <span class="bb-step__title">{{ step_3_title | escape }}</span>
+                    <span class="bb-step__subtitle">{{ step_3_subtitle | escape }}</span>
+                  </div>
+                </div>
+                <svg
+                  class="bb-step__chevron"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <path d="M6 9L12 15L18 9" stroke="#1D1D1D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div class="bb-step__body">
+                <div class="pm-cards" data-pm-root>
+                  {% if show_gc_card %}
+                    {%- comment -%} Paid greeting card {%- endcomment -%}
+                    <div class="pm-card" data-pm-card="greeting-card">
+                      <div class="pm-card__icon">
+                        <img src="{{ 'greeting-card.svg' | asset_url }}" alt="" width="32" height="32" style="width:32px;height:32px" aria-hidden="true">
+                      </div>
+                      <div class="pm-card__info">
+                        <div class="pm-card__details">
+                          <span class="pm-card__text" data-pm-greeting-card-title>{{ gc_title | escape }}</span>
+                        </div>
+                        <div data-pm-message-state="add">
+                          <button type="button" class="pm-card__btn pm-card__btn--primary" data-pm-greeting-card-trigger>
+                            {%- if gc_price > 0 -%}{{ gc_button_label | escape }} - {{ gc_price | money }}{%- else -%}{{ gc_button_label | escape }}{%- endif -%}
+                          </button>
+                        </div>
+                        <div data-pm-message-state="added" style="display:none;">
+                          <div class="pm-card__added-actions">
+                            <button type="button" class="pm-card__action-btn pm-card__action-btn--remove" data-pm-greeting-card-action="remove">Remove</button>
+                            <button type="button" class="pm-card__action-btn pm-card__action-btn--link" data-pm-greeting-card-action="change">Change</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  {% endif %}
+                  {% if show_gm_card %}
+                    {%- comment -%} Free gift message {%- endcomment -%}
+                    <div class="pm-card" data-pm-card="gift-message">
+                      <div class="pm-card__icon">
+                        <img src="{{ 'gift-note.svg' | asset_url }}" alt="" width="32" height="32" style="width:32px;height:32px" aria-hidden="true">
+                      </div>
+                      <div class="pm-card__info">
+                        <div class="pm-card__details">
+                          <span class="pm-card__text" data-pm-gift-message-title>{{ gm_title | escape }}</span>
+                        </div>
+                        <div data-pm-message-state="add">
+                          <button type="button" class="pm-card__btn pm-card__btn--secondary" data-pm-gift-message-trigger>{{ gm_button_label | escape }}</button>
+                        </div>
+                        <div data-pm-message-state="added" style="display:none;">
+                          <div class="pm-card__added-actions">
+                            <button type="button" class="pm-card__action-btn pm-card__action-btn--remove" data-pm-gift-message-action="remove">Remove</button>
+                            <button type="button" class="pm-card__action-btn pm-card__action-btn--link" data-pm-gift-message-action="edit">Edit</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          {% endif %}
+
+        </div>
+      </div>
+    </div>
+
+    {%- comment -%} Sticky footer {%- endcomment -%}
+    <div class="bb-footer">
+      <div class="bb-footer__inputs">
+        <div class="bb-footer__input-group">
+          <div class="bb-footer__input-row">
+            <img
+              src="{{ 'location-icon.svg' | asset_url }}"
+              alt=""
+              width="14"
+              height="14"
+              style="width:14px;height:14px;"
+              aria-hidden="true"
+            >
+            <input type="text" class="bb-footer__zip-input" placeholder="Zip code" aria-label="Delivery zip code">
+          </div>
+          <button type="button" class="bb-footer__input-clear" aria-label="Clear zip code">
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <path d="M18 6L6 18" stroke="#1D1D1D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M6 6L18 18" stroke="#1D1D1D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+        <div class="bb-footer__input-group">
+          <div class="bb-footer__input-row">
+            <img
+              src="{{ 'calendar-icon.svg' | asset_url }}"
+              alt=""
+              width="14"
+              height="14"
+              style="width:14px;height:14px;"
+              aria-hidden="true"
+            >
+            <span class="bb-footer__delivery-label">1-Hour Delivery</span>
+          </div>
+          <svg
+            class="bb-footer__delivery-chevron"
+            width="14"
+            height="7"
+            viewBox="0 0 14 7"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
+            <path d="M1 1L7 6L13 1" stroke="#1D1D1D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="bb-footer__savings" style="display: none;">
+        <div class="bb-footer__savings-label">
+          <img
+            src="{{ 'label.svg' | asset_url }}"
+            alt=""
+            width="16"
+            height="16"
+            style="width:16px;height:16px;"
+            aria-hidden="true"
+          >
+          <span>{{ total_savings_label | escape }}</span>
+        </div>
+        <span class="bb-footer__savings-amount">$0.00</span>
+      </div>
+
+      <button type="button" class="bb-footer__atc" on:click="/handleAddToCart" disabled>
+        {{ add_to_cart_text | escape }}
+      </button>
+    </div>
+
+    {% if show_step_3 %}
+    {%- comment -%} ===== Gift Message Subview ===== {%- endcomment -%}
+    <div class="pm-panel" aria-hidden="true" data-pm-gift-message-view>
+      <div class="pm-panel__header">
+        <button type="button" class="pm-panel__back" aria-label="Back to bundle" data-pm-gift-message-back>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M15 6L9 12L15 18" stroke="#1D1D1D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <h3 class="pm-panel__title">Send a complimentary gift message</h3>
+        <button type="button" class="pm-panel__close" aria-label="Close drawer" data-pm-gift-message-close>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M18 6L6 18" stroke="#1D1D1D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M6 6L18 18" stroke="#1D1D1D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+      <div class="pm-panel__body">
+        <div class="pm-gm-content">
+          <p class="pm-gm-description" data-pm-gm-description>{{ gm_description | escape }}</p>
+          <div class="pm-tabs">
+            <button type="button" class="pm-tab pm-tab--active" data-pm-gm-tab="write-own">Write my own</button>
+            <button type="button" class="pm-tab" data-pm-gm-tab="generate">Write one for me</button>
+          </div>
+
+          {%- comment -%} Write my own panel {%- endcomment -%}
+          <div class="pm-gm-panel" data-pm-gm-panel="write-own">
+            <div class="pm-textarea-wrap">
+              <textarea class="pm-textarea" data-pm-gm-textarea placeholder="Write your message here" maxlength="{{ gm_max_chars }}"></textarea>
+              <span class="pm-counter" data-pm-gm-counter>0/{{ gm_max_chars }}</span>
+            </div>
+            <span class="pm-error" data-pm-gm-error style="display: none;">You've reached the max character count</span>
+            <button type="button" class="pm-btn pm-btn--disabled" data-pm-gm-submit disabled>Add Gift Message</button>
+          </div>
+
+          {%- comment -%} Write one for me panel {%- endcomment -%}
+          <div class="pm-gm-panel" data-pm-gm-panel="generate" style="display: none;">
+            <div class="pm-field" data-pm-gm-dropdown>
+              <div class="pm-field__select" data-pm-gm-dropdown-trigger tabindex="0" role="combobox" aria-expanded="false" aria-haspopup="listbox">
+                <div class="pm-field__label-wrap">
+                  <span class="pm-field__label" data-pm-gm-dropdown-label>Select the Occasion</span>
+                  <span class="pm-field__value" data-pm-gm-dropdown-value style="display: none;"></span>
+                </div>
+                <img src="{{ 'chevron-down-13.svg' | asset_url }}" alt="" width="20" height="20" class="pm-field__chevron" aria-hidden="true">
+              </div>
+              <ul class="pm-dropdown-list" data-pm-gm-dropdown-list role="listbox" style="display: none;"></ul>
+            </div>
+
+            <div class="pm-field">
+              <div class="pm-field__input-wrap">
+                <label class="pm-field__floating-label" data-pm-gm-name-label for="pm-gm-name-{{ section.id }}">Your Name</label>
+                <input
+                  type="text"
+                  id="pm-gm-name-{{ section.id }}"
+                  class="pm-field__input"
+                  data-pm-gm-name-input
+                  autocomplete="given-name"
+                >
+              </div>
+            </div>
+
+            <div class="pm-gm-generated-wrap" data-pm-gm-generated-wrap style="display: none;">
+              <div class="pm-textarea-wrap">
+                <textarea class="pm-textarea" data-pm-gm-generated-textarea maxlength="{{ gm_max_chars }}"></textarea>
+                <span class="pm-counter" data-pm-gm-generated-counter>0/{{ gm_max_chars }}</span>
+              </div>
+              <span class="pm-error" data-pm-gm-generated-error style="display: none;">You've reached the max character count</span>
+            </div>
+
+            <button type="button" class="pm-btn pm-btn--disabled" data-pm-gm-generate-btn disabled>Generate Gift Message</button>
+            <div class="pm-gm-actions" data-pm-gm-post-generate style="display: none;">
+              <button type="button" class="pm-btn" data-pm-gm-submit-generated>Add Gift Message</button>
+              <button type="button" class="pm-regenerate" data-pm-gm-regenerate-btn>Regenerate Message</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {%- comment -%} ===== Greeting Card Subview ===== {%- endcomment -%}
+    <div class="pm-panel" aria-hidden="true" data-pm-greeting-card-view>
+      <div class="pm-panel__header">
+        <button type="button" class="pm-panel__back" aria-label="Back to bundle" data-pm-greeting-card-back>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M15 6L9 12L15 18" stroke="#1D1D1D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <h3 class="pm-panel__title">Customize Greeting Card</h3>
+        <button type="button" class="pm-panel__close" aria-label="Close drawer" data-pm-greeting-card-close>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M18 6L6 18" stroke="#1D1D1D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M6 6L18 18" stroke="#1D1D1D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+      <div class="pm-panel__body pm-panel__body--gc">
+        <div class="pm-gc-occasion-wrap" data-pm-gc-occasion-wrap>
+          <div class="pm-field" data-pm-gc-dropdown>
+            <div class="pm-field__select" data-pm-gc-dropdown-trigger tabindex="0" role="combobox" aria-expanded="false" aria-haspopup="listbox">
+              <div class="pm-field__label-wrap">
+                <span class="pm-field__label" data-pm-gc-dropdown-label>Select the Occasion</span>
+                <span class="pm-field__value" data-pm-gc-dropdown-value style="display: none;"></span>
+              </div>
+              <img src="{{ 'chevron-down-13.svg' | asset_url }}" alt="" width="20" height="20" class="pm-field__chevron" aria-hidden="true">
+            </div>
+            <ul class="pm-dropdown-list" data-pm-gc-dropdown-list role="listbox" style="display: none;"></ul>
+          </div>
+        </div>
+        <iframe
+          class="pm-gc-iframe"
+          data-pm-gc-iframe
+          title="Design your greeting card"
+          allow="camera"
+          style="display: none;"
+        ></iframe>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  {%- comment -%}
+    Secondary drawer — opens on top of the main drawer to pick a variant and a
+    complimentary gift wrap before the product is added to the bundle.
+  {%- endcomment -%}
+  <div
+    ref="secondaryOverlay"
+    class="bb2-overlay"
+    style="display: none;"
+    on:click="/handleSecondaryOverlayClick"
+  ></div>
+
+  <div ref="secondaryDrawer" class="bb2-drawer" style="display: none;">
+    <div class="bb2-header">
+      <button type="button" class="bb2-header__back" on:click="/handleSecondaryClose" aria-label="Back">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M15 18L9 12L15 6" stroke="#1D1D1D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <span class="bb2-header__title" data-bb2-title>{{ section.settings.variant_select_title | default: 'Select your size' | escape }}</span>
+    </div>
+
+    <div class="bb2-main">
+      <p class="bb2-product-name" data-bb2-product-name></p>
+      <div class="bb2-variants" data-bb2-variants></div>
+
+      <div class="bb2-giftwrap" data-bb2-giftwrap hidden>
+        <div class="bb2-giftwrap__divider"></div>
+        <div class="bb2-giftwrap__head">
+          {% if gift_wrap_description != blank or gw_meta != blank %}
+            <p class="bb2-giftwrap__desc">
+              {% if gift_wrap_description != blank %}{{ gift_wrap_description | escape }}{% endif %}
+              {% if gw_meta != blank %}
+                {%- capture gw_drawer_content -%}{% render 'gift-wrap-drawer-content', gift_wrap: gw_meta %}{%- endcapture -%}
+                <button
+                  type="button"
+                  class="bb2-giftwrap__learn"
+                  data-global-drawer-trigger
+                  data-drawer-title="{{ gw_meta.drawer_title | escape }}"
+                  data-drawer-title-style='{"preset":"h3","color":"#5f0300"}'
+                  data-drawer-close-style='{"size":"32px","desktopSize":"40px"}'
+                  data-content="{{ gw_drawer_content | escape }}"
+                >{{ gift_wrap_learn_more_text | escape }}</button>
+              {% endif %}
+            </p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="bb2-footer">
+      <button type="button" class="bb2-footer__add" data-bb2-add on:click="/handleSecondaryAdd" disabled>
+        {{ secondary_add_text | escape }}
+      </button>
+    </div>
+  </div>
+</ea-bundle-builder-drawer>
+
+<script src="{{ 'ea-bundle-builder-drawer.js' | asset_url }}" type="module"></script>
+<script src="{{ 'bb-product-card-cta.js' | asset_url }}" type="module"></script>
+
+{% stylesheet %}
+  /* ===== Bundle Builder Drawer ===== */
+
+  .bb-section {
+    display: contents;
+  }
+
+  /* Overlay */
+  .bb-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 19;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+
+  .bb-overlay--open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Drawer panel */
+  .bb-drawer {
+    position: fixed;
+    inset-block-start: 16px;
+    inset-block-end: 16px;
+    inset-inline-end: 16px;
+    max-width: 587px;
+    width: 100%;
+    z-index: 20;
+    background: #ffffff;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(calc(100% + 16px));
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.12);
+    overflow: hidden;
+  }
+
+  .bb-drawer--open {
+    transform: translateX(0);
+  }
+
+  /* Header */
+  .bb-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    border-radius: 8px 8px 0 0;
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.05);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+  }
+
+  .bb-header__title {
+    font-family: var(--font-heading--family);
+    font-size: var(--font-size--xl);
+    font-weight: 600;
+    line-height: 1.2;
+    color: #464646;
+  }
+
+  .bb-header__close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  /* Progress bar CSS lives in snippets/bundle-progress-bar.liquid (shared with
+     the Cart drawer). No BB-specific overrides so the two bars render identically. */
+
+  /* Main scrollable area */
+  .bb-main {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .bb-content {
+    padding: 0 16px 24px;
+  }
+
+  .bb-steps {
+    padding: 24px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* Step cards */
+  .bb-step {
+    background: #fbf7f5;
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .bb-step__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    cursor: default;
+  }
+
+  .bb-step__header[data-collapsible='true'] {
+    cursor: pointer;
+  }
+
+  .bb-step__header-left {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .bb-step__number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    border-radius: 50%;
+    background: #ebdcd0;
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--sm);
+    font-weight: 600;
+    line-height: 1.43;
+    color: #1d1d1d;
+  }
+
+  .bb-step__title {
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--md);
+    font-weight: 600;
+    line-height: 1.375;
+    color: #464646;
+  }
+
+  .bb-step__title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .bb-step__subtitle {
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--2xs);
+    font-weight: 400;
+    line-height: 1.42;
+    color: #1d1d1d;
+  }
+
+  .bb-step__shop-all {
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--2xs);
+    font-weight: 600;
+    line-height: 1.42;
+    color: #e10600;
+    text-decoration: none;
+    border: none;
+    border-bottom: 1px solid #e10600;
+    padding: 0 0 1px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .bb-step__shop-all:hover {
+    border-bottom-color: #c20500;
+    color: #c20500;
+  }
+
+  .bb-step__chevron {
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+  }
+
+  .bb-step__header[aria-expanded='true'] .bb-step__chevron {
+    transform: rotate(180deg);
+  }
+
+  .bb-step__body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .bb-step__body[hidden] {
+    display: none;
+  }
+
+  .bb-step__placeholder {
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--sm);
+    color: #838383;
+    margin: 0;
+    padding: 8px 0;
+  }
+
+  /* Tabs */
+  .bb-tabs {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .bb-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .bb-tab {
+    padding: 0 16px 8px;
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--2xs);
+    font-weight: 400;
+    line-height: 1.42;
+    color: #1d1d1d;
+    background: none;
+    border: none;
+    border-bottom: 1px solid #c6c6c6;
+    cursor: pointer;
+    white-space: nowrap;
+    text-align: center;
+    transition: border-color 0.2s ease, font-weight 0.2s ease;
+  }
+
+  .bb-tab--active,
+  .bb-tab[data-active='true'] {
+    font-weight: 600;
+    border-bottom-color: #1d1d1d;
+  }
+
+  /* Product grid */
+  .bb-products__panel {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-block-end: 4px;
+  }
+
+  .bb-products__panel[hidden] {
+    display: none;
+  }
+
+  .bb-products__panel::-webkit-scrollbar {
+    display: none;
+  }
+
+  .bb-products__empty {
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--sm);
+    color: #838383;
+    margin: 0;
+    padding: 16px 0;
+  }
+
+  /* Loading skeleton */
+  .bb-products__loading {
+    display: flex;
+    gap: 16px;
+  }
+
+  .bb-card-skeleton {
+    min-width: 169px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .bb-card-skeleton__image {
+    width: 169px;
+    height: 169px;
+    border-radius: 8px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: bb-shimmer 1.5s infinite;
+  }
+
+  .bb-card-skeleton__text {
+    height: 14px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: bb-shimmer 1.5s infinite;
+    width: 80%;
+  }
+
+  .bb-card-skeleton__text--short {
+    width: 50%;
+  }
+
+  @keyframes bb-shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  /* Product card */
+  .bb-card {
+    min-width: 169px;
+    max-width: 169px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .bb-card__image-wrapper {
+    position: relative;
+    width: 169px;
+    height: 169px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: linear-gradient(180deg, #f2e7df 0%, #f5f1f1 100%);
+  }
+
+  .bb-card__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .bb-card__image-placeholder {
+    width: 100%;
+    height: 100%;
+    background: #f0f0f0;
+  }
+
+  .bb-card__callout {
+    position: absolute;
+    inset-block-start: 8px;
+    inset-inline-start: 0;
+    padding: 0 8px;
+    border-radius: 0 24px 24px 0;
+    background: #ffffff;
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--2xs);
+    font-weight: 400;
+    line-height: 1.67;
+    color: #1d1d1d;
+  }
+
+  /* Delivery badge (e.g. "1 Hour Delivery") */
+  .bb-card__badge {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 0;
+  }
+
+  .bb-card__badge-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+
+  .bb-card__badge-text {
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--2xs);
+    font-weight: 500;
+    line-height: 1.42;
+    color: #526f1b;
+  }
+
+  .bb-card__info {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .bb-card__details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .bb-card__title {
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--sm);
+    font-weight: 600;
+    line-height: 1.43;
+    color: #1d1d1d;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .bb-card__pricing {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .bb-card__price {
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--2xs);
+    font-weight: 600;
+    line-height: 1.42;
+    color: #1d1d1d;
+  }
+
+  .bb-card__compare-price {
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--2xs);
+    font-weight: 400;
+    line-height: 1.42;
+    color: #838383;
+    text-decoration: line-through;
+  }
+
+  /* Card action buttons */
+  .bb-card__action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 24px;
+    border-radius: 24px;
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--2xs);
+    font-weight: 600;
+    line-height: 1.42;
+    cursor: pointer;
+    border: none;
+    transition: background-color 0.15s ease, color 0.15s ease;
+    align-self: flex-start;
+    height: 32px;
+  }
+
+  .bb-card__action--add {
+    background: #e10600;
+    color: #ffffff;
+  }
+
+  .bb-card__action--add:hover {
+    background: #c20500;
+  }
+
+  .bb-card__action:disabled {
+    background: #ededed;
+    color: #8c8c8c;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .bb-card__action--remove {
+    background: #ffffff;
+    color: #1d1d1d;
+    border: 1px solid #ededed;
+  }
+
+  .bb-card__action--remove:hover {
+    background: #f5f5f5;
+  }
+
+  /* Variant select view */
+  .bb-variant-select {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .bb-variant-select__back {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    align-self: flex-start;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--2xs);
+    font-weight: 600;
+    line-height: 1.42;
+    color: #1d1d1d;
+  }
+
+  .bb-variant-select__list {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-block-end: 4px;
+  }
+
+  .bb-variant-select__list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .bb-variant-tile {
+    flex: 0 0 auto;
+    min-width: 240px;
+    max-width: 280px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px;
+    border: 1px solid #ededed;
+    border-radius: 8px;
+    background: #ffffff;
+    cursor: pointer;
+    text-align: left;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .bb-variant-tile--selected {
+    border-color: #1d1d1d;
+    box-shadow: inset 0 0 0 1px #1d1d1d;
+  }
+
+  .bb-variant-tile:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .bb-variant-tile__image {
+    width: 56px;
+    height: 56px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: linear-gradient(180deg, #f2e7df 0%, #f5f1f1 100%);
+  }
+
+  .bb-variant-tile__image--placeholder {
+    background: #f0f0f0;
+  }
+
+  .bb-variant-tile__info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-start;
+    min-width: 0;
+  }
+
+  .bb-variant-tile__title {
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--md);
+    font-weight: 600;
+    line-height: 1.375;
+    color: #1d1d1d;
+  }
+
+  .bb-variant-tile__pricing {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .bb-variant-tile__price {
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--sm);
+    font-weight: 600;
+    line-height: 1.43;
+    color: #1d1d1d;
+  }
+
+  .bb-variant-tile__compare {
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--2xs);
+    font-weight: 400;
+    line-height: 1.42;
+    color: #838383;
+    text-decoration: line-through;
+  }
+
+  /* Footer */
+  .bb-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+    background: #ffffff;
+    box-shadow: 0 -5px 10px rgba(0, 0, 0, 0.05);
+    border-radius: 0 0 8px 8px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+  }
+
+  .bb-footer__inputs {
+    display: flex;
+    gap: 8px;
+  }
+
+  .bb-footer__input-group {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid #dbdbdb;
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .bb-footer__input-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .bb-footer__zip-input {
+    border: none;
+    outline: none;
+    background: none;
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--2xs);
+    font-weight: 500;
+    line-height: 1.5;
+    color: #1d1d1d;
+    width: 100%;
+    padding: 0;
+  }
+
+  .bb-footer__zip-input::placeholder {
+    color: #838383;
+  }
+
+  .bb-footer__input-clear {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    border-radius: 50%;
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .bb-footer__delivery-label {
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--2xs);
+    font-weight: 500;
+    line-height: 1.5;
+    color: #1d1d1d;
+    white-space: nowrap;
+  }
+
+  .bb-footer__delivery-chevron {
+    flex-shrink: 0;
+  }
+
+  .bb-footer__savings {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .bb-footer__savings-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--2xs);
+    font-weight: 600;
+    line-height: 1.42;
+    color: #5f0300;
+  }
+
+  .bb-footer__savings-amount {
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--2xs);
+    font-weight: 600;
+    line-height: 1.42;
+    color: #5f0300;
+  }
+
+  .bb-footer__atc {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 24px;
+    min-height: 40px;
+    border-radius: 24px;
+    background: #e10600;
+    color: #ffffff;
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--sm);
+    font-weight: 600;
+    line-height: 1.43;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+
+  .bb-footer__atc:hover:not(:disabled) {
+    background: #c20500;
+  }
+
+  .bb-footer__atc:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* ===== Card quantity stepper (shown after a product is added) ===== */
+  .bb-card__qty {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    align-self: flex-start;
+    height: 32px;
+    padding: 0 8px;
+    border-radius: 24px;
+    border: 1px solid #ededed;
+    background: #ffffff;
+  }
+
+  .bb-card__qty-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    background: none;
+    color: #1d1d1d;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .bb-card__qty-btn:hover {
+    color: #e10600;
+  }
+
+  .bb-card__qty-value {
+    min-width: 16px;
+    text-align: center;
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--2xs);
+    font-weight: 600;
+    line-height: 1.42;
+    color: #1d1d1d;
+  }
+
+  /* ===== Secondary drawer (variant picker) ===== */
+  .bb2-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 29;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+
+  .bb2-overlay--open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .bb2-drawer {
+    position: fixed;
+    inset-block-start: 16px;
+    inset-block-end: 16px;
+    inset-inline-end: 16px;
+    max-width: 587px;
+    width: 100%;
+    z-index: 30;
+    background: #ffffff;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(calc(100% + 16px));
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.12);
+    overflow: hidden;
+  }
+
+  .bb2-drawer--open {
+    transform: translateX(0);
+  }
+
+  .bb2-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 16px;
+    border-radius: 8px 8px 0 0;
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.05);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+  }
+
+  .bb2-header__back {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .bb2-header__title {
+    font-family: var(--font-heading--family);
+    font-size: var(--font-size--xl);
+    font-weight: 600;
+    line-height: 1.2;
+    color: #464646;
+  }
+
+  .bb2-main {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .bb2-product-name {
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--md);
+    font-weight: 600;
+    line-height: 1.375;
+    color: #1d1d1d;
+    margin: 0;
+  }
+
+  .bb2-variants {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .bb2-variant {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ededed;
+    border-radius: 8px;
+    background: #ffffff;
+    cursor: pointer;
+    text-align: left;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .bb2-variant--selected {
+    border-color: #1d1d1d;
+    box-shadow: inset 0 0 0 1px #1d1d1d;
+  }
+
+  .bb2-variant--single {
+    cursor: default;
+  }
+
+  .bb2-variant:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .bb2-variant__image {
+    width: 64px;
+    height: 64px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: linear-gradient(180deg, #f2e7df 0%, #f5f1f1 100%);
+  }
+
+  .bb2-variant__image--placeholder {
+    background: #f0f0f0;
+  }
+
+  .bb2-variant__info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-start;
+    min-width: 0;
+  }
+
+  .bb2-variant__title {
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--md);
+    font-weight: 600;
+    line-height: 1.375;
+    color: #1d1d1d;
+  }
+
+  .bb2-variant__pricing {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .bb2-variant__price {
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--sm);
+    font-weight: 400;
+    line-height: 1.43;
+    color: #1d1d1d;
+  }
+
+  .bb2-variant__compare {
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--2xs);
+    font-weight: 400;
+    line-height: 1.42;
+    color: #838383;
+    text-decoration: line-through;
+  }
+
+  /* Gift wrap section */
+  .bb2-giftwrap[hidden] {
+    display: none;
+  }
+
+  .bb2-giftwrap {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .bb2-giftwrap__divider {
+    height: 1px;
+    background: #ededed;
+    width: 100%;
+  }
+
+  .bb2-giftwrap__head {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .bb2-giftwrap__desc {
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--2xs);
+    font-weight: 400;
+    line-height: 1.42;
+    color: #1d1d1d;
+    margin: 0;
+  }
+
+  .bb2-giftwrap__learn {
+    display: inline;
+    padding: 0;
+    border: none;
+    background: none;
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--2xs);
+    font-weight: 600;
+    line-height: 1.42;
+    color: #1d1d1d;
+    text-decoration: underline;
+    text-underline-offset: 0.08em;
+    cursor: pointer;
+  }
+
+  .bb2-wrap-carousel {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-block-end: 4px;
+  }
+
+  .bb2-wrap-carousel::-webkit-scrollbar {
+    display: none;
+  }
+
+  .bb2-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 91px;
+    flex-shrink: 0;
+    padding: 8px;
+    border-radius: 8px;
+    background: #ffffff;
+    border: 1px solid #c6c6c6;
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+    box-sizing: border-box;
+  }
+
+  .bb2-wrap--selected {
+    border-color: #1d1d1d;
+  }
+
+  .bb2-wrap__image {
+    width: 75px;
+    height: 75px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 1px solid #fce6e6;
+  }
+
+  .bb2-wrap__image--placeholder {
+    background: #f0f0f0;
+    border: 1px solid #fce6e6;
+  }
+
+  .bb2-wrap__label {
+    width: 100%;
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--2xs);
+    font-weight: 400;
+    line-height: 1.42;
+    text-align: center;
+    color: #1d1d1d;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .bb2-wrap--selected .bb2-wrap__label {
+    font-weight: 600;
+  }
+
+  .bb2-footer {
+    padding: 16px;
+    background: #ffffff;
+    box-shadow: 0 -5px 10px rgba(0, 0, 0, 0.05);
+    border-radius: 0 0 8px 8px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+  }
+
+  .bb2-footer__add {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 24px;
+    min-height: 40px;
+    border-radius: 24px;
+    background: #e10600;
+    color: #ffffff;
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--sm);
+    font-weight: 600;
+    line-height: 1.43;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+
+  .bb2-footer__add:hover:not(:disabled) {
+    background: #c20500;
+  }
+
+  .bb2-footer__add:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* ===== Step 3: Personal message cards (pm-) ===== */
+  .pm-cards {
+    display: flex;
+    gap: 16px;
+  }
+
+  .pm-card[hidden] {
+    display: none;
+  }
+
+  .pm-card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 8px;
+    border: 1px solid #ededed;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.05);
+  }
+
+  .pm-card__icon {
+    width: 32px;
+    height: 32px;
+    overflow: hidden;
+  }
+
+  .pm-card__icon img {
+    width: 32px;
+    height: 32px;
+  }
+
+  .pm-card__info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .pm-card__details {
+    width: 100%;
+    text-align: center;
+  }
+
+  .pm-card__text {
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: var(--font-size--2xs);
+    line-height: 1.42;
+    color: #464646;
+    text-align: center;
+  }
+
+  .pm-card__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 8px;
+    border-radius: 24px;
+    font-family: var(--font-body--family);
+    font-weight: 600;
+    font-size: var(--font-size--2xs);
+    line-height: 1.42;
+    cursor: pointer;
+    border: none;
+    min-height: 24px;
+  }
+
+  .pm-card__btn--primary {
+    background: #e10600;
+    color: #ffffff;
+  }
+
+  .pm-card__btn--primary:hover {
+    background: #c20500;
+  }
+
+  .pm-card__btn--secondary {
+    background: #ffffff;
+    color: #1d1d1d;
+    border: 1px solid #ededed;
+  }
+
+  .pm-card__btn--secondary:hover {
+    background: #f5f5f5;
+  }
+
+  .pm-card__added-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .pm-card__action-btn {
+    font-family: var(--font-body--family);
+    cursor: pointer;
+  }
+
+  .pm-card__action-btn--remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 16px;
+    border-radius: 24px;
+    background: #ffffff;
+    color: #1d1d1d;
+    border: 1px solid #ededed;
+    font-weight: 600;
+    font-size: var(--font-size--2xs);
+    line-height: 1.42;
+    white-space: nowrap;
+  }
+
+  .pm-card__action-btn--link {
+    padding: 0;
+    border: none;
+    background: none;
+    color: #e10600;
+    text-decoration: underline;
+    font-weight: 600;
+    font-size: var(--font-size--sm);
+    line-height: 1.43;
+  }
+
+  /* ===== Step 3 subview panels (slide-in over the drawer) ===== */
+  .pm-panel {
+    position: absolute;
+    inset: 0;
+    background: #ffffff;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 5;
+    transform: translateX(100%);
+    visibility: hidden;
+    transition: transform 0.25s ease, visibility 0.25s ease;
+  }
+
+  .pm-panel[aria-hidden='false'] {
+    visibility: visible;
+    transform: translateX(0);
+  }
+
+  .pm-panel__header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    background: #ffffff;
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.05);
+    flex: 0 0 auto;
+    position: relative;
+    z-index: 2;
+  }
+
+  .pm-panel__back,
+  .pm-panel__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    line-height: 0;
+    flex-shrink: 0;
+  }
+
+  .pm-panel__title {
+    font-family: var(--font-heading--family);
+    font-weight: 600;
+    font-size: var(--font-size--xl);
+    line-height: 1.2;
+    color: #464646;
+    margin: 0;
+    text-align: start;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .pm-panel__body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    box-shadow: inset 0 5px 10px rgba(0, 0, 0, 0.05);
+  }
+
+  .pm-panel__body--gc {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .pm-gm-content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 24px 16px;
+  }
+
+  .pm-gm-description {
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: var(--font-size--sm);
+    line-height: 1.43;
+    color: #464646;
+    margin: 0;
+  }
+
+  .pm-tabs {
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+  }
+
+  .pm-tab {
+    display: flex;
+    justify-content: center;
+    padding: 0 16px 8px;
+    border: none;
+    background: none;
+    border-bottom: 1px solid #c6c6c6;
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: var(--font-size--2xs);
+    line-height: 1.42;
+    text-align: center;
+    color: #1d1d1d;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: border-color 0.15s ease, font-weight 0.15s ease;
+  }
+
+  .pm-tab--active {
+    border-bottom-color: #1d1d1d;
+    font-weight: 600;
+  }
+
+  .pm-gm-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .pm-textarea-wrap {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .pm-textarea {
+    width: 100%;
+    min-height: 169px;
+    padding: 15.5px 16px 28px;
+    border-radius: 8px;
+    border: 1px solid #c6c6c6;
+    background: #ffffff;
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: var(--font-size--md);
+    line-height: 1.375;
+    color: #1d1d1d;
+    resize: none;
+    outline: none;
+    transition: border-color 0.15s ease;
+    box-sizing: border-box;
+  }
+
+  .pm-textarea::placeholder {
+    color: #6b6b6b;
+  }
+
+  .pm-textarea:focus,
+  .pm-textarea--filled {
+    border-color: #464646;
+  }
+
+  .pm-textarea--error {
+    border-color: #e10600;
+  }
+
+  .pm-counter {
+    position: absolute;
+    bottom: 10px;
+    right: 16px;
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: var(--font-size--2xs);
+    line-height: 1.42;
+    color: #6b6b6b;
+    pointer-events: none;
+  }
+
+  .pm-counter--error {
+    color: #e10600;
+  }
+
+  .pm-error {
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: var(--font-size--2xs);
+    line-height: 1.42;
+    color: #e10600;
+  }
+
+  .pm-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 4px 24px;
+    min-height: 40px;
+    border-radius: 24px;
+    border: none;
+    background: #e10600;
+    font-family: var(--font-body--family);
+    font-weight: 600;
+    font-size: var(--font-size--sm);
+    line-height: 1.43;
+    text-align: center;
+    color: #ffffff;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+
+  .pm-btn:hover:not(:disabled):not(.pm-btn--disabled) {
+    background: #c20500;
+  }
+
+  .pm-btn--disabled,
+  .pm-btn:disabled {
+    background: #aaaaaa;
+    cursor: not-allowed;
+  }
+
+  .pm-gm-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .pm-regenerate {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    background: none;
+    font-family: var(--font-body--family);
+    font-weight: 600;
+    font-size: var(--font-size--2xs);
+    line-height: 1.42;
+    text-align: center;
+    color: #e10600;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  .pm-field {
+    position: relative;
+  }
+
+  .pm-field__select {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    min-height: 48px;
+    border-radius: 8px;
+    border: 1px solid #c6c6c6;
+    background: #ffffff;
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+    box-sizing: border-box;
+  }
+
+  .pm-field__select--filled,
+  .pm-field__select--open {
+    border-color: #464646;
+  }
+
+  .pm-field__label-wrap {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .pm-field__label {
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: var(--font-size--2xs);
+    line-height: 1.42;
+    color: #6b6b6b;
+  }
+
+  .pm-field__value {
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: var(--font-size--2xs);
+    line-height: 1.42;
+    color: #1d1d1d;
+  }
+
+  .pm-field__chevron {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+  }
+
+  .pm-field__select--open .pm-field__chevron {
+    transform: rotate(180deg);
+  }
+
+  .pm-dropdown-list {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 5;
+    list-style: none;
+    margin: 0;
+    padding: 4px 0;
+    border-radius: 8px;
+    border: 1px solid #c6c6c6;
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .pm-dropdown-item {
+    padding: 10px 16px;
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: var(--font-size--2xs);
+    line-height: 1.42;
+    color: #1d1d1d;
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+  }
+
+  .pm-dropdown-item:hover,
+  .pm-dropdown-item--selected {
+    background: #f5f1f1;
+  }
+
+  .pm-dropdown-item--selected {
+    font-weight: 600;
+  }
+
+  .pm-field__input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+    border-radius: 8px;
+    border: 1px solid #c6c6c6;
+    background: #ffffff;
+    padding: 10px 16px;
+    box-sizing: border-box;
+    transition: border-color 0.15s ease;
+  }
+
+  .pm-field__input-wrap--filled,
+  .pm-field__input-wrap--focused {
+    border-color: #464646;
+  }
+
+  .pm-field__floating-label {
+    position: absolute;
+    top: 50%;
+    left: 16px;
+    transform: translateY(-50%);
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: var(--font-size--2xs);
+    line-height: 1.42;
+    color: #6b6b6b;
+    pointer-events: none;
+    transition: transform 0.15s ease, top 0.15s ease;
+  }
+
+  .pm-field__input-wrap--active .pm-field__floating-label {
+    top: 10px;
+    transform: translateY(0);
+  }
+
+  .pm-field__input {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: none;
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: var(--font-size--md);
+    line-height: 1.375;
+    color: #1d1d1d;
+    padding: 0;
+    margin: 0;
+  }
+
+  .pm-field__input-wrap--active .pm-field__input {
+    padding-top: 14px;
+  }
+
+  .pm-gm-generated-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .pm-gc-occasion-wrap {
+    padding: 20px 16px;
+    flex-shrink: 0;
+  }
+
+  .pm-gc-iframe {
+    width: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
+    border: none;
+    display: block;
+  }
+
+  /* Mobile responsive */
+  @media screen and (max-width: 750px) {
+    .pm-panel__title {
+      font-size: var(--font-size--md);
+      line-height: 1.375;
+    }
+
+    .bb-drawer,
+    .bb2-drawer {
+      max-width: calc(100% - 32px);
+      inset-block-start: 16px;
+      inset-block-end: 16px;
+      inset-inline-end: 16px;
+    }
+
+    .bb-header__title,
+    .bb2-header__title {
+      font-size: var(--font-size--md);
+      line-height: 1.375;
+    }
+
+    .bb-step__title {
+      font-size: var(--font-size--sm);
+      line-height: 1.43;
+    }
+
+    .bb-card {
+      min-width: 155px;
+      max-width: 155px;
+    }
+
+    .bb-card__image-wrapper {
+      width: 155px;
+      height: 155px;
+    }
+
+    .bb-variant-tile {
+      min-width: 248px;
+      max-width: 88%;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Bundle Builder Drawer",
+  "tag": "div",
+  "settings": [
+    {
+      "type": "header",
+      "content": "General"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Build your bundle"
+    },
+    {
+      "type": "text",
+      "id": "add_to_cart_text",
+      "label": "Add to cart text",
+      "default": "Add to Cart"
+    },
+    {
+      "type": "text",
+      "id": "total_savings_label",
+      "label": "Savings label",
+      "default": "Total Savings"
+    },
+    {
+      "type": "header",
+      "content": "Bundle products"
+    },
+    {
+      "type": "paragraph",
+      "content": "Products come from the Bundle Builder Config metaobject, selected in Theme settings → Bundle Discounts. Tabs are built automatically from each product's BB: tags — 'BB:Arrangements' shows under Step 1, 'BB:Add-on:Birthday' shows under Step 2. The tab name is the last segment after the colon."
+    },
+    {
+      "type": "text",
+      "id": "variant_select_title",
+      "label": "Variant select title",
+      "info": "Shown as the step heading while choosing a size/variant.",
+      "default": "Select Variant"
+    },
+    {
+      "type": "color",
+      "id": "progress_color",
+      "label": "Progress bar accent color",
+      "default": "#E10600"
+    },
+    {
+      "type": "range",
+      "id": "max_quantity",
+      "label": "Max quantity per item",
+      "info": "Maximum quantity a shopper can add for a single bundle product.",
+      "min": 1,
+      "max": 50,
+      "step": 1,
+      "default": 9
+    },
+    {
+      "type": "header",
+      "content": "Secondary drawer (variant picker)"
+    },
+    {
+      "type": "text",
+      "id": "secondary_add_text",
+      "label": "Add button text",
+      "default": "Add"
+    },
+    {
+      "type": "text",
+      "id": "gift_wrap_description",
+      "label": "Gift wrap description",
+      "default": "Choose your premium gift wrapping!"
+    },
+    {
+      "type": "text",
+      "id": "gift_wrap_learn_more_text",
+      "label": "Gift wrap learn-more text",
+      "info": "Opens the global Gift Wrap metaobject drawer. Hidden if that metaobject is empty.",
+      "default": "Learn More"
+    },
+    {
+      "type": "header",
+      "content": "Step 1"
+    },
+    {
+      "type": "text",
+      "id": "step_1_title",
+      "label": "Step 1 title",
+      "default": "Choose your first item"
+    },
+    {
+      "type": "url",
+      "id": "step_1_shop_all_link",
+      "label": "Shop all link"
+    },
+    {
+      "type": "header",
+      "content": "Step 2"
+    },
+    {
+      "type": "text",
+      "id": "step_2_title",
+      "label": "Step 2 title",
+      "default": "Add more, save more"
+    },
+    {
+      "type": "text",
+      "id": "step_2_subtitle",
+      "label": "Step 2 subtitle",
+      "default": "The more you add, the more you save."
+    },
+    {
+      "type": "header",
+      "content": "Step 3 (personal message)"
+    },
+    {
+      "type": "paragraph",
+      "content": "Self-contained greeting card + complimentary gift message. The greeting card renders whenever an iframe URL is set; the gift message renders when a product is set. Occasions are fetched live from Edible Arrangements. This step hides when neither is configured."
+    },
+    {
+      "type": "text",
+      "id": "step_3_title",
+      "label": "Step 3 title",
+      "default": "Add a personal message"
+    },
+    {
+      "type": "text",
+      "id": "step_3_subtitle",
+      "label": "Step 3 subtitle",
+      "default": "Make it extra special with a note or card."
+    },
+    {
+      "type": "header",
+      "content": "Greeting card (paid)"
+    },
+    {
+      "type": "product",
+      "id": "gc_product",
+      "label": "Greeting card product",
+      "info": "Variant added to cart when a card is completed. Falls back to the 'premium-greeting-card' product."
+    },
+    {
+      "type": "text",
+      "id": "gc_iframe_url",
+      "label": "Printible iframe URL",
+      "default": "https://printible.ediblearrangements.com/?token=MTc4MDM4OTYwNDU0OQ==&locale=en-US"
+    },
+    {
+      "type": "text",
+      "id": "gc_title",
+      "label": "Greeting card title",
+      "default": "Add a real custom greeting card"
+    },
+    {
+      "type": "text",
+      "id": "gc_button_label",
+      "label": "Greeting card button label",
+      "default": "Add"
+    },
+    {
+      "type": "header",
+      "content": "Gift message (free)"
+    },
+    {
+      "type": "product",
+      "id": "gm_product",
+      "label": "Gift message product",
+      "info": "Complimentary line item added with the written/generated message. Leave empty to hide the gift message card."
+    },
+    {
+      "type": "text",
+      "id": "gm_title",
+      "label": "Gift message title",
+      "default": "Send a complimentary gift message"
+    },
+    {
+      "type": "text",
+      "id": "gm_button_label",
+      "label": "Gift message button label",
+      "default": "Add - FREE"
+    },
+    {
+      "type": "textarea",
+      "id": "gm_description",
+      "label": "Gift message description",
+      "default": "Tell your loved one how much they mean to you."
+    },
+    {
+      "type": "range",
+      "id": "gm_max_characters",
+      "label": "Gift message max characters",
+      "min": 100,
+      "max": 500,
+      "step": 50,
+      "default": 300
+    }
+  ],
+  "enabled_on": {
+    "groups": ["header"]
+  }
+}
+{% endschema %}

@@ -1,0 +1,143 @@
+{% liquid
+  assign product_resource = closest.product
+  if request.visual_preview_mode and product_resource == blank
+    assign product_resource = collections.all.products.first
+  endif
+
+  assign callouts = product_resource.metafields.ediblearrangement.callouts.value
+%}
+
+{% if callouts != blank %}
+  <div
+    class="product-callouts body-small spacing-style"
+    style="{% render 'spacing-padding', settings: block.settings %}"
+    {{ block.shopify_attributes }}
+  >
+    {% for callout in callouts %}
+      {% if callout != blank and callout.text != blank %}
+        <div class="product-callouts__item">
+          {% if callout.icon.value != blank %}
+            <span class="product-callouts__icon-wrapper">
+              {{
+                callout.icon.value
+                | image_url: width: 48
+                | image_tag:
+                  class: 'product-callouts__icon',
+                  loading: 'lazy',
+                  widths: '20, 40',
+                  sizes: '1.25rem',
+                  alt: ''
+              }}
+            </span>
+          {% endif %}
+          <span class="product-callouts__text">
+            {{ callout.text | strip | escape }}
+          </span>
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% stylesheet %}
+  .product-callouts {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    align-content: flex-start;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .product-callouts__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    min-height: 2rem;
+    max-width: 100%;
+    padding: 0.375rem 0.75rem;
+    border: 1px solid #ededed;
+    border-radius: 1.5rem;
+    background: var(--color-background);
+    color: inherit;
+  }
+
+  .product-callouts__icon-wrapper {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 1.25rem;
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  .product-callouts__icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    object-fit: contain;
+  }
+
+  .product-callouts__text {
+    min-width: 0;
+    color: inherit;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Product callouts",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:content.padding"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "t:settings.top",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "t:settings.bottom",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-start",
+      "label": "t:settings.left",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-end",
+      "label": "t:settings.right",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    }
+  ],
+  "presets": [
+    {
+      "name": "Product callouts",
+      "category": "t:categories.product"
+    }
+  ]
+}
+{% endschema %}

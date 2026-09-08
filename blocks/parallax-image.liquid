@@ -1,0 +1,219 @@
+{%- doc -%}
+  Small decorative image that floats inside its parent section and scrolls
+  slower than the page, creating a classic parallax depth effect.
+
+  The element is absolutely positioned using merchant-configurable offsets
+  (top / left as %). The parent section gets `position: relative` applied
+  by the JS component so no manual section edits are needed.
+
+  Parallax is driven by a rAF scroll handler in assets/parallax-image.js,
+  gated behind an IntersectionObserver so work only runs while visible.
+{%- enddoc -%}
+
+{%- liquid
+  assign block_id = 'ParallaxImage-' | append: block.id
+  assign img_width = block.settings.width | default: 150
+  assign pos_top = block.settings.position_top | default: 10
+  assign pos_left = block.settings.position_left | default: 5
+  assign speed = block.settings.speed | default: 0.5
+  assign z_index = block.settings.z_index | default: -1
+  assign visibility = block.settings.visibility | default: 'none'
+  assign visibility_class = ''
+  if visibility == 'none'
+    assign visibility_class = 'hidden'
+  elsif visibility == 'desktop_only'
+    assign visibility_class = 'hidden--mobile'
+  elsif visibility == 'mobile_only'
+    assign visibility_class = 'hidden--desktop'
+  endif
+
+  assign overflow_class = 'parallax-image--crop'
+  if block.settings.section_overflow
+    assign overflow_class = 'parallax-image--bleed'
+  endif
+-%}
+
+<parallax-image-component
+  id="{{ block_id }}"
+  class="parallax-image force-full-width {{ visibility_class }} {{ overflow_class }}"
+  data-speed="{{ speed }}"
+  data-visibility="{{ visibility }}"
+  style="
+    --parallax-w: {{ img_width }}px;
+    --parallax-top: {{ pos_top }}%;
+    --parallax-left: {{ pos_left }}%;
+    --parallax-z: {{ z_index }};
+    --parallax-travel: 80px;
+  "
+  {{ block.shopify_attributes }}
+>
+  {%- if block.settings.image != blank -%}
+    {%- liquid
+      assign widths = '150, 200, 300, 400, 600, 800'
+      assign sizes = '(min-width: 750px) ' | append: img_width | append: 'px, ' | append: img_width | append: 'px'
+      assign alt = block.settings.image.alt | default: ''
+    -%}
+    {{
+      block.settings.image
+      | image_url: width: 800
+      | image_tag:
+        loading: 'lazy',
+        decoding: 'async',
+        fetchpriority: 'low',
+        class: 'parallax-image__img',
+        widths: widths,
+        sizes: sizes,
+        alt: alt
+    }}
+  {%- else -%}
+    {{ 'lifestyle-1' | placeholder_svg_tag: 'parallax-image__img parallax-image__img--placeholder' }}
+  {%- endif -%}
+</parallax-image-component>
+
+{% stylesheet %}
+  .parallax-image {
+    position: absolute;
+    top: var(--parallax-top, 10%);
+    left: var(--parallax-left, 5%);
+    width: var(--parallax-w, 150px);
+    z-index: var(--parallax-z, -1);
+    pointer-events: none;
+    display: block;
+    grid-column: 1 / -1;
+  }
+
+  .parallax-image__img {
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    will-change: transform;
+    transform: translate3d(0, 0, 0);
+  }
+
+  .parallax-image__img--placeholder {
+    background: rgba(0, 0, 0, 0.05);
+    aspect-ratio: 1;
+  }
+
+  /* Section overflow toggle.
+     The JS makes the closest .shopify-section the positioned containing block,
+     so overflow set here reliably clips (or releases) the absolute image.
+     "Bleed" lets the image spill into the next section; "crop" clips it at the
+     section edge as it scrolls. */
+  .shopify-section:has(.parallax-image--bleed) {
+    overflow: visible;
+  }
+
+  .shopify-section:has(.parallax-image--crop) {
+    overflow: hidden;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .parallax-image__img {
+      animation: none !important;
+      transform: translate3d(0, 0, 0) !important;
+    }
+  }
+
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Parallax image",
+  "tag": null,
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Small decorative image that floats inside the parent section and scrolls slower than the page."
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Image"
+    },
+    {
+      "type": "select",
+      "id": "visibility",
+      "label": "Visibility",
+      "options": [
+        { "value": "none", "label": "t:options.none" },
+        { "value": "desktop_only", "label": "t:options.desktop_only" },
+        { "value": "mobile_only", "label": "t:options.mobile_only" },
+        { "value": "both", "label": "t:options.both" }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "header",
+      "content": "Size"
+    },
+    {
+      "type": "number",
+      "id": "width",
+      "label": "Image width",
+      "info": "Width in pixels",
+      "default": 150
+    },
+    {
+      "type": "header",
+      "content": "Position"
+    },
+    {
+      "type": "number",
+      "id": "position_top",
+      "label": "Distance from top",
+      "info": "Percentage from the section top. Use a negative value (e.g. -5) to start the image above the section edge so it appears cropped, then reveals on scroll.",
+      "default": 10
+    },
+    {
+      "type": "number",
+      "id": "position_left",
+      "label": "Distance from left",
+      "info": "Percentage from the section left. Use a negative value to shift the image off the left edge.",
+      "default": 5
+    },
+    {
+      "type": "header",
+      "content": "Parallax"
+    },
+    {
+      "type": "range",
+      "id": "speed",
+      "label": "Scroll speed",
+      "info": "0 = image stays nearly fixed (strongest parallax). 1 = scrolls with the page (no parallax).",
+      "min": 0,
+      "max": 1,
+      "step": 0.1,
+      "default": 0.5
+    },
+    {
+      "type": "range",
+      "id": "z_index",
+      "label": "Z-index",
+      "info": "Controls stacking order. Use a distinct value for each parallax image in the same section to prevent visual conflicts.",
+      "min": -1,
+      "max": 10,
+      "step": 1,
+      "default": -1
+    },
+    {
+      "type": "header",
+      "content": "Overflow"
+    },
+    {
+      "type": "checkbox",
+      "id": "section_overflow",
+      "label": "Section overflow",
+      "info": "On: the image bleeds into the next section. Off: the image is cropped at the section edge as it scrolls. For the bleed to show in front, keep the containing section at z-index 0 (its default). If that section — or a neighboring one — has a higher z-index set (in theme CSS or its section settings), this image can be hidden or stacked behind it. To fix a conflict, either reset the section to z-index 0, or raise this block's own 'Z-index' setting above so the image stacks in front.",
+      "default": true
+    }
+  ],
+  "presets": [
+    {
+      "name": "Parallax image",
+      "category": "t:categories.basic"
+    }
+  ]
+}
+{% endschema %}

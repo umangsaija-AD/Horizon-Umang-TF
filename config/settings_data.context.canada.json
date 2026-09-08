@@ -1,0 +1,70 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "context": {
+    "market": "canada"
+  },
+  "current": {
+    "edible_free_delivery_threshold": 89,
+    "color_schemes": {
+      "scheme-1": {
+        "settings": {}
+      },
+      "scheme-2": {
+        "settings": {}
+      },
+      "scheme-3": {
+        "settings": {}
+      },
+      "scheme-4": {
+        "settings": {}
+      },
+      "scheme-5": {
+        "settings": {}
+      },
+      "scheme-6": {
+        "settings": {}
+      },
+      "scheme-7": {
+        "settings": {}
+      },
+      "scheme-8": {
+        "settings": {}
+      },
+      "scheme-9": {
+        "settings": {}
+      },
+      "scheme-58084d4c-a86e-4d0a-855e-a0966e5043f7": {
+        "settings": {}
+      },
+      "scheme-34fd6e45-69db-48c0-b4de-b0fc565a3f89": {
+        "settings": {}
+      },
+      "scheme-e57b5e6d-a914-4206-b7ce-96f6af3232dd": {
+        "settings": {}
+      },
+      "scheme-6c582f48-ebf8-4560-b895-d458691a25fc": {
+        "settings": {}
+      },
+      "scheme-13": {
+        "settings": {}
+      },
+      "scheme-14": {
+        "settings": {}
+      },
+      "scheme-15": {
+        "settings": {}
+      },
+      "scheme-19cc2e9b-d66e-417b-92ac-b1f465d6d5d8": {
+        "settings": {}
+      }
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{%- doc -%}
+  Returns a product media gradient string.
+
+  @param {object} [product] - Product used for tag-based gradient selection.
+  @param {string} [gradient_handle] - Explicit gradient handle override.
+  @param {string} [primary_handle] - Primary gradient handle.
+  @param {string} [secondary_handle] - Secondary gradient handle.
+{%- enddoc -%}
+
+{%- liquid
+  assign resolved_primary_handle = primary_handle | default: 'product-media-primary'
+  assign resolved_secondary_handle = secondary_handle | default: 'product-media-secondary'
+  assign resolved_gradient_handle = gradient_handle
+
+  if resolved_gradient_handle == blank
+    assign resolved_gradient_handle = resolved_primary_handle
+
+    if product != blank and product.tags contains 'media-special-bg'
+      assign resolved_gradient_handle = resolved_secondary_handle
+    endif
+  endif
+
+  assign gradient = shop.metaobjects.gradient_styles[resolved_gradient_handle]
+
+  if gradient != blank
+    assign gradient_direction = gradient.gradient_direction.value
+    assign gradient_start_color = gradient.gradient_start_color.value
+    assign gradient_end_color = gradient.gradient_end_color.value
+  else
+    assign gradient_direction = 'to bottom'
+    assign gradient_start_color = '#F2E7DF'
+    assign gradient_end_color = '#F5F1F1'
+  endif
+-%}
+linear-gradient({{ gradient_direction }}, {{ gradient_start_color }} 0%, {{ gradient_end_color }} 100%)

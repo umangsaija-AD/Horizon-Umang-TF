@@ -1,0 +1,4494 @@
+{% comment %}
+  Cart Drawer Section
+  Global floating dialog for cart management.
+  Mounted via header-group.json so it renders on every page.
+{% endcomment %}
+
+{% liquid
+  assign heading = section.settings.heading | default: 'Your Cart'
+  assign threshold_cents = section.settings.free_delivery_threshold | times: 100
+  assign remaining_cents = threshold_cents | minus: cart.total_price
+  assign progress_text = section.settings.progress_text | default: 'Spend [amount] more to unlock free next day delivery!'
+  assign progress_complete_text = section.settings.progress_complete_text | default: 'Yay! You have unlocked free next day delivery!'
+  assign checkout_text = section.settings.checkout_button_text | default: 'Continue to Checkout'
+  assign empty_heading = section.settings.empty_heading | default: 'Your cart is empty'
+  assign empty_text = section.settings.empty_text | default: 'Not sure where to start?'
+  assign has_collections = false
+  for _c in section.settings.empty_collections limit: 1
+    assign has_collections = true
+  endfor
+  assign delivery_price_value = section.settings.delivery_price | default: 15.99
+  assign delivery_price_value = delivery_price_value | remove: '$' | remove: ',' | strip
+  assign delivery_price_cents = delivery_price_value | times: 100 | round
+
+  # Keep these cart contract keys aligned with assets/cart-contract.js.
+  assign cart_property_add_to_cart_id = '_add_to_cart_id'
+  assign cart_property_item_type = '_item_type'
+  assign cart_property_gift_message_data = 'gift_message'
+  assign cart_property_greeting_card_data = 'greeting_card'
+  assign cart_property_digital_card_data = '_digital_card'
+  assign cart_property_is_on_goody = '_is_on_goody'
+  assign cart_property_is_bundle_addon = '_is_bundle_addon'
+  assign cart_property_line_item_order = '_line_item_order'
+  assign cyo_property_group_key = '_cyo_group_key'
+  assign cyo_property_role = '_cyo_role'
+  assign cyo_property_summary = '_cyo_summary'
+  assign cyo_property_box_type = '_cyo_box_type'
+  assign cyo_property_item_count = '_cyo_item_count'
+  assign cyo_role_parent = 'parent'
+  assign cyo_role_child = 'child'
+  assign cart_item_type_parent = 'parent'
+  assign cart_item_type_add_on = 'add_on'
+  assign cart_item_type_upgrade = 'upgrade'
+  assign cart_item_type_bundle = 'bundle_line_item'
+  assign cart_item_type_gift_message = 'gift_message'
+  assign cart_item_type_greeting_card = 'greeting_card'
+  assign cart_item_type_digital_card = 'digital_card'
+  assign cart_has_on_goody_product = false
+
+  # Bundle discount progress: when enabled and the cart holds bundle line items,
+  # the Bundle Builder's multi-tier discount bar replaces the default free-delivery
+  # bar. Bundle subtotal uses pre-discount line prices to match the builder.
+  assign show_bundle_progress = section.settings.show_bundle_discount_progress
+  assign has_bundle_items = false
+  assign bundle_subtotal_cents = 0
+  for item in cart.items
+    if item.properties[cart_property_item_type] == cart_item_type_bundle
+      assign has_bundle_items = true
+      assign bundle_subtotal_cents = bundle_subtotal_cents | plus: item.original_line_price
+    endif
+  endfor
+  assign use_bundle_progress = false
+  if show_bundle_progress and has_bundle_items
+    assign use_bundle_progress = true
+  endif
+
+  # Detect whether the current cart is an on-goody cart.
+  for item in cart.items
+    assign item_type = item.properties[cart_property_item_type]
+    if item_type == cart_item_type_parent
+      assign product_is_on_goody = item.product.metafields.ediblearrangment.is_on_goody_product.value
+      if product_is_on_goody == true or product_is_on_goody == 'true' or item.properties[cart_property_is_on_goody] == 'true'
+        assign cart_has_on_goody_product = true
+        break
+      endif
+    endif
+  endfor
+
+  assign threshold_reached = false
+  if remaining_cents <= 0
+    assign remaining_cents = 0
+    assign threshold_reached = true
+  endif
+
+  assign remaining_formatted = remaining_cents | money
+
+  assign progress_message = progress_text | replace: '[amount]', remaining_formatted
+  if threshold_reached
+    assign progress_message = progress_complete_text
+  endif
+  assign show_progress_confetti = false
+  if threshold_reached and section.settings.show_confetti_animation
+    assign show_progress_confetti = true
+  endif
+
+  if threshold_cents > 0
+    assign progress_pct = cart.total_price | times: 100 | divided_by: threshold_cents
+  else
+    assign progress_pct = 100
+  endif
+
+  if progress_pct > 100
+    assign progress_pct = 100
+  endif
+
+  assign item_count_text = 'cart_drawer.items_count' | t: count: cart.item_count
+%}
+
+<ea-cart-drawer
+  data-section-id="{{ section.id }}"
+  data-threshold="{{ section.settings.free_delivery_threshold | default: 100 }}"
+  data-money-format="{{ shop.money_format | strip_html | escape }}"
+  data-currency="{{ localization.country.currency.iso_code | default: cart.currency.iso_code | escape }}"
+  data-bundle-config-available="{% render 'bundle-config-available' %}"
+  data-storefront-token="{{ settings.addons_storefront_token }}"
+  style="--cd-progress-color: {{ section.settings.progress_color }}; --bundle-progress-color: {{ section.settings.progress_color }}; --cd-personal-message-bg: {{ section.settings.personal_message_background | default: '#FBF7F5' }}; --cd-variant-delivery-color: {{ section.settings.variant_delivery_availability_color | default: '#526F1B' }};"
+>
+  <dialog ref="dialog" class="cd-dialog color-{{ section.settings.color_scheme }}">
+    {%- comment -%} Recoverable error banner (shown after a failed cart mutation) {%- endcomment -%}
+    <div class="cd-error-toast" role="alert" aria-live="assertive"></div>
+    <script type="application/json" data-cd-i18n>
+      {
+        "add": {{ 'cart_drawer.add' | t | json }},
+        "added": {{ 'cart_drawer.added' | t | json }},
+        "selectOptions": {{ 'cart_drawer.select_options' | t | json }},
+        "viewDetails": {{ 'cart_drawer.view_details' | t | json }},
+        "free": {{ 'cart_drawer.free' | t | json }},
+        "updateItem": {{ 'cart_drawer.update_item' | t | json }},
+        "updateCart": {{ 'cart_drawer.update_cart' | t | json }},
+        "updating": {{ 'cart_drawer.updating' | t | json }},
+        "regenerateMessage": {{ 'personalization.regenerate_message' | t | json }},
+        "generating": {{ 'personalization.generating' | t | json }},
+        "removeItemError": {{ 'cart_drawer.remove_item_error' | t | json }},
+        "updateAddonError": {{ 'cart_drawer.update_addon_error' | t | json }},
+        "updateItemError": {{ 'cart_drawer.update_item_error' | t | json }},
+        "updateCartError": {{ 'cart_drawer.update_cart_error' | t | json }},
+        "genericRefreshError": {{ 'cart_drawer.generic_refresh_error' | t | json }},
+        "loadGiftUpgradesError": {{ 'cart_drawer.load_gift_upgrades_error' | t | json }},
+        "updateGiftUpgradesError": {{ 'cart_drawer.update_gift_upgrades_error' | t | json }},
+        "giftMessageNotConfigured": {{ 'cart_drawer.gift_message_not_configured' | t | json }},
+        "saveGiftMessageError": {{ 'cart_drawer.save_gift_message_error' | t | json }},
+        "removeGiftMessageError": {{ 'cart_drawer.remove_gift_message_error' | t | json }},
+        "saveGreetingCardError": {{ 'cart_drawer.save_greeting_card_error' | t | json }},
+        "removeGreetingCardError": {{ 'cart_drawer.remove_greeting_card_error' | t | json }},
+        "upgradesTab": {{ 'cart_drawer.upgrades_tab' | t | json }},
+        "addonsOther": "Add-ons",
+        "addonsSelectOne": {{ 'cart_drawer.addons_select_one' | t | json }},
+        "readMore": {{ 'cart_drawer.read_more' | t | json }},
+        "readLess": {{ 'cart_drawer.read_less' | t | json }},
+        "noGiftUpgrades": {{ 'cart_drawer.no_gift_upgrades' | t | json }}
+      }
+    </script>
+
+    {%- comment -%} ===== Main View ===== {%- endcomment -%}
+    <div class="cd-main-view" aria-hidden="false">
+
+      {%- comment -%} ===== Header ===== {%- endcomment -%}
+      <div class="cd-header">
+        <div class="cd-header__title-row">
+          <h2 class="cd-header__title">{{ heading }} ({{ item_count_text }})</h2>
+          <button type="button" class="cd-header__close" aria-label="{{ 'cart_drawer.close_cart' | t }}" on:click="/handleClose">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M18 6L6 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M6 6L18 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+
+        {%- comment -%} Progress bar {%- endcomment -%}
+        {%- capture bundle_progress_html -%}
+          {%- if use_bundle_progress -%}{% render 'cart-bundle-progress', subtotal_cents: bundle_subtotal_cents %}{%- endif -%}
+        {%- endcapture -%}
+        {%- assign bundle_progress_trimmed = bundle_progress_html | strip -%}
+        {% if bundle_progress_trimmed != blank %}
+          {{ bundle_progress_html }}
+        {% elsif cart.item_count > 0 and threshold_cents > 0 %}
+          <div class="cd-progress" style="--cd-progress: {{ progress_pct }}%;">
+            <p class="cd-progress__text{% if show_progress_confetti %} cd-progress__text--with-confetti{% endif %}">
+              {% if show_progress_confetti %}
+                <img
+                  class="cd-progress__confetti"
+                  src="{{ 'confetti.gif' | asset_url }}"
+                  width="32"
+                  height="32"
+                  alt=""
+                  aria-hidden="true"
+                >
+              {% endif %}
+              <span>{{ progress_message }}</span>
+            </p>
+            <div class="cd-progress__bar">
+              <div class="cd-progress__track">
+                <div class="cd-progress__fill"></div>
+              </div>
+              <span class="cd-progress__dot"></span>
+              <div class="cd-progress__truck">
+                <span
+                  class="cd-progress__truck-icon"
+                  style="--cd-progress-truck-icon: url('{{ 'cart-progress-truck.svg' | asset_url }}');"
+                  aria-hidden="true"
+                ></span>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+
+      {%- comment -%} ===== Loading State ===== {%- endcomment -%}
+      <div class="cd-loading" style="display: none;">
+        <div class="cd-skeleton cd-skeleton--item"></div>
+        <div class="cd-skeleton cd-skeleton--item"></div>
+      </div>
+
+      {%- comment -%} ===== Scrollable Body ===== {%- endcomment -%}
+      <div class="cd-body">
+        {% if cart.item_count > 0 %}
+          {%- comment -%} ===== Cart Items ===== {%- endcomment -%}
+          <div class="cd-content">
+            <div class="cd-items">
+              {%- assign rendered_child_keys = '' -%}
+              {% for item in cart.items %}
+                {%- liquid
+                  assign item_type = item.properties[cart_property_item_type]
+                  assign add_to_cart_id = item.properties[cart_property_add_to_cart_id]
+                  assign is_personalization_summary_item = false
+                  if item_type == cart_item_type_gift_message or item_type == cart_item_type_greeting_card or item_type == cart_item_type_digital_card
+                    assign is_personalization_summary_item = true
+                  endif
+
+                  assign is_add_on_child = false
+                  if add_to_cart_id != blank
+                    if item_type == cart_item_type_add_on or item_type == cart_item_type_upgrade
+                      assign is_add_on_child = true
+                    endif
+                  endif
+
+                  assign has_variant_choices = false
+                  if item.product.variants.size > 1
+                    assign has_variant_choices = true
+                  endif
+
+                  assign can_edit = false
+                  if has_variant_choices
+                    assign can_edit = true
+                  endif
+
+                  assign has_grouped_children = false
+                  if add_to_cart_id != blank
+                    for grouped_item in cart.items
+                      assign grouped_item_type = grouped_item.properties[cart_property_item_type]
+                      assign grouped_add_to_cart_id = grouped_item.properties[cart_property_add_to_cart_id]
+                      if grouped_add_to_cart_id == add_to_cart_id
+                        if grouped_item_type == cart_item_type_add_on or grouped_item_type == cart_item_type_upgrade
+                          assign has_grouped_children = true
+                          break
+                        endif
+                      endif
+                    endfor
+                  endif
+                -%}
+
+                {% if is_add_on_child %}
+                  {%- comment -%} Skip — rendered after parent {%- endcomment -%}
+                  {% continue %}
+                {% endif %}
+
+                {% if is_personalization_summary_item %}
+                  {%- comment -%} Skip — rendered as personal-message summary items below {%- endcomment -%}
+                  {% continue %}
+                {% endif %}
+
+                {%- liquid
+                  assign is_cyo_child = false
+                  if item.properties[cyo_property_role] == cyo_role_child
+                    assign is_cyo_child = true
+                  endif
+                -%}
+                {% if is_cyo_child %}
+                  {%- comment -%} Skip — CYO child items are summarized under their parent {%- endcomment -%}
+                  {% continue %}
+                {% endif %}
+
+                {%- liquid
+                  assign is_cyo_parent = false
+                  assign cyo_group_key = ''
+                  assign cyo_summary = ''
+                  assign cyo_box_type = ''
+                  assign cyo_item_count = ''
+                  if item.properties[cyo_property_role] == cyo_role_parent
+                    assign is_cyo_parent = true
+                    assign cyo_group_key = item.properties[cyo_property_group_key]
+                    assign cyo_summary = item.properties[cyo_property_summary]
+                    assign cyo_box_type = item.properties[cyo_property_box_type]
+                    assign cyo_item_count = item.properties[cyo_property_item_count]
+                  endif
+                -%}
+
+                {%- comment -%} ===== Parent Line Item ===== {%- endcomment -%}
+                <div
+                  class="cd-line-item{% if is_cyo_parent %} cd-line-item--cyo{% endif %}"
+                  data-line-key="{{ item.key }}"
+                  data-product-handle="{{ item.product.handle }}"
+                  data-variant-id="{{ item.variant_id }}"
+                  {% if item_type != blank %}data-item-type="{{ item_type | escape }}"{% endif %}
+                  {% if item.properties[cart_property_line_item_order] != blank %}data-line-item-order="{{ item.properties[cart_property_line_item_order] | escape }}"{% endif %}
+                  style="--cd-product-media-gradient: {% render 'product-media-gradient', product: item.product %};"
+                  {% if add_to_cart_id != blank %}data-add-to-cart-id="{{ add_to_cart_id }}"{% endif %}
+                  {% if is_cyo_parent and cyo_group_key != blank %}data-cyo-group-key="{{ cyo_group_key | escape }}"{% endif %}
+                >
+                  <div class="cd-line-item__card">
+                    <div class="cd-line-item__top">
+                      <div class="cd-line-item__image">
+                        <div class="cd-line-item__image-bg"></div>
+                        {% if item.image %}
+                          <img
+                            src="{{ item.image | image_url: width: 192 }}"
+                            alt="{{ item.title | escape }}"
+                            width="96"
+                            height="96"
+                            loading="lazy"
+                          >
+                        {% endif %}
+                      </div>
+
+                      <div class="cd-line-item__details">
+                        <div class="cd-line-item__info">
+                          <div class="cd-line-item__meta">
+                            <span class="cd-line-item__name">{{ item.product.title | escape }}</span>
+                            {% if item.variant.title != 'Default Title' %}
+                              <span class="cd-line-item__variant">{{ item.variant.title | escape }}</span>
+                            {% endif %}
+                          </div>
+                          {% unless is_cyo_parent %}
+                            <div class="cd-line-item__qty-selector">
+                              <button type="button" class="cd-qty-btn" aria-label="{{ 'cart_drawer.decrease_quantity' | t }}" on:click="/handleQuantityMinus">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                  <path d="M5 10H15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                </svg>
+                              </button>
+                              <span class="cd-qty-value" data-qty-value>{{ item.quantity }}</span>
+                              <button type="button" class="cd-qty-btn" aria-label="{{ 'cart_drawer.increase_quantity' | t }}" on:click="/handleQuantityPlus">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                  <path d="M10 5V15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                  <path d="M5 10H15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                </svg>
+                              </button>
+                            </div>
+                          {% endunless %}
+                        </div>
+
+                        <div class="cd-line-item__price-actions">
+                          <div class="cd-line-item__prices">
+                            <span class="cd-line-item__price">{{ item.final_line_price | money }}</span>
+                            {%- liquid
+                              # Strikethrough shows the pre-discount line price so the bundle
+                              # discount is visible even on products without a compare-at price.
+                              # Use the higher of the original (pre-discount) line price and the
+                              # compare-at line price.
+                              assign cd_reference_line_price = item.original_line_price
+                              assign cd_compare_line_price = item.variant.compare_at_price | times: item.quantity
+                              if cd_compare_line_price > cd_reference_line_price
+                                assign cd_reference_line_price = cd_compare_line_price
+                              endif
+                            -%}
+                            {% if cd_reference_line_price > item.final_line_price %}
+                              <span class="cd-line-item__compare-price">{{ cd_reference_line_price | money }}</span>
+                            {% endif %}
+                          </div>
+                          <div class="cd-line-item__actions">
+                            {% unless is_cyo_parent %}
+                              {% if can_edit %}
+                                <button type="button" class="cd-action-btn" on:click="/handleEdit">{{ 'cart_drawer.edit' | t }}</button>
+                              {% endif %}
+                            {% endunless %}
+                            <button type="button" class="cd-action-btn" on:click="/handleRemove">{{ 'cart_drawer.remove' | t }}</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {% if is_cyo_parent and cyo_summary != blank %}
+                      <div class="cd-cyo-summary">
+                        <span class="cd-cyo-summary__label">
+                          {%- if cyo_box_type != blank -%}
+                            {{ cyo_box_type | escape }}
+                          {%- else -%}
+                            Box contents
+                          {%- endif -%}
+                          {%- if cyo_item_count != blank %} ({{ cyo_item_count }}){% endif -%}
+                        </span>
+                        <ul class="cd-cyo-summary__list">
+                          {%- assign cyo_summary_items = cyo_summary | split: ', ' -%}
+                          {%- for cyo_entry in cyo_summary_items -%}
+                            <li class="cd-cyo-summary__item">{{ cyo_entry | escape }}</li>
+                          {%- endfor -%}
+                        </ul>
+                      </div>
+                    {% endif %}
+
+                    {%- liquid
+                      assign has_addons_or_upgrades = false
+                      for v in item.product.variants
+                        if v.metafields.ediblearrangement.upgrades.value != blank or v.metafields.ediblearrangement.addons.value != blank
+                          assign has_addons_or_upgrades = true
+                          break
+                        endif
+                      endfor
+                    -%}
+                    {% unless is_cyo_parent %}
+                      {% if has_addons_or_upgrades and has_grouped_children == false %}
+                        <button type="button" class="cd-upgrades-btn" on:click="/handleViewAddons">{{ 'cart_drawer.view_gift_upgrades' | t }}</button>
+                      {% endif %}
+                    {% endunless %}
+                  </div>
+
+                  {%- comment -%} Embed variant delivery availability data for the edit-item screen. {%- endcomment -%}
+                  {% if has_variant_choices %}
+                    <script type="application/json" data-cd-variant-delivery-data>
+                      [
+                        {%- for variant in item.product.variants -%}
+                          {%- assign delivery_availability = variant.metafields.ediblearrangement.delivery_availability.value -%}
+                          {
+                            "id": {{ variant.id | json }},
+                            "deliveryAvailability":
+                              {%- if delivery_availability != blank -%}
+                                {
+                                  "name": {{ delivery_availability.name.value | json }},
+                                  "icon": {% if delivery_availability.icon.value != blank %}{{ delivery_availability.icon.value | image_url: width: 64 | json }}{% else %}null{% endif %}
+                                }
+                              {%- else -%}
+                                null
+                              {%- endif -%}
+                          }{% unless forloop.last %},{% endunless %}
+                        {%- endfor -%}
+                      ]
+                    </script>
+                  {% endif %}
+
+                  {%- comment -%} Embed per-variant addon/upgrade source data for JS {%- endcomment -%}
+                  {% if has_addons_or_upgrades %}
+                    <script type="application/json" data-cd-addons-source>{% render 'addons-source-json', product: item.product %}</script>
+                  {% endif %}
+
+                  {% unless is_cyo_parent %}
+                  {% if has_grouped_children or has_addons_or_upgrades %}
+                    <div class="cd-child-group">
+                      {% if has_grouped_children %}
+                        <span class="cd-child-group__label">{{ 'cart_drawer.you_made_it_special' | t }}</span>
+                      {% endif %}
+
+                      {%- comment -%} ===== Add-On & Upgrade Child Items (upgrades first, then add-ons) ===== {%- endcomment -%}
+                      {% if add_to_cart_id != blank %}
+                        {%- assign addon_type_order = cart_item_type_upgrade | append: ',' | append: cart_item_type_add_on -%}
+                        {%- assign addon_type_passes = addon_type_order | split: ',' -%}
+                        {% for pass_type in addon_type_passes %}
+                        {% for child_item in cart.items %}
+                          {%- liquid
+                            assign child_item_type = child_item.properties[cart_property_item_type]
+                            assign child_add_to_cart_id = child_item.properties[cart_property_add_to_cart_id]
+                          -%}
+                          {%- if child_item_type != pass_type -%}{%- continue -%}{%- endif -%}
+                          {%- if child_add_to_cart_id != add_to_cart_id -%}{%- continue -%}{%- endif -%}
+                          {%- assign rendered_child_keys = rendered_child_keys | append: child_item.key | append: ',' -%}
+
+                          <div
+                            class="cd-child-item"
+                            data-line-key="{{ child_item.key }}"
+                            data-item-type="{{ child_item_type }}"
+                            data-add-to-cart-id="{{ child_add_to_cart_id }}"
+                            style="--cd-product-media-gradient: {% render 'product-media-gradient', product: child_item.product %};"
+                          >
+                            <div class="cd-child-item__card">
+                              <div class="cd-child-item__top">
+                                <div class="cd-child-item__image">
+                                  <div class="cd-child-item__image-bg"></div>
+                                  {% if child_item.image %}
+                                    <img
+                                      src="{{ child_item.image | image_url: width: 144 }}"
+                                      alt="{{ child_item.title | escape }}"
+                                      width="72"
+                                      height="72"
+                                      loading="lazy"
+                                    >
+                                  {% endif %}
+                                </div>
+                                <div class="cd-child-item__details">
+                                  <div class="cd-child-item__meta">
+                                    <span class="cd-child-item__name">{{ child_item.product.title | escape }}</span>
+                                    {% if child_item.variant.title != 'Default Title' %}
+                                      <span class="cd-child-item__variant-label">{{ child_item.variant.title | escape }}</span>
+                                    {% endif %}
+                                  </div>
+                                  <div class="cd-child-item__qty-selector">
+                                    <button type="button" class="cd-qty-btn" aria-label="{{ 'cart_drawer.decrease_quantity' | t }}" on:click="/handleChildQuantityMinus">
+                                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                        <path d="M5 10H15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                      </svg>
+                                    </button>
+                                    <span class="cd-qty-value" data-qty-value>{{ child_item.quantity }}</span>
+                                    <button type="button" class="cd-qty-btn" aria-label="{{ 'cart_drawer.increase_quantity' | t }}" on:click="/handleChildQuantityPlus">
+                                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                        <path d="M10 5V15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                        <path d="M5 10H15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                      </svg>
+                                    </button>
+                                  </div>
+                                  <div class="cd-child-item__prices">
+                                    <span class="cd-child-item__price">{{ child_item.final_line_price | money }}</span>
+                                    {% if child_item.variant.compare_at_price > child_item.final_price %}
+                                      {%- assign child_compare_line_price = child_item.variant.compare_at_price | times: child_item.quantity -%}
+                                      <span class="cd-child-item__compare-price">{{ child_compare_line_price | money }}</span>
+                                    {% endif %}
+                                  </div>
+                                  <div class="cd-child-item__actions">
+                                    <button type="button" class="cd-action-btn" on:click="/handleChildRemove">{{ 'cart_drawer.remove' | t }}</button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        {% endfor %}
+                        {% endfor %}
+                      {% endif %}
+
+                      {% if has_addons_or_upgrades and has_grouped_children %}
+                        <button type="button" class="cd-upgrades-btn" on:click="/handleViewAddons">{{ 'cart_drawer.view_gift_upgrades' | t }}</button>
+                      {% endif %}
+                    </div>
+                  {% endif %}
+                  {% endunless %}
+                </div>
+              {% endfor %}
+
+              {%- comment -%} ===== Orphaned Child Items (parent removed) ===== {%- endcomment -%}
+              {% for item in cart.items %}
+                {%- liquid
+                  assign item_type = item.properties[cart_property_item_type]
+                  assign add_to_cart_id = item.properties[cart_property_add_to_cart_id]
+                -%}
+                {%- unless item_type == cart_item_type_add_on or item_type == cart_item_type_upgrade -%}{%- continue -%}{%- endunless -%}
+                {%- if add_to_cart_id == blank -%}{%- continue -%}{%- endif -%}
+                {%- assign key_check = item.key | append: ',' -%}
+                {%- if rendered_child_keys contains key_check -%}{%- continue -%}{%- endif -%}
+
+                <div
+                  class="cd-line-item"
+                  data-line-key="{{ item.key }}"
+                  data-product-handle="{{ item.product.handle }}"
+                  data-variant-id="{{ item.variant_id }}"
+                  data-add-to-cart-id="{{ add_to_cart_id }}"
+                  style="--cd-product-media-gradient: {% render 'product-media-gradient', product: item.product %};"
+                >
+                  <div class="cd-line-item__card">
+                    <div class="cd-line-item__top">
+                      <div class="cd-line-item__image">
+                        <div class="cd-line-item__image-bg"></div>
+                        {% if item.image %}
+                          <img
+                            src="{{ item.image | image_url: width: 192 }}"
+                            alt="{{ item.title | escape }}"
+                            width="96"
+                            height="96"
+                            loading="lazy"
+                          >
+                        {% endif %}
+                      </div>
+
+                      <div class="cd-line-item__details">
+                        <div class="cd-line-item__info">
+                          <div class="cd-line-item__meta">
+                            <span class="cd-line-item__name">{{ item.product.title | escape }}</span>
+                            {% if item.variant.title != 'Default Title' %}
+                              <span class="cd-line-item__variant">{{ item.variant.title | escape }}</span>
+                            {% endif %}
+                          </div>
+                          <div class="cd-line-item__qty-selector">
+                            <button type="button" class="cd-qty-btn" aria-label="{{ 'cart_drawer.decrease_quantity' | t }}" on:click="/handleQuantityMinus">
+                              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <path d="M5 10H15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                              </svg>
+                            </button>
+                            <span class="cd-qty-value" data-qty-value>{{ item.quantity }}</span>
+                            <button type="button" class="cd-qty-btn" aria-label="{{ 'cart_drawer.increase_quantity' | t }}" on:click="/handleQuantityPlus">
+                              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <path d="M10 5V15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                <path d="M5 10H15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+
+                        <div class="cd-line-item__price-actions">
+                          <div class="cd-line-item__prices">
+                            <span class="cd-line-item__price">{{ item.final_line_price | money }}</span>
+                            {%- liquid
+                              # Strikethrough shows the pre-discount line price so the bundle
+                              # discount is visible even on products without a compare-at price.
+                              assign cd_reference_line_price = item.original_line_price
+                              assign cd_compare_line_price = item.variant.compare_at_price | times: item.quantity
+                              if cd_compare_line_price > cd_reference_line_price
+                                assign cd_reference_line_price = cd_compare_line_price
+                              endif
+                            -%}
+                            {% if cd_reference_line_price > item.final_line_price %}
+                              <span class="cd-line-item__compare-price">{{ cd_reference_line_price | money }}</span>
+                            {% endif %}
+                          </div>
+                          <div class="cd-line-item__actions">
+                            <button type="button" class="cd-action-btn" on:click="/handleRemove">{{ 'cart_drawer.remove' | t }}</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+
+              {%- comment -%}
+                ===== Personal message summary items =====
+                Listings shown after all cart items and before the
+                "Add a personal message" section.
+              {%- endcomment -%}
+
+              {%- comment -%} Premium greeting card — sourced from the greeting_card line item {%- endcomment -%}
+              {%- assign gc_summary_item = nil -%}
+              {%- for item in cart.items -%}
+                {%- if item.properties[cart_property_item_type] == cart_item_type_greeting_card -%}
+                  {%- assign gc_summary_item = item -%}
+                  {%- break -%}
+                {%- endif -%}
+              {%- endfor -%}
+              {%- if gc_summary_item != blank -%}
+                {%- liquid
+                  assign gc_summary_data = gc_summary_item.properties[cart_property_greeting_card_data]
+                  assign gc_summary_image = ''
+                  if gc_summary_data.mediumImageLink != blank
+                    assign gc_summary_image = gc_summary_data.mediumImageLink
+                  elsif gc_summary_data.imageLink != blank
+                    assign gc_summary_image = gc_summary_data.imageLink
+                  endif
+                -%}
+                <div
+                  class="cd-line-item cd-line-item--summary"
+                  data-line-key="{{ gc_summary_item.key }}"
+                  data-cd-message-summary
+                  style="--cd-product-media-gradient: {% render 'product-media-gradient', product: gc_summary_item.product %};"
+                >
+                  <div class="cd-line-item__card">
+                    <div class="cd-line-item__top">
+                      <div class="cd-line-item__image">
+                        <div class="cd-line-item__image-bg"></div>
+                        {% if gc_summary_image != blank %}
+                          <img
+                            class="cd-line-item__image-img--contain"
+                            src="{{ gc_summary_image | escape }}"
+                            alt="{{ gc_summary_item.product.title | escape }}"
+                            width="96"
+                            height="96"
+                            loading="lazy"
+                          >
+                        {% endif %}
+                      </div>
+                      <div class="cd-line-item__details">
+                        <div class="cd-line-item__info">
+                          <div class="cd-line-item__meta">
+                            <span class="cd-line-item__name">{{ gc_summary_item.product.title | escape }}</span>
+                            {% if gc_summary_item.variant.title != 'Default Title' %}
+                              <span class="cd-line-item__variant">{{ gc_summary_item.variant.title | escape }}</span>
+                            {% endif %}
+                          </div>
+                        </div>
+                        <div class="cd-line-item__price-actions">
+                          <div class="cd-line-item__prices">
+                            <span class="cd-line-item__price">{{ gc_summary_item.final_line_price | money }}</span>
+                            {% if gc_summary_item.variant.compare_at_price > gc_summary_item.final_price %}
+                              {%- assign gc_compare_line_price = gc_summary_item.variant.compare_at_price | times: gc_summary_item.quantity -%}
+                              <span class="cd-line-item__compare-price">{{ gc_compare_line_price | money }}</span>
+                            {% endif %}
+                          </div>
+                          <div class="cd-line-item__actions">
+                            <button type="button" class="cd-action-btn" data-cd-greeting-card-action="change">{{ 'cart_drawer.change' | t }}</button>
+                            <button type="button" class="cd-action-btn" data-cd-greeting-card-action="remove">{{ 'cart_drawer.remove' | t }}</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              {%- endif -%}
+
+              {%- comment -%} Complimentary gift message — sourced from the gift_message utility line item {%- endcomment -%}
+              {%- assign gm_summary_item = nil -%}
+              {%- for item in cart.items -%}
+                {%- if item.properties[cart_property_item_type] == cart_item_type_gift_message -%}
+                  {%- assign gm_summary_item = item -%}
+                  {%- break -%}
+                {%- endif -%}
+              {%- endfor -%}
+              {%- if gm_summary_item != blank -%}
+                <div
+                  class="cd-line-item cd-line-item--summary"
+                  data-line-key="{{ gm_summary_item.key }}"
+                  data-cd-message-summary
+                  style="--cd-product-media-gradient: {% render 'product-media-gradient' %};"
+                >
+                  <div class="cd-line-item__card">
+                    <div class="cd-line-item__top">
+                      <div class="cd-line-item__image cd-line-item__image--icon cd-line-item__image--gift-message">
+                        <div class="cd-line-item__image-bg"></div>
+                        <img
+                          class="cd-line-item__image-img--contain"
+                          src="{{ 'gift-note.svg' | asset_url }}"
+                          alt=""
+                          width="80"
+                          height="80"
+                          aria-hidden="true"
+                        >
+                      </div>
+                      <div class="cd-line-item__details">
+                        <div class="cd-line-item__info">
+                          <div class="cd-line-item__meta">
+                            <span class="cd-line-item__name">{{ gm_summary_item.product.title | escape }}</span>
+                          </div>
+                        </div>
+                        <div class="cd-line-item__price-actions">
+                          <div class="cd-line-item__prices">
+                            <span class="cd-line-item__price cd-line-item__price--free">{{ 'cart_drawer.free' | t }}</span>
+                          </div>
+                          <div class="cd-line-item__actions">
+                            <button type="button" class="cd-action-btn" data-cd-gift-message-action="edit">{{ 'cart_drawer.edit' | t }}</button>
+                            <button type="button" class="cd-action-btn" data-cd-gift-message-action="remove">{{ 'cart_drawer.remove' | t }}</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              {%- endif -%}
+
+              {%- comment -%} Digital card — sourced from the digital_card utility line item {%- endcomment -%}
+              {%- assign dc_summary_item = nil -%}
+              {%- for item in cart.items -%}
+                {%- if item.properties[cart_property_item_type] == cart_item_type_digital_card -%}
+                  {%- assign dc_summary_item = item -%}
+                  {%- break -%}
+                {%- endif -%}
+              {%- endfor -%}
+              {%- if dc_summary_item != blank -%}
+                {%- liquid
+                  assign dc_summary_data = dc_summary_item.properties[cart_property_digital_card_data]
+                  assign dc_summary_image = dc_summary_data.MPCardMessageUrl
+                  if dc_summary_image contains '?'
+                    assign dc_summary_image = dc_summary_image | append: '&width=192'
+                  elsif dc_summary_image != blank
+                    assign dc_summary_image = dc_summary_image | append: '?width=192'
+                  endif
+                  assign dc_delivery_text = ''
+                  if dc_summary_data.MPCardMessageRecipientPhone != blank
+                    assign dc_delivery_text = 'Text message delivery: ' | append: dc_summary_data.MPCardMessageRecipientPhone
+                  elsif dc_summary_data.MPCardMessageEmail != blank
+                    assign dc_delivery_text = 'Email delivery: ' | append: dc_summary_data.MPCardMessageEmail
+                  endif
+                -%}
+                <div
+                  class="cd-line-item cd-line-item--summary"
+                  data-line-key="{{ dc_summary_item.key }}"
+                  data-cd-message-summary
+                  style="--cd-product-media-gradient: {% render 'product-media-gradient', product: dc_summary_item.product %};"
+                >
+                  <div class="cd-line-item__card">
+                    <div class="cd-line-item__top">
+                      <div class="cd-line-item__image">
+                        <div class="cd-line-item__image-bg"></div>
+                        {% if dc_summary_image != blank %}
+                          <img
+                            class="cd-line-item__image-img--contain"
+                            src="{{ dc_summary_image | escape }}"
+                            alt="{{ dc_summary_item.product.title | escape }}"
+                            width="96"
+                            height="96"
+                            loading="lazy"
+                          >
+                        {% endif %}
+                      </div>
+                      <div class="cd-line-item__details">
+                        <div class="cd-line-item__info">
+                          <div class="cd-line-item__meta">
+                            <span class="cd-line-item__name">{{ dc_summary_item.product.title | escape }}</span>
+                            {% if dc_delivery_text != blank %}
+                              <span class="cd-line-item__variant">{{ dc_delivery_text | escape }}</span>
+                            {% endif %}
+                          </div>
+                        </div>
+                        <div class="cd-line-item__price-actions">
+                          <div class="cd-line-item__prices">
+                            <span class="cd-line-item__price cd-line-item__price--free">{{ 'cart_drawer.free' | t }}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              {%- endif -%}
+            </div>
+
+            {%- unless cart_has_on_goody_product -%}
+              {%- comment -%}
+                ===== Add a Personal Message =====
+                Copy/config (titles, button labels, paid product/price, iframe URL,
+                occasion list, max characters, tab labels) is sourced at runtime
+                from the Personalization Drawer message-option blocks via the
+                #cd-personalization-message-config JSON island. The values below
+                are static fallbacks only; ea-cart-drawer.js overrides them.
+              {%- endcomment -%}
+              {%- liquid
+                assign msg_title = section.settings.gift_message_title | default: 'Add a personal message'
+                assign msg_subtitle = section.settings.gift_message_subtitle | default: 'Include a message or greeting card.'
+
+                # Initial Add/Added state rendered server-side to avoid an Add -> Added
+                # flicker after Section Rendering. JS still reconciles from /cart.js.
+                assign gm_added = false
+                assign gc_added = false
+
+                for item in cart.items
+                  case item.properties[cart_property_item_type]
+                    when cart_item_type_gift_message
+                      assign gm_added = true
+                    when cart_item_type_greeting_card
+                      assign gc_added = true
+                  endcase
+                  if gm_added and gc_added
+                    break
+                  endif
+                endfor
+              -%}
+              <div class="cd-personalize" data-cd-personalize>
+                <div class="cd-personalize__steps">
+                  <div class="cd-personalize__section">
+                    <div class="cd-personalize__header">
+                      <div class="cd-personalize__header-text">
+                        <span class="cd-personalize__title">{{ msg_title }}</span>
+                        <span class="cd-personalize__subtitle">{{ msg_subtitle }}</span>
+                      </div>
+                    </div>
+                    <div class="cd-personalize__cards">
+                      {%- comment -%} Paid greeting card (hidden until config confirms it is available) {%- endcomment -%}
+                      <div class="cd-personalize__card{% if gc_added %} cd-personalize__card--added{% endif %}" data-cd-message-card="greeting-card" hidden>
+                        <div class="cd-personalize__card-icon">
+                          <img src="{{ 'greeting-card.svg' | asset_url }}" alt="" width="32" height="32" style="width:32px;height:32px" aria-hidden="true">
+                        </div>
+                        <div class="cd-personalize__card-info">
+                          <div class="cd-personalize__card-details">
+                            <span class="cd-personalize__card-text" data-cd-greeting-card-title></span>
+                          </div>
+                          <div data-cd-message-state="add"{% if gc_added %} style="display:none;"{% endif %}>
+                            <button
+                              type="button"
+                              class="cd-personalize__card-btn cd-personalize__card-btn--primary"
+                              data-cd-greeting-card-trigger
+                            >{{ 'cart_drawer.add' | t }}</button>
+                          </div>
+                          <div data-cd-message-state="added"{% unless gc_added %} style="display:none;"{% endunless %}>
+                            <div class="cd-personalize__card-added-actions">
+                              <button type="button" class="cd-personalize__card-action-btn cd-personalize__card-action-btn--remove" data-cd-greeting-card-action="remove">{{ 'cart_drawer.remove' | t }}</button>
+                              <button type="button" class="cd-personalize__card-action-btn cd-personalize__card-action-btn--link" data-cd-greeting-card-action="change">{{ 'cart_drawer.change' | t }}</button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      {%- comment -%} Free gift message {%- endcomment -%}
+                      <div class="cd-personalize__card{% if gm_added %} cd-personalize__card--added{% endif %}" data-cd-message-card="gift-message">
+                        <div class="cd-personalize__card-icon">
+                          <img src="{{ 'gift-note.svg' | asset_url }}" alt="" width="32" height="32" style="width:32px;height:32px" aria-hidden="true">
+                        </div>
+                        <div class="cd-personalize__card-info">
+                          <div class="cd-personalize__card-details">
+                            <span class="cd-personalize__card-text" data-cd-gift-message-title></span>
+                          </div>
+                          <div data-cd-message-state="add"{% if gm_added %} style="display:none;"{% endif %}>
+                            <button
+                              type="button"
+                              class="cd-personalize__card-btn cd-personalize__card-btn--secondary"
+                              data-cd-gift-message-trigger
+                            >{{ 'personalization.add_free' | t }}</button>
+                          </div>
+                          <div data-cd-message-state="added"{% unless gm_added %} style="display:none;"{% endunless %}>
+                            <div class="cd-personalize__card-added-actions">
+                              <button type="button" class="cd-personalize__card-action-btn cd-personalize__card-action-btn--remove" data-cd-gift-message-action="remove">{{ 'cart_drawer.remove' | t }}</button>
+                              <button type="button" class="cd-personalize__card-action-btn cd-personalize__card-action-btn--link" data-cd-gift-message-action="edit">{{ 'cart_drawer.edit' | t }}</button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {%- endunless -%}
+          </div>
+        {% else %}
+          {%- comment -%} ===== Empty State ===== {%- endcomment -%}
+          <div class="cd-empty">
+            <h3 class="cd-empty__heading">{{ empty_heading }}</h3>
+            {%- if has_collections -%}
+              <p class="cd-empty__subtitle">{{ empty_text }}</p>
+              <div
+                class="cd-collection-grid"
+                style="--cd-tile-bg-1: {{ section.settings.empty_bg_color_1 | default: '#fbf7f5' }}; --cd-tile-bg-2: {{ section.settings.empty_bg_color_2 | default: '#f2e7df' }};"
+              >
+                {%- for collection in section.settings.empty_collections -%}
+                  <a href="{{ collection.url }}" class="cd-collection-tile" aria-label="{{ collection.title | escape }}">
+                    <div class="cd-collection-tile__img-wrap">
+                      {%- if collection.image != blank -%}
+                        <img
+                          src="{{ collection.image | image_url: width: 308 }}"
+                          alt="{{ collection.image.alt | escape }}"
+                          width="154"
+                          height="154"
+                          loading="lazy"
+                        >
+                      {%- else -%}
+                        <div class="cd-collection-tile__img-placeholder"></div>
+                      {%- endif -%}
+                    </div>
+                    <span class="cd-collection-tile__title">{{ collection.title }}</span>
+                  </a>
+                {%- endfor -%}
+              </div>
+            {%- endif -%}
+          </div>
+        {% endif %}
+      </div>
+
+      {%- comment -%} ===== Footer ===== {%- endcomment -%}
+      {% if cart.item_count > 0 %}
+        <div class="cd-footer">
+          <div class="cd-footer__delivery">
+            <div class="cd-footer__delivery-label">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                {%- render 'icon', icon: 'calendar' -%}
+              </svg>
+              <span class="cd-footer__delivery-text">{{ section.settings.delivery_label }}</span>
+            </div>
+            <span class="cd-footer__delivery-price">{{ delivery_price_cents | money }}</span>
+          </div>
+          <div class="cd-footer__subtotal">
+            <span class="cd-footer__subtotal-label">{{ 'cart_drawer.subtotal' | t }}</span>
+            <span class="cd-footer__subtotal-price">{{ cart.total_price | money }}</span>
+          </div>
+          <a href="/checkout" class="cd-footer__checkout">{{ checkout_text }}</a>
+        </div>
+      {% endif %}
+
+    </div>
+
+    {%- comment -%} ===== Change Variant Subview ===== {%- endcomment -%}
+    <div class="cd-variant-panel" aria-hidden="true">
+      <div class="cd-variant-panel__header">
+      <button type="button" class="cd-variant-panel__back" aria-label="{{ 'cart_drawer.back_to_cart' | t }}" on:click="/handleVariantBack">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M15 6L9 12L15 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <h3 class="cd-variant-panel__title">{{ section.settings.edit_item_title | default: 'Edit your item' }}</h3>
+      <button type="button" class="cd-variant-panel__close" aria-label="{{ 'cart_drawer.close_cart' | t }}" on:click="/handleVariantClose">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M18 6L6 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M6 6L18 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="cd-variant-panel__body">
+      <p class="cd-variant-product-title"></p>
+
+      {%- comment -%} Loading state {%- endcomment -%}
+      <div class="cd-variant-loading" style="display: none;">
+        <div class="cd-skeleton cd-skeleton--variant"></div>
+        <div class="cd-skeleton cd-skeleton--variant"></div>
+        <div class="cd-skeleton cd-skeleton--variant"></div>
+      </div>
+
+      {%- comment -%} Variant list (populated by JS) {%- endcomment -%}
+      <div class="cd-variant-list"></div>
+
+      {%- comment -%} Error state {%- endcomment -%}
+      <div class="cd-variant-error" style="display: none;">
+        <p>{{ 'cart_drawer.variant_load_error' | t }}</p>
+      </div>
+    </div>
+
+      <div class="cd-variant-panel__footer">
+        <button type="button" class="cd-variant-panel__update" on:click="/handleVariantUpdate" disabled>{{ 'cart_drawer.update_item' | t }}</button>
+      </div>
+    </div>
+
+    {%- comment -%} ===== Gift Wrap Learn More Subview ===== {%- endcomment -%}
+    <div class="cd-gift-wrap-learn-more" aria-hidden="true">
+      <div class="cd-gift-wrap-learn-more__header">
+        <button type="button" class="cd-gift-wrap-learn-more__back" aria-label="{{ 'cart_drawer.back_to_edit' | t }}" on:click="/handleLearnMoreBack">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M15 6L9 12L15 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <h3 class="cd-gift-wrap-learn-more__title">{{ section.settings.gift_wrap_learn_more_panel_title }}</h3>
+        <button type="button" class="cd-gift-wrap-learn-more__close" aria-label="{{ 'cart_drawer.close_cart' | t }}" on:click="/handleVariantClose">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M18 6L6 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M6 6L18 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+      <div class="cd-gift-wrap-learn-more__body">
+        {% if shop.metaobjects.gift_wrap.global != blank %}
+          {% render 'gift-wrap-drawer-content', gift_wrap: shop.metaobjects.gift_wrap.global %}
+        {% endif %}
+      </div>
+    </div>
+
+    {%- comment -%} ===== Add-Ons Subview ===== {%- endcomment -%}
+    <div class="cd-addons-panel" aria-hidden="true">
+      <div class="cd-addons-panel__header">
+        <button type="button" class="cd-addons-panel__back" aria-label="{{ 'cart_drawer.back_to_cart' | t }}" on:click="/handleAddonsBack">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M15 6L9 12L15 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <h3 class="cd-addons-panel__title">{{ section.settings.gift_upgrades_title | default: 'Upgrade your gift' }}</h3>
+        <button type="button" class="cd-addons-panel__close" aria-label="{{ 'cart_drawer.close_cart' | t }}" on:click="/handleVariantClose">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M18 6L6 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M6 6L18 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="cd-addons-panel__body">
+        {%- comment -%} Loading skeleton {%- endcomment -%}
+        <div class="cd-addons-loading" style="display: none;">
+          <div class="cd-skeleton cd-skeleton--addon"></div>
+          <div class="cd-skeleton cd-skeleton--addon"></div>
+          <div class="cd-skeleton cd-skeleton--addon"></div>
+        </div>
+
+        {%- comment -%} Group tabs (populated by JS; hidden when <= 1 group) {%- endcomment -%}
+        <div class="cd-addons-tabs"></div>
+
+        {%- comment -%} Add-on product list (populated by JS) {%- endcomment -%}
+        <div class="cd-addons-list"></div>
+      </div>
+
+      <div class="cd-addons-panel__footer">
+        <button type="button" class="cd-addons-panel__update" on:click="/handleAddonsUpdate" disabled>{{ 'cart_drawer.update_cart' | t }}</button>
+      </div>
+    </div>
+
+    {%- comment -%} ===== Add-On Variant Sub-Panel ===== {%- endcomment -%}
+    <div class="cd-addon-variant-panel" aria-hidden="true">
+      <div class="cd-addon-variant-panel__header">
+        <button type="button" class="cd-addon-variant-panel__back" aria-label="{{ 'cart_drawer.back_to_addons' | t }}" on:click="/handleAddonVariantBack">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M15 6L9 12L15 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <h3 class="cd-addon-variant-panel__title">{{ 'cart_drawer.select_option' | t }}</h3>
+        <button type="button" class="cd-addon-variant-panel__close" aria-label="{{ 'cart_drawer.close_cart' | t }}" on:click="/handleVariantClose">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M18 6L6 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M6 6L18 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="cd-addon-variant-panel__body">
+        <p class="cd-addon-variant-panel__product-title"></p>
+        <div class="cd-addon-variant-list"></div>
+      </div>
+
+      <div class="cd-addon-variant-panel__footer">
+        <button type="button" class="cd-addon-variant-panel__confirm" on:click="/handleAddonVariantConfirm" disabled>{{ 'cart_drawer.add_item' | t }}</button>
+      </div>
+    </div>
+
+    {%- comment -%} ===== Gift Message Subview ===== {%- endcomment -%}
+    <div class="cd-message-panel" aria-hidden="true" data-cd-gift-message-view>
+      <div class="cd-message-panel__header">
+        <button type="button" class="cd-message-panel__back" aria-label="{{ 'cart_drawer.back_to_cart' | t }}" data-cd-gift-message-back>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M15 6L9 12L15 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <h3 class="cd-message-panel__title">{{ section.settings.gift_message_panel_title }}</h3>
+        <button type="button" class="cd-message-panel__close" aria-label="{{ 'cart_drawer.close_cart' | t }}" data-cd-gift-message-close>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M18 6L6 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M6 6L18 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="cd-message-panel__body">
+        <div class="cd-gm-content">
+
+          {%- comment -%} Description text (sourced from PD free message block) {%- endcomment -%}
+          <p class="cd-gm-description" data-cd-gm-description>{{ 'personalization.gift_message_heading' | t }}</p>
+
+          {%- comment -%} Tabs {%- endcomment -%}
+          <div class="cd-gm-tabs">
+            <button type="button" class="cd-gm-tab cd-gm-tab--active" data-cd-gm-tab="write-own">{{ 'personalization.tab_write_own' | t }}</button>
+            <button type="button" class="cd-gm-tab" data-cd-gm-tab="generate">{{ 'personalization.tab_write_for_me' | t }}</button>
+          </div>
+
+          {%- comment -%} Write my own panel {%- endcomment -%}
+          <div class="cd-gm-panel" data-cd-gm-panel="write-own">
+            <div class="cd-gm-textarea-wrap">
+              <textarea
+                class="cd-gm-textarea"
+                data-cd-gm-textarea
+                placeholder="{{ 'personalization.write_message_placeholder' | t }}"
+                maxlength="300"
+              ></textarea>
+              <span class="cd-gm-counter" data-cd-gm-counter>0/300</span>
+            </div>
+            <span class="cd-gm-error" data-cd-gm-error style="display: none;">{{ 'personalization.max_char_error' | t }}</span>
+            <button type="button" class="cd-gm-btn cd-gm-btn--disabled" data-cd-gm-submit disabled>{{ 'personalization.add_gift_message' | t }}</button>
+          </div>
+
+          {%- comment -%} Write one for me panel {%- endcomment -%}
+          <div class="cd-gm-panel" data-cd-gm-panel="generate" style="display: none;">
+            {%- comment -%} Occasion dropdown (custom, matches PD) {%- endcomment -%}
+            <div class="cd-gm-field" data-cd-gm-dropdown>
+              <div class="cd-gm-field__select" data-cd-gm-dropdown-trigger tabindex="0" role="combobox" aria-expanded="false" aria-haspopup="listbox">
+                <div class="cd-gm-field__label-wrap">
+                  <span class="cd-gm-field__label" data-cd-gm-dropdown-label>{{ 'personalization.select_occasion' | t }}</span>
+                  <span class="cd-gm-field__value" data-cd-gm-dropdown-value style="display: none;"></span>
+                </div>
+                <img src="{{ 'chevron-down-13.svg' | asset_url }}" alt="" width="20" height="20" class="cd-gm-field__chevron" aria-hidden="true">
+              </div>
+              <ul class="cd-gm-dropdown-list" data-cd-gm-dropdown-list role="listbox" style="display: none;"></ul>
+            </div>
+
+            {%- comment -%} Name input {%- endcomment -%}
+            <div class="cd-gm-field">
+              <div class="cd-gm-field__input-wrap">
+                <label class="cd-gm-field__floating-label" data-cd-gm-name-label for="cd-gm-name-{{ section.id }}">{{ 'personalization.your_name' | t }}</label>
+                <input
+                  type="text"
+                  id="cd-gm-name-{{ section.id }}"
+                  class="cd-gm-field__input"
+                  data-cd-gm-name-input
+                  autocomplete="given-name"
+                >
+              </div>
+            </div>
+
+            {%- comment -%} Generated message textarea (hidden until generated) {%- endcomment -%}
+            <div class="cd-gm-generated-wrap" data-cd-gm-generated-wrap style="display: none;">
+              <div class="cd-gm-textarea-wrap">
+                <textarea
+                  class="cd-gm-textarea"
+                  data-cd-gm-generated-textarea
+                  maxlength="300"
+                ></textarea>
+                <span class="cd-gm-counter" data-cd-gm-generated-counter>0/300</span>
+              </div>
+              <span class="cd-gm-error" data-cd-gm-generated-error style="display: none;">{{ 'personalization.max_char_error' | t }}</span>
+            </div>
+
+            {%- comment -%} Generate / Add buttons {%- endcomment -%}
+            <button type="button" class="cd-gm-btn cd-gm-btn--disabled" data-cd-gm-generate-btn disabled>{{ 'personalization.generate_gift_message' | t }}</button>
+            <div class="cd-gm-actions" data-cd-gm-post-generate style="display: none;">
+              <button type="button" class="cd-gm-btn" data-cd-gm-submit-generated>{{ 'personalization.add_gift_message' | t }}</button>
+              <button type="button" class="cd-gm-regenerate" data-cd-gm-regenerate-btn>{{ 'personalization.regenerate_message' | t }}</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    {%- comment -%} ===== Greeting Card Subview ===== {%- endcomment -%}
+    <div class="cd-gc-panel" aria-hidden="true" data-cd-greeting-card-view>
+      <div class="cd-gc-panel__header">
+        <button type="button" class="cd-gc-panel__back" aria-label="{{ 'cart_drawer.back_to_cart' | t }}" data-cd-greeting-card-back>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M15 6L9 12L15 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <h3 class="cd-gc-panel__title">{{ section.settings.greeting_card_panel_title }}</h3>
+        <button type="button" class="cd-gc-panel__close" aria-label="{{ 'cart_drawer.close_cart' | t }}" data-cd-greeting-card-close>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M18 6L6 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M6 6L18 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="cd-gc-panel__body">
+        {%- comment -%} Occasion picker — custom dropdown, shown before the iframe loads {%- endcomment -%}
+        <div class="cd-gc-occasion-wrap" data-cd-gc-occasion-wrap>
+          <div class="cd-gm-field" data-cd-gc-dropdown>
+            <div class="cd-gm-field__select" data-cd-gc-dropdown-trigger tabindex="0" role="combobox" aria-expanded="false" aria-haspopup="listbox">
+              <div class="cd-gm-field__label-wrap">
+                <span class="cd-gm-field__label" data-cd-gc-dropdown-label>{{ 'personalization.select_occasion' | t }}</span>
+                <span class="cd-gm-field__value" data-cd-gc-dropdown-value style="display: none;"></span>
+              </div>
+              <img src="{{ 'chevron-down-13.svg' | asset_url }}" alt="" width="20" height="20" class="cd-gm-field__chevron" aria-hidden="true">
+            </div>
+            <ul class="cd-gm-dropdown-list" data-cd-gc-dropdown-list role="listbox" style="display: none;"></ul>
+          </div>
+        </div>
+
+        {%- comment -%} Printible iframe — fills the panel, shown after an occasion is picked {%- endcomment -%}
+        <iframe
+          class="cd-gc-iframe"
+          data-cd-gc-iframe
+          title="{{ section.settings.greeting_card_panel_title }}"
+          allow="camera"
+          style="display: none;"
+        ></iframe>
+      </div>
+    </div>
+
+  </dialog>
+</ea-cart-drawer>
+
+{%- comment -%}
+  Cart conflict modal — rendered here (Cart Drawer is present on every page via
+  header-group) so its copy can be driven by this section's settings.
+{%- endcomment -%}
+{% render 'cart-conflict-modal',
+  title: section.settings.cart_conflict_title,
+  description: section.settings.cart_conflict_description,
+  clear_cta_text: section.settings.cart_conflict_clear_cta_text,
+  keep_cta_text: section.settings.cart_conflict_keep_cta_text
+%}
+
+<script src="{{ 'ea-cart-drawer.js' | asset_url }}" type="module"></script>
+
+{% stylesheet %}
+  /* ================================================
+     Cart Drawer — cd- prefix
+     ================================================ */
+
+  ea-cart-drawer {
+    position: fixed;
+    z-index: 20;
+    pointer-events: none;
+  }
+
+  /* ---------- Dialog ---------- */
+
+  .cd-dialog.cd-dialog {
+    --cd-muted-opacity: 0.82;
+    --cd-color-muted: rgb(var(--color-foreground-rgb) / var(--cd-muted-opacity));
+    --cd-color-accent-light: color-mix(in srgb, var(--cd-progress-color) 12%, var(--color-background));
+    --cd-color-surface-warm: #FBF7F5;
+    --cd-color-gradient-start: #F2E7DF;
+    --cd-color-gradient-end: #F5F1F1;
+    --cd-color-free: #526F1B;
+
+    position: fixed;
+    inset-block: 16px;
+    inset-inline-start: auto;
+    inset-inline-end: 16px;
+    width: calc(100vw - 32px);
+    max-width: 587px;
+    height: calc(100dvh - 32px);
+    max-height: calc(100dvh - 32px);
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 8px;
+    background: var(--color-background);
+    color: var(--color-foreground);
+    box-shadow: 0 5px 10px rgb(var(--color-shadow-rgb) / var(--opacity-5));
+    overflow: hidden;
+    pointer-events: auto;
+  }
+
+  .cd-dialog.cd-dialog[open] {
+    display: flex;
+    flex-direction: column;
+    animation: cd-slide-in var(--animation-speed, 0.2s) ease forwards;
+  }
+
+  .cd-dialog.cd-dialog.dialog-closing {
+    animation: cd-slide-out var(--animation-speed, 0.2s) ease forwards;
+  }
+
+  .cd-dialog.cd-dialog::backdrop {
+    background: rgb(var(--backdrop-color-rgb) / var(--opacity-40));
+  }
+
+  @keyframes cd-slide-in {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+  }
+
+  @keyframes cd-slide-out {
+    from { transform: translateX(0); }
+    to { transform: translateX(100%); }
+  }
+
+  /* ---------- Main View ---------- */
+
+  .cd-main-view {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+  }
+
+  /* ---------- Recoverable error banner ---------- */
+
+  .cd-error-toast {
+    position: absolute;
+    inset-inline: 16px;
+    top: 16px;
+    z-index: 10;
+    padding: 12px 16px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-background);
+    box-shadow: 0 4px 12px rgb(var(--color-shadow-rgb) / var(--opacity-15));
+    font-family: var(--font-body--family);
+    font-weight: 500;
+    font-size: var(--font-size--sm);
+    line-height: var(--font-body-small--line-height);
+    color: var(--color-foreground);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px);
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+  }
+
+  .cd-error-toast--visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+
+  /* ---------- Header ---------- */
+
+  .cd-header {
+    flex: 0 0 auto;
+    background: var(--color-background);
+    box-shadow: 0 5px 10px rgb(var(--color-shadow-rgb) / var(--opacity-5));
+    border-radius: 8px 8px 0 0;
+    z-index: 2;
+  }
+
+  .cd-header__title-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 16px;
+  }
+
+  .cd-header__title {
+    font-family: var(--font-heading--family);
+    font-weight: 600;
+    font-size: var(--font-size--xl);
+    line-height: var(--font-display--line-height);
+    color: var(--cd-color-muted);
+    margin: 0;
+    text-align: start;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .cd-header__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--color-foreground);
+    line-height: 0;
+    flex-shrink: 0;
+  }
+
+  .cd-header__close svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* ---------- Progress Bar ---------- */
+
+  .cd-progress {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    padding: 8px 16px;
+  }
+
+  .cd-progress__text {
+    position: relative;
+    min-height: 18px;
+    font-family: var(--font-body--family);
+    font-weight: 600;
+    font-size: var(--font-size--2xs);
+    line-height: var(--font-body-small--line-height);
+    color: var(--color-foreground);
+    margin: 0;
+    text-align: start;
+  }
+
+  .cd-progress__text--with-confetti {
+    padding-inline-start: 26px;
+  }
+
+  .cd-progress__confetti {
+    position: absolute;
+    inset-inline-start: 0;
+    top: -12px;
+    display: block;
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    line-height: 0;
+    pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cd-progress__text--with-confetti {
+      padding-inline-start: 0;
+    }
+
+    .cd-progress__confetti {
+      display: none;
+    }
+  }
+
+  .cd-progress__bar {
+    position: relative;
+    width: 100%;
+    height: 24px;
+    display: flex;
+    align-items: center;
+  }
+
+  .cd-progress__track {
+    position: relative;
+    width: 100%;
+    height: 4px;
+    border-radius: 8px;
+    background: var(--cd-color-accent-light);
+    overflow: hidden;
+  }
+
+  .cd-progress__fill {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: var(--cd-progress, 0%);
+    height: 100%;
+    border-radius: 8px;
+    background: var(--cd-progress-color);
+    transition: width 0.3s ease;
+  }
+
+  .cd-progress__dot {
+    position: absolute;
+    inset-inline-start: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--cd-progress-color);
+    z-index: 1;
+  }
+
+  .cd-progress__truck {
+    position: absolute;
+    top: 50%;
+    inset-inline-start: clamp(16px, var(--cd-progress, 0%), calc(100% - 16px));
+    transform: translate(-50%, -50%);
+    /* Explicit width + border-box so the truck never shrinks-to-fit against the
+       right edge when progress nears 100%. */
+    width: 32px;
+    height: 24px;
+    box-sizing: border-box;
+    padding-inline: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* White lane behind the truck so the red progress line does not pass through it */
+    background: var(--color-background);
+    z-index: 2;
+    transition: inset-inline-start 0.3s ease;
+  }
+
+  .cd-progress__truck-icon {
+    flex-shrink: 0;
+    display: block;
+    width: 24px;
+    height: 24px;
+    background: var(--cd-progress-color);
+    -webkit-mask: var(--cd-progress-truck-icon) center / contain no-repeat;
+    mask: var(--cd-progress-truck-icon) center / contain no-repeat;
+  }
+
+  /* Bundle discount progress CSS moved to snippets/bundle-progress-bar.liquid (shared) */
+
+  /* ---------- Loading Skeleton ---------- */
+
+  .cd-loading {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 24px;
+  }
+
+  .cd-skeleton {
+    border-radius: 8px;
+    background: linear-gradient(
+      90deg,
+      rgb(var(--color-foreground-rgb) / var(--opacity-8)) 25%,
+      rgb(var(--color-foreground-rgb) / var(--opacity-15)) 50%,
+      rgb(var(--color-foreground-rgb) / var(--opacity-8)) 75%
+    );
+    background-size: 200% 100%;
+    animation: cd-shimmer 1.5s infinite;
+  }
+
+  .cd-skeleton--item {
+    height: 120px;
+  }
+
+  .cd-skeleton--variant {
+    height: 88px;
+  }
+
+  /* Variant fetch loading state — stack skeletons full-width like the main card. */
+  .cd-variant-loading {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .cd-variant-loading .cd-skeleton--variant {
+    width: 100%;
+  }
+
+  @keyframes cd-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* ---------- Scrollable Body ---------- */
+
+  .cd-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .cd-content {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ---------- Cart Items ---------- */
+
+  .cd-items {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 24px;
+  }
+
+  .cd-line-item {
+    position: relative;
+  }
+
+  .cd-line-item--loading {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  .cd-line-item__image--icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .cd-line-item__image--icon img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+  }
+
+  /* When a cart mutation is in progress, block all cart item actions
+     (plus, minus, edit, remove, view gift upgrades). Header and footer
+     stay normal. Other line items stay visually normal but non-interactive. */
+  .cd-drawer--busy .cd-qty-btn,
+  .cd-drawer--busy .cd-action-btn,
+  .cd-drawer--busy .cd-upgrades-btn,
+  .cd-drawer--busy .cd-personalize__card-btn,
+  .cd-drawer--busy .cd-personalize__card-action-btn {
+    pointer-events: none;
+  }
+
+  /* Processing/wait cursor applied at the cart body level, not per-button. */
+  .cd-drawer--busy .cd-body {
+    cursor: wait;
+  }
+
+  .cd-line-item__card {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-background);
+  }
+
+  .cd-line-item__top {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .cd-line-item__image {
+    flex: 0 0 96px;
+    width: 96px;
+    height: 96px;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cd-line-item__image-bg {
+    position: absolute;
+    inset: 0;
+    background: var(
+      --cd-product-media-gradient,
+      linear-gradient(180deg, var(--cd-color-gradient-start) 0%, var(--cd-color-gradient-end) 100%)
+    );
+    border-radius: 4px;
+  }
+
+  .cd-line-item__image img {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 4px;
+  }
+
+  .cd-line-item__image.cd-line-item__image--gift-message img {
+    width: 80px;
+    height: 80px;
+  }
+
+  .cd-line-item__image img.cd-line-item__image-img--contain {
+    object-fit: contain;
+  }
+
+  .cd-line-item__details {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    gap: 12px;
+  }
+
+  .cd-line-item__info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 96px;
+  }
+
+  .cd-line-item__meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .cd-line-item__name {
+    font-family: var(--font-body--family);
+    font-weight: 600;
+    font-size: var(--font-size--sm);
+    line-height: var(--font-body-small--line-height);
+    color: var(--color-foreground);
+  }
+
+  .cd-line-item__variant {
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: var(--font-size--sm);
+    line-height: var(--font-body-small--line-height);
+    color: var(--cd-color-muted);
+  }
+
+  /* ---------- Quantity Selector ---------- */
+
+  .cd-line-item__qty-selector {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--color-border);
+    border-radius: 24px;
+    padding: 4px 8px;
+    background: var(--color-background);
+    width: fit-content;
+  }
+
+  .cd-qty-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--color-foreground);
+    line-height: 0;
+  }
+
+  .cd-qty-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .cd-qty-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .cd-qty-value {
+    font-family: var(--font-body--family);
+    font-weight: 600;
+    font-size: var(--font-size--2xs);
+    line-height: var(--font-body-small--line-height);
+    color: var(--color-foreground);
+    min-width: 12px;
+    text-align: center;
+  }
+
+  /* ---------- Prices ---------- */
+
+  .cd-line-item__price-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: space-between;
+    min-height: 96px;
+  }
+
+  .cd-line-item__prices {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
+  .cd-line-item__price {
+    font-family: var(--font-body--family);
+    font-weight: 500;
+    font-size: var(--font-size--sm);
+    line-height: var(--font-body-small--line-height);
+    color: var(--color-foreground);
+    text-align: end;
+  }
+
+  .cd-line-item__compare-price {
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: var(--font-size--sm);
+    line-height: var(--font-body-small--line-height);
+    color: var(--color-foreground);
+    text-align: end;
+    text-decoration: line-through;
+  }
+
+  .cd-line-item__price.cd-line-item__price--free {
+    color: var(--cd-color-free);
+  }
+
+  /* ---------- Action Buttons ---------- */
+
+  .cd-line-item__actions {
+    display: flex;
+    align-items: center;
+  }
+
+  .cd-action-btn {
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: var(--font-size--sm);
+    line-height: var(--font-body-small--line-height);
+    color: var(--color-foreground);
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  .cd-action-btn:hover {
+    text-decoration: underline;
+  }
+
+  .cd-line-item__actions > .cd-action-btn + .cd-action-btn {
+    position: relative;
+    margin-left: 25px;
+  }
+
+  .cd-line-item__actions > .cd-action-btn + .cd-action-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: -13px;
+    width: 1px;
+    height: 13px;
+    background: var(--color-border);
+    transform: translateY(-50%);
+  }
+
+  /* ---------- Gift Upgrades Button ---------- */
+
+  .cd-upgrades-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 4px 24px;
+    border: 1px solid var(--color-secondary-button-border);
+    border-radius: 24px;
+    background: var(--color-secondary-button-background);
+    font-family: var(--font-body--family);
+    font-weight: 600;
+    font-size: var(--font-size--sm);
+    line-height: var(--font-body-small--line-height);
+    color: var(--color-secondary-button-text);
+    cursor: pointer;
+    height: 40px;
+  }
+
+  .cd-upgrades-btn:hover {
+    background: var(--color-secondary-button-hover-background);
+    color: var(--color-secondary-button-hover-text);
+    border-color: var(--color-secondary-button-hover-border);
+  }
+
+  /* ---------- Personalize Your Gift ---------- */
+
+  .cd-personalize {
+    padding: 24px 16px 32px;
+    background: var(--cd-personal-message-bg);
+  }
+
+  .cd-personalize__steps {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .cd-personalize__section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .cd-personalize__header {
+    display: flex;
+    gap: 8px;
+  }
+
+  .cd-personalize__header-text {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .cd-personalize__title {
+    font-family: var(--font-body--family);
+    font-weight: 600;
+    font-size: var(--font-size--md);
+    line-height: var(--font-body-regular--line-height);
+    color: var(--color-foreground);
+  }
+
+  .cd-personalize__subtitle {
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: var(--font-size--2xs);
+    line-height: var(--font-body-small--line-height);
+    color: var(--color-foreground);
+  }
+
+  .cd-personalize__cards {
+    display: flex;
+    gap: 16px;
+  }
+
+  .cd-personalize__card {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 8px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-background);
+    box-shadow: 0 3px 5px rgb(var(--color-shadow-rgb) / var(--opacity-5));
+  }
+
+  .cd-personalize__card-icon {
+    width: 32px;
+    height: 32px;
+    overflow: hidden;
+  }
+
+  .cd-personalize__card-icon img {
+    width: 32px;
+    height: 32px;
+  }
+
+  .cd-personalize__card-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .cd-personalize__card-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 8px;
+    border-radius: 24px;
+    font-family: var(--font-body--family);
+    font-weight: 600;
+    font-size: var(--font-size--2xs);
+    line-height: var(--font-body-small--line-height);
+    cursor: pointer;
+    border: none;
+    height: 24px;
+  }
+
+  .cd-personalize__card-btn--primary {
+    background: var(--color-primary-button-background);
+    color: var(--color-primary-button-text);
+  }
+
+  .cd-personalize__card-btn--primary:hover {
+    background: var(--color-primary-button-hover-background);
+    color: var(--color-primary-button-hover-text);
+  }
+
+  .cd-personalize__card-btn--secondary {
+    background: var(--color-secondary-button-background);
+    color: var(--color-secondary-button-text);
+    border: 1px solid var(--color-secondary-button-border);
+  }
+
+  .cd-personalize__card-btn--secondary:hover {
+    background: var(--color-secondary-button-hover-background);
+    color: var(--color-secondary-button-hover-text);
+    border-color: var(--color-secondary-button-hover-border);
+  }
+
+  /* Processing state — while saving/removing a message option, fade related
+     message UI until the cart mutation completes and the drawer refreshes.
+     No spinner — just a wait cursor + opacity fade. */
+  .cd-personalize--processing {
+    opacity: 0.5;
+    pointer-events: none;
+    cursor: wait;
+    transition: opacity 0.2s ease;
+  }
+
+  /* ---------- Empty State ---------- */
+
+  .cd-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 96px 24px 64px;
+    text-align: center;
+    flex: 1;
+  }
+
+  .cd-empty__heading {
+    font-family: var(--font-heading--family);
+    font-weight: 600;
+    font-size: var(--font-size--3xl);
+    line-height: 1.2;
+    letter-spacing: 0;
+    color: var(--color-foreground-heading);
+    margin: 0;
+  }
+
+  .cd-empty__subtitle {
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: var(--font-size--sm);
+    line-height: 1.4;
+    color: var(--cd-color-muted);
+    margin: 8px 0 0;
+  }
+
+  .cd-collection-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 154px);
+    column-gap: 24px;
+    row-gap: 24px;
+    width: auto;
+    margin-top: 32px;
+    justify-content: center;
+  }
+
+  .cd-collection-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+  }
+
+  .cd-collection-tile__img-wrap {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 6px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgb(0 0 0 / 5%);
+  }
+
+  .cd-collection-tile:nth-child(4n + 1) .cd-collection-tile__img-wrap,
+  .cd-collection-tile:nth-child(4n + 4) .cd-collection-tile__img-wrap {
+    background-color: var(--cd-tile-bg-1, #fbf7f5);
+  }
+
+  .cd-collection-tile:nth-child(4n + 2) .cd-collection-tile__img-wrap,
+  .cd-collection-tile:nth-child(4n + 3) .cd-collection-tile__img-wrap {
+    background-color: var(--cd-tile-bg-2, #f2e7df);
+  }
+
+  .cd-collection-tile__img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .cd-collection-tile__img-placeholder {
+    width: 100%;
+    height: 100%;
+  }
+
+  .cd-collection-tile__title {
+    font-family: var(--font-heading--family);
+    font-weight: 600;
+    font-size: var(--font-size--sm);
+    line-height: 1.4;
+    color: var(--color-foreground-heading);
+    text-align: center;
+  }
+
+  /* ---------- Footer ---------- */
+
+  .cd-footer {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+    background: var(--color-background);
+    box-shadow: 0 -5px 10px rgb(var(--color-shadow-rgb) / var(--opacity-5));
+    border-radius: 0 0 8px 8px;
+    z-index: 2;
+  }
+
+  .cd-footer__delivery {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .cd-footer__delivery-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--color-foreground-heading);
+  }
+
+  .cd-footer__delivery-label svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+
+  .cd-footer__delivery-text {
+    font-family: var(--font-body--family);
+    font-weight: 600;
+    font-size: var(--font-size--2xs);
+    line-height: var(--font-body-small--line-height);
+    color: inherit;
+  }
+
+  .cd-footer__delivery-price {
+    font-family: var(--font-body--family);
+    font-weight: 600;
+    font-size: var(--font-size--2xs);
+    line-height: var(--font-body-small--line-height);
+    color: var(--color-foreground-heading);
+    text-align: end;
+  }
+
+  .cd-footer__subtotal {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .cd-footer__subtotal-label {
+    font-family: var(--font-body--family);
+    font-weight: 600;
+    font-size: var(--font-size--md);
+    line-height: var(--font-body-regular--line-height);
+    color: var(--color-foreground-heading);
+  }
+
+  .cd-footer__subtotal-price {
+    font-family: var(--font-body--family);
+    font-weight: 600;
+    font-size: var(--font-size--md);
+    line-height: var(--font-body-regular--line-height);
+    color: var(--color-foreground-heading);
+  }
+
+  .cd-footer__checkout {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 40px;
+    padding: 4px 24px;
+    border-radius: 24px;
+    background: var(--color-primary-button-background);
+    color: var(--color-primary-button-text);
+    font-family: var(--font-body--family);
+    font-weight: 600;
+    font-size: var(--font-size--sm);
+    line-height: var(--font-body-small--line-height);
+    text-decoration: none;
+    text-align: center;
+    cursor: pointer;
+    border: none;
+  }
+
+  .cd-footer__checkout:hover {
+    background: var(--color-primary-button-hover-background);
+  }
+
+  /* ---------- Variant Panel (subview) ---------- */
+
+  .cd-variant-panel {
+    position: absolute;
+    inset: 0;
+    background: var(--color-background);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 3;
+    transform: translateX(100%);
+    visibility: hidden;
+    transition: transform 0.2s ease, visibility 0.2s ease;
+  }
+
+  .cd-variant-panel[aria-hidden='true'] {
+    visibility: hidden;
+    transform: translateX(100%);
+  }
+
+  .cd-variant-panel[aria-hidden='false'] {
+    visibility: visible;
+    transform: translateX(0);
+  }
+
+  .cd-variant-panel__header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 20px 16px;
+    background: var(--color-background);
+    box-shadow: 0 5px 10px rgb(var(--color-shadow-rgb) / var(--opacity-5));
+  }
+
+  .cd-variant-panel__back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--color-foreground);
+    line-height: 0;
+    flex-shrink: 0;
+  }
+
+  .cd-variant-panel__back svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .cd-variant-panel__title {
+    font-family: var(--font-heading--family);
+    font-weight: 600;
+    font-size: var(--font-size--xl);
+    line-height: var(--font-display--line-height);
+    color: var(--cd-color-muted);
+    margin: 0;
+    text-align: start;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .cd-variant-panel__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--color-foreground);
+    line-height: 0;
+    flex-shrink: 0;
+  }
+
+  .cd-variant-panel__close svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .cd-variant-panel__body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .cd-variant-product-title {
+    font-family: var(--font-body--family);
+    font-weight: 600;
+    font-size: var(--font-size--md);
+    line-height: var(--font-body-regular--line-height);
+    color: var(--color-foreground);
+    margin: 0;
+  }
+
+  .cd-variant-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .cd-variant-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-background);
+    cursor: pointer;
+    width: 100%;
+    text-align: start;
+  }
+
+  .cd-variant-card--selected {
+    border-color: var(--color-foreground);
+  }
+
+  .cd-variant-card__image {
+    flex: 0 0 64px;
+    width: 64px;
+    height: 64px;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cd-variant-card__image-bg {
+    position: absolute;
+    inset: 0;
+    background: var(
+      --cd-product-media-gradient,
+      linear-gradient(180deg, var(--cd-color-gradient-start) 0%, var(--cd-color-gradient-end) 100%)
+    );
+    border-radius: 4px;
+  }
+
+  .cd-variant-card__image img {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 4px;
+  }
+
+  .cd-variant-card__info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    align-items: flex-start;
+  }
+
+  .cd-variant-card__title {
+    font-family: var(--font-body--family);
+    font-weight: 600;
+    font-size: var(--font-size--sm);
+    line-height: var(--font-body-small--line-height);
+    color: var(--color-foreground);
+  }
+
+  .cd-variant-card__prices,
+  .cd-addon-card__prices,
+  .cd-addon-variant-card__prices {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  .cd-variant-card__price,
+  .cd-addon-card__price,
+  .cd-addon-variant-card__price {
+    font-family: var(--font-body--family);
+    font-weight: 500;
+    font-size: var(--font-size--sm);
+    line-height: var(--font-body-small--line-height);
+    color: var(--color-foreground);
+  }
+
+  .cd-variant-card__compare-price,
+  .cd-addon-card__compare-price,
+  .cd-addon-variant-card__compare-price {
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: var(--font-size--sm);
+    line-height: var(--font-body-small--line-height);
+    color: var(--color-foreground);
+  }
+
+  .cd-variant-card__compare-price,
+  .cd-addon-card__compare-price,
+  .cd-addon-variant-card__compare-price {
+    text-decoration: line-through;
+  }
+
+  .cd-variant-card__delivery {
+    display: inline-flex;
+    max-width: 100%;
+    align-items: flex-start;
+    gap: 4px;
+    color: var(--cd-variant-delivery-color);
+    font-family: var(--font-body--family);
+    font-weight: 500;
+    font-size: var(--font-size--2xs);
+    line-height: var(--font-body-small--line-height);
+  }
+
+  .cd-variant-card__delivery-icon {
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+    margin-block-start: 1px;
+    background-color: currentColor;
+    -webkit-mask: var(--cd-variant-delivery-icon) center / contain no-repeat;
+    mask: var(--cd-variant-delivery-icon) center / contain no-repeat;
+  }
+
+  .cd-variant-card__delivery-name {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .cd-variant-error {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    color: var(--cd-color-muted);
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--sm);
+    text-align: center;
+  }
+
+  .cd-variant-panel__footer {
+    flex: 0 0 auto;
+    padding: 16px;
+    background: var(--color-background);
+    box-shadow: 0 -5px 10px rgb(var(--color-shadow-rgb) / var(--opacity-5));
+    border-radius: 0 0 8px 8px;
+  }
+
+  .cd-variant-panel__update {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 40px;
+    padding: 4px 24px;
+    border: none;
+    border-radius: 24px;
+    background: var(--color-primary-button-background);
+    color: var(--color-primary-button-text);
+    font-family: var(--font-body--family);
+    font-weight: 600;
+    font-size: var(--font-size--sm);
+    line-height: var(--font-body-small--line-height);
+    cursor: pointer;
+  }
+
+  .cd-variant-panel__update:hover {
+    background: var(--color-primary-button-hover-background);
+  }
+
+  .cd-variant-panel__update:disabled {
+    background: #aaaaaa;
+    color: #ffffff;
+    opacity: 1;
+    cursor: not-allowed;
+  }
+
+  /* While an item update is processing: fade the panel content and show a
+     wait cursor, but keep the variant list visible (do not clear it). */
+  .cd-variant-panel__body--processing {
+    opacity: 0.5;
+    cursor: wait;
+  }
+
+  .cd-variant-panel__body--processing * {
+    cursor: wait !important;
+  }
+
+  .cd-variant-panel__body--processing .cd-variant-list {
+    pointer-events: none;
+  }
+
+  /* ---------- Grouped child line items ---------- */
+
+  .cd-child-group {
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+    margin-block-start: 16px;
+    margin-inline-start: 50px;
+  }
+
+  .cd-child-group__label {
+    font-family: var(--font-body--family);
+    font-weight: 500;
+    font-size: var(--font-size--2xs);
+    line-height: var(--font-body-small--line-height);
+    letter-spacing: 0.12px;
+    color: var(--color-foreground);
+    text-transform: uppercase;
+  }
+
+  .cd-child-item {
+    position: relative;
+  }
+
+  .cd-child-item__card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-background);
+  }
+
+  .cd-child-item__top {
+    display: flex;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .cd-child-item__image {
+    flex: 0 0 72px;
+    width: 72px;
+    height: 72px;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cd-child-item__image-bg {
+    position: absolute;
+    inset: 0;
+    background: var(
+      --cd-product-media-gradient,
+      linear-gradient(180deg, var(--cd-color-gradient-start) 0%, var(--cd-color-gradient-end) 100%)
+    );
+    border-radius: 4px;
+  }
+
+  .cd-child-item__image img {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 4px;
+  }
+
+  .cd-child-item__details {
+    flex: 1;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto 1fr auto;
+    align-items: start;
+    gap: 8px;
+  }
+
+  .cd-child-item__meta {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .cd-child-item__qty-selector {
+    grid-column: 1;
+    grid-row: 3;
+    align-self: end;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--color-border);
+    border-radius: 24px;
+    padding: 4px 8px;
+    background: var(--color-background);
+    width: fit-content;
+    flex: 0 0 auto;
+  }
+
+  .cd-child-item__name {
+    font-family: var(--font-body--family);
+    font-weight: 600;
+    font-size: var(--font-size--sm);
+    line-height: var(--font-body-small--line-height);
+    color: var(--color-foreground);
+  }
+
+  .cd-child-item__prices {
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
+  .cd-child-item__price {
+    font-family: var(--font-body--family);
+    font-weight: 500;
+    font-size: var(--font-size--sm);
+    line-height: var(--font-body-small--line-height);
+    color: var(--color-foreground);
+  }
+
+  .cd-child-item__price--free {
+    color: var(--cd-color-free);
+  }
+
+  .cd-child-item__compare-price {
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: var(--font-size--sm);
+    line-height: var(--font-body-small--line-height);
+    color: var(--color-foreground);
+    text-decoration: line-through;
+  }
+
+  .cd-child-item__actions {
+    grid-column: 2;
+    grid-row: 3;
+    align-self: end;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  /* Busy state for child items */
+  .cd-drawer--busy .cd-child-item .cd-action-btn,
+  .cd-drawer--busy .cd-child-item .cd-qty-btn {
+    pointer-events: none;
+  }
+
+  /* ---------- Gift Wrap Learn More Link ---------- */
+
+  .cd-gift-wrap-learn-more-link {
+    font-family: var(--font-body--family);
+    font-weight: 600;
+    font-size: var(--font-size--2xs);
+    line-height: var(--font-body-small--line-height);
+    color: var(--color-foreground);
+    text-decoration: underline;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .cd-gift-wrap-learn-more-link:hover {
+    color: var(--color-foreground);
+  }
+
+  /* ---------- Gift Wrap Learn More Subview ---------- */
+
+  .cd-gift-wrap-learn-more {
+    position: absolute;
+    inset: 0;
+    background: var(--color-background);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 4;
+    transform: translateX(100%);
+    visibility: hidden;
+    transition: transform 0.2s ease, visibility 0.2s ease;
+  }
+
+  .cd-gift-wrap-learn-more[aria-hidden='true'] {
+    visibility: hidden;
+    transform: translateX(100%);
+  }
+
+  .cd-gift-wrap-learn-more[aria-hidden='false'] {
+    visibility: visible;
+    transform: translateX(0);
+  }
+
+  .cd-gift-wrap-learn-more__header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 20px 16px;
+    background: var(--color-background);
+    box-shadow: 0 5px 10px rgb(var(--color-shadow-rgb) / var(--opacity-5));
+    position: relative;
+    flex: 0 0 auto;
+  }
+
+  .cd-gift-wrap-learn-more__back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--color-foreground);
+    line-height: 0;
+  }
+
+  .cd-gift-wrap-learn-more__back svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .cd-gift-wrap-learn-more__title {
+    font-family: var(--font-heading--family);
+    font-weight: 600;
+    font-size: var(--font-size--xl);
+    line-height: var(--font-display--line-height);
+    color: var(--cd-color-muted);
+    margin: 0;
+    text-align: start;
+    flex: 1;
+  }
+
+  .cd-gift-wrap-learn-more__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--color-foreground);
+    line-height: 0;
+  }
+
+  .cd-gift-wrap-learn-more__close svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .cd-gift-wrap-learn-more__body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 24px;
+  }
+
+  /* ---------- Add-On Variant Label (child item) ---------- */
+
+  .cd-child-item__variant-label,
+  .cd-child-item__qty-label {
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: var(--font-size--2xs);
+    line-height: var(--font-body-small--line-height);
+    color: var(--cd-color-muted);
+  }
+
+  /* ---------- Add-Ons Panel (subview) ---------- */
+
+  .cd-addons-panel {
+    position: absolute;
+    inset: 0;
+    background: var(--color-background);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 3;
+    transform: translateX(100%);
+    visibility: hidden;
+    transition: transform 0.2s ease, visibility 0.2s ease;
+  }
+
+  .cd-addons-panel[aria-hidden='true'] {
+    visibility: hidden;
+    transform: translateX(100%);
+  }
+
+  .cd-addons-panel[aria-hidden='false'] {
+    visibility: visible;
+    transform: translateX(0);
+  }
+
+  .cd-addons-panel__header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 20px 16px;
+    background: var(--color-background);
+    box-shadow: 0 5px 10px rgb(var(--color-shadow-rgb) / var(--opacity-5));
+    flex: 0 0 auto;
+  }
+
+  .cd-addons-panel__back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--color-foreground);
+    line-height: 0;
+    flex-shrink: 0;
+  }
+
+  .cd-addons-panel__back svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .cd-addons-panel__title {
+    font-family: var(--font-heading--family);
+    font-weight: 600;
+    font-size: var(--font-size--xl);
+    line-height: var(--font-display--line-height);
+    color: var(--cd-color-muted);
+    margin: 0;
+    text-align: start;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .cd-addons-panel__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--color-foreground);
+    line-height: 0;
+    flex-shrink: 0;
+  }
+
+  .cd-addons-panel__close svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .cd-addons-panel__body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .cd-addons-loading {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .cd-skeleton--addon {
+    height: 100px;
+  }
+
+  .cd-addons-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .cd-addon-card {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-background);
+    align-items: flex-start;
+  }
+
+  .cd-addon-card__image {
+    flex: 0 0 72px;
+    width: 72px;
+    height: 72px;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cd-addon-card__image-bg {
+    position: absolute;
+    inset: 0;
+    background: var(
+      --cd-product-media-gradient,
+      linear-gradient(180deg, var(--cd-color-gradient-start) 0%, var(--cd-color-gradient-end) 100%)
+    );
+    border-radius: 4px;
+  }
+
+  .cd-addon-card__image img {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 4px;
+  }
+
+  .cd-addon-card__info {
+    flex: 1;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 16px;
+    row-gap: 4px;
+    align-self: stretch;
+  }
+
+  .cd-addon-card__meta {
+    display: contents;
+  }
+
+  .cd-addon-card__prices {
+    grid-column: 1;
+    align-self: end;
+    margin-top: 4px;
+  }
+
+  .cd-addon-card__title {
+    grid-column: 1;
+    font-family: var(--font-body--family);
+    font-weight: 600;
+    font-size: var(--font-size--sm);
+    line-height: var(--font-body-small--line-height);
+    color: var(--color-foreground);
+  }
+
+  .cd-addon-card__desc {
+    grid-column: 1;
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: var(--font-size--2xs);
+    line-height: var(--font-body-small--line-height);
+    color: var(--cd-color-muted);
+  }
+
+  .cd-addon-card__details-link {
+    font: inherit;
+    font-weight: 500;
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    white-space: nowrap;
+  }
+
+  .cd-addon-card__details-link:hover {
+    color: inherit;
+  }
+
+  /* Add / Select Options = primary button; Added = secondary/outlined button */
+  .cd-addon-card__btn {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    align-self: end;
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 8px;
+    border: 1px solid var(--color-primary-button-border);
+    border-radius: 24px;
+    background: var(--color-primary-button-background);
+    font-family: var(--font-body--family);
+    font-weight: 600;
+    font-size: var(--font-size--2xs);
+    line-height: var(--font-body-small--line-height);
+    color: var(--color-primary-button-text);
+    cursor: pointer;
+    height: 24px;
+    white-space: nowrap;
+  }
+
+  .cd-addon-card__btn--added {
+    background: var(--color-secondary-button-background);
+    color: var(--color-secondary-button-text);
+    border-color: var(--color-secondary-button-border);
+  }
+
+  @media (hover: hover) {
+    .cd-addon-card__btn:hover {
+      background: var(--color-primary-button-hover-background);
+      color: var(--color-primary-button-hover-text);
+      border-color: var(--color-primary-button-hover-border);
+    }
+
+    .cd-addon-card__btn--added:hover {
+      background: var(--color-secondary-button-hover-background);
+      color: var(--color-secondary-button-hover-text);
+      border-color: var(--color-secondary-button-hover-border);
+    }
+  }
+
+  .cd-addons-panel__footer {
+    flex: 0 0 auto;
+    padding: 16px;
+    background: var(--color-background);
+    box-shadow: 0 -5px 10px rgb(var(--color-shadow-rgb) / var(--opacity-5));
+    border-radius: 0 0 8px 8px;
+  }
+
+  .cd-addons-panel__update {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 40px;
+    padding: 4px 24px;
+    border: none;
+    border-radius: 24px;
+    background: var(--color-primary-button-background);
+    color: var(--color-primary-button-text);
+    font-family: var(--font-body--family);
+    font-weight: 600;
+    font-size: var(--font-size--sm);
+    line-height: var(--font-body-small--line-height);
+    cursor: pointer;
+  }
+
+  .cd-addons-panel__update:hover {
+    background: var(--color-primary-button-hover-background);
+  }
+
+  .cd-addons-panel__update:disabled {
+    background: #aaaaaa;
+    color: #ffffff;
+    opacity: 1;
+    cursor: not-allowed;
+  }
+
+  /* ---------- Add-Ons Tabs ---------- */
+
+  .cd-addons-tabs {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .cd-addons-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .cd-addons-tabs:empty,
+  .cd-addons-tabs[hidden] {
+    display: none;
+  }
+
+  .cd-addons-tab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 16px;
+    border: 1px solid var(--color-border);
+    border-radius: 24px;
+    background: var(--color-background);
+    font-family: var(--font-body--family);
+    font-weight: 500;
+    font-size: var(--font-size--sm);
+    line-height: var(--font-body-small--line-height);
+    color: var(--color-foreground);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .cd-addons-tab--active {
+    background: var(--color-foreground);
+    color: var(--color-background);
+    border-color: var(--color-foreground);
+  }
+
+  /* ---------- Add-Ons Empty State ---------- */
+
+  .cd-addons-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+    text-align: center;
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--sm);
+    color: var(--cd-color-muted);
+  }
+
+  /* ---------- Add-On Card Read More / Hint ---------- */
+
+  .cd-addon-card__read-more {
+    display: inline;
+    padding: 0;
+    border: none;
+    background: none;
+    font: inherit;
+    font-weight: 500;
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+  }
+
+  .cd-addons-hint {
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--2xs);
+    color: var(--cd-color-muted);
+    margin: 0;
+  }
+
+  /* ---------- Add-On Variant Sub-Panel ---------- */
+
+  .cd-addon-variant-panel {
+    position: absolute;
+    inset: 0;
+    background: var(--color-background);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 4;
+    transform: translateX(100%);
+    visibility: hidden;
+    transition: transform 0.2s ease, visibility 0.2s ease;
+  }
+
+  .cd-addon-variant-panel[aria-hidden='true'] {
+    visibility: hidden;
+    transform: translateX(100%);
+  }
+
+  .cd-addon-variant-panel[aria-hidden='false'] {
+    visibility: visible;
+    transform: translateX(0);
+  }
+
+  .cd-addon-variant-panel__header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 20px 16px;
+    background: var(--color-background);
+    box-shadow: 0 5px 10px rgb(var(--color-shadow-rgb) / var(--opacity-5));
+    flex: 0 0 auto;
+  }
+
+  .cd-addon-variant-panel__back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--color-foreground);
+    line-height: 0;
+    flex-shrink: 0;
+  }
+
+  .cd-addon-variant-panel__back svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .cd-addon-variant-panel__title {
+    font-family: var(--font-heading--family);
+    font-weight: 600;
+    font-size: var(--font-size--xl);
+    line-height: var(--font-display--line-height);
+    color: var(--cd-color-muted);
+    margin: 0;
+    text-align: start;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .cd-addon-variant-panel__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--color-foreground);
+    line-height: 0;
+    flex-shrink: 0;
+  }
+
+  .cd-addon-variant-panel__close svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .cd-addon-variant-panel__body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .cd-addon-variant-panel__product-title {
+    font-family: var(--font-body--family);
+    font-weight: 600;
+    font-size: var(--font-size--md);
+    line-height: var(--font-body-regular--line-height);
+    color: var(--color-foreground);
+    margin: 0;
+  }
+
+  .cd-addon-variant-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .cd-addon-variant-card {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-background);
+    cursor: pointer;
+    width: 100%;
+    text-align: start;
+  }
+
+  .cd-addon-variant-card--selected {
+    border-color: var(--color-foreground);
+  }
+
+  .cd-addon-variant-card__image {
+    flex: 0 0 64px;
+    width: 64px;
+    height: 64px;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cd-addon-variant-card__image-bg {
+    position: absolute;
+    inset: 0;
+    background: var(
+      --cd-product-media-gradient,
+      linear-gradient(180deg, var(--cd-color-gradient-start) 0%, var(--cd-color-gradient-end) 100%)
+    );
+    border-radius: 4px;
+  }
+
+  .cd-addon-variant-card__image img {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 4px;
+  }
+
+  .cd-addon-variant-card__info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .cd-addon-variant-card__title {
+    font-family: var(--font-body--family);
+    font-weight: 600;
+    font-size: var(--font-size--sm);
+    line-height: var(--font-body-small--line-height);
+    color: var(--color-foreground);
+  }
+
+  .cd-addon-variant-panel__footer {
+    flex: 0 0 auto;
+    padding: 16px;
+    background: var(--color-background);
+    box-shadow: 0 -5px 10px rgb(var(--color-shadow-rgb) / var(--opacity-5));
+    border-radius: 0 0 8px 8px;
+  }
+
+  .cd-addon-variant-panel__confirm {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 40px;
+    padding: 4px 24px;
+    border: none;
+    border-radius: 24px;
+    background: var(--color-primary-button-background);
+    color: var(--color-primary-button-text);
+    font-family: var(--font-body--family);
+    font-weight: 600;
+    font-size: var(--font-size--sm);
+    line-height: var(--font-body-small--line-height);
+    cursor: pointer;
+  }
+
+  .cd-addon-variant-panel__confirm:hover {
+    background: var(--color-primary-button-hover-background);
+  }
+
+  .cd-addon-variant-panel__confirm:disabled {
+    background: #aaaaaa;
+    color: #ffffff;
+    opacity: 1;
+    cursor: not-allowed;
+  }
+
+  /* Busy state for add-on panels */
+  .cd-addons-panel__body--processing {
+    opacity: 0.5;
+    cursor: wait;
+  }
+
+  .cd-addons-panel__body--processing * {
+    cursor: wait !important;
+  }
+
+  .cd-addons-panel__body--processing .cd-addons-list {
+    pointer-events: none;
+  }
+
+  /* ---------- Mobile Responsive ---------- */
+
+  @media screen and (max-width: 749px) {
+    .cd-header__title-row,
+    .cd-variant-panel__header,
+    .cd-addons-panel__header,
+    .cd-addon-variant-panel__header,
+    .cd-message-panel__header,
+    .cd-gc-panel__header {
+      padding: 16px;
+    }
+
+    .cd-header__title {
+      font-size: var(--font-size--md);
+      line-height: var(--font-body-regular--line-height);
+    }
+
+    .cd-items {
+      padding: 16px 16px 24px;
+    }
+
+    .cd-child-group {
+      margin-inline-start: 24px;
+    }
+
+    .cd-child-item__image {
+      flex: 0 0 79px;
+      width: 79px;
+      height: 79px;
+    }
+
+    .cd-child-item__details {
+      min-height: 79px;
+    }
+
+    .cd-child-item__name,
+    .cd-child-item__variant-label,
+    .cd-child-item__price,
+    .cd-child-item__compare-price {
+      font-size: var(--font-size--2xs);
+      line-height: var(--font-body-small--line-height);
+    }
+
+    .cd-child-item__actions {
+      grid-column: 1 / -1;
+      justify-self: end;
+    }
+
+    .cd-line-item__image {
+      flex: 0 0 79px;
+      width: 79px;
+      height: 79px;
+    }
+
+    .cd-line-item__name {
+      font-size: var(--font-size--2xs);
+      line-height: var(--font-body-small--line-height);
+    }
+
+    .cd-line-item__variant {
+      font-size: var(--font-size--2xs);
+      line-height: var(--font-body-small--line-height);
+    }
+
+    .cd-line-item__details {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-rows: auto 1fr auto;
+      align-items: start;
+      gap: 8px;
+      min-height: 79px;
+    }
+
+    .cd-line-item__info {
+      display: contents;
+      min-height: 0;
+    }
+
+    .cd-line-item__meta {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    .cd-line-item__qty-selector {
+      grid-column: 1;
+      grid-row: 3;
+      align-self: end;
+    }
+
+    .cd-line-item__price-actions {
+      display: contents;
+      min-height: 0;
+    }
+
+    .cd-line-item__prices {
+      grid-column: 2;
+      grid-row: 1;
+    }
+
+    .cd-line-item__actions {
+      grid-column: 1 / -1;
+      grid-row: 3;
+      align-self: end;
+      justify-self: end;
+      justify-content: flex-end;
+    }
+
+    .cd-line-item__price {
+      font-size: var(--font-size--2xs);
+      line-height: var(--font-body-small--line-height);
+    }
+
+    .cd-line-item__compare-price {
+      font-size: var(--font-size--2xs);
+      line-height: var(--font-body-small--line-height);
+    }
+
+    .cd-action-btn {
+      font-size: var(--font-size--2xs);
+      line-height: var(--font-body-small--line-height);
+    }
+
+    .cd-personalize__title {
+      font-size: var(--font-size--sm);
+      line-height: var(--font-body-small--line-height);
+    }
+
+    .cd-personalize__cards {
+      gap: 8px;
+    }
+
+    .cd-personalize__card {
+      gap: 12px;
+    }
+
+    .cd-personalize__card-info {
+      gap: 8px;
+    }
+
+    .cd-personalize {
+      padding: 24px 16px;
+    }
+
+    .cd-empty {
+      padding: 71px 16px 56px;
+    }
+
+    .cd-empty__heading {
+      font-size: var(--font-size--2xl);
+      line-height: 1.2;
+    }
+
+    .cd-empty__subtitle {
+      font-size: var(--font-size--sm);
+      line-height: 1.4;
+      margin-top: 6px;
+    }
+
+    .cd-collection-grid {
+      column-gap: 18px;
+      row-gap: 16px;
+      margin-top: 32px;
+    }
+
+    .cd-collection-tile {
+      gap: 8px;
+    }
+
+    /* Add-ons panel mobile overrides */
+    .cd-addons-panel__body {
+      padding: 16px;
+    }
+
+    .cd-addon-card__image {
+      flex: 0 0 64px;
+      width: 64px;
+      height: 64px;
+    }
+
+    .cd-addon-card__info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-self: flex-start;
+    }
+
+    .cd-addon-card__meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    .cd-addon-card__btn {
+      align-self: auto;
+    }
+
+    .cd-addon-card__desc {
+      font-size: var(--font-size--2xs);
+      line-height: var(--font-body-small--line-height);
+    }
+
+    .cd-addon-card__title {
+      font-size: var(--font-size--2xs);
+      line-height: var(--font-body-small--line-height);
+    }
+
+    .cd-variant-panel__title,
+    .cd-addons-panel__title {
+      font-size: var(--font-size--md);
+      line-height: var(--font-body-regular--line-height);
+    }
+
+    .cd-addon-variant-panel__title {
+      font-size: var(--font-size--md);
+      line-height: var(--font-body-regular--line-height);
+    }
+
+    .cd-addon-variant-panel__body {
+      padding: 16px;
+    }
+
+    .cd-addon-variant-card__image {
+      flex: 0 0 64px;
+      width: 64px;
+      height: 64px;
+    }
+
+    .cd-message-panel__title {
+      font-size: var(--font-size--md);
+      line-height: var(--font-body-regular--line-height);
+    }
+
+    .cd-gc-panel__title {
+      font-size: var(--font-size--md);
+      line-height: var(--font-body-regular--line-height);
+    }
+
+    .cd-gm-content {
+      padding: 16px;
+      gap: 16px;
+    }
+
+    .cd-gc-occasion-wrap {
+      padding: 16px;
+    }
+  }
+
+  /* ---------- Gift Message Panel (subview) ---------- */
+
+  .cd-message-panel {
+    position: absolute;
+    inset: 0;
+    background: var(--color-background);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 5;
+    transform: translateX(100%);
+    visibility: hidden;
+    transition: transform 0.2s ease, visibility 0.2s ease;
+  }
+
+  .cd-message-panel[aria-hidden='true'] {
+    visibility: hidden;
+    transform: translateX(100%);
+  }
+
+  .cd-message-panel[aria-hidden='false'] {
+    visibility: visible;
+    transform: translateX(0);
+  }
+
+  .cd-message-panel__header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 20px 16px;
+    background: var(--color-background);
+    box-shadow: 0 5px 10px rgb(var(--color-shadow-rgb) / var(--opacity-5));
+    flex: 0 0 auto;
+    z-index: 2;
+  }
+
+  .cd-message-panel__back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--color-foreground);
+    line-height: 0;
+    flex-shrink: 0;
+  }
+
+  .cd-message-panel__back svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .cd-message-panel__title {
+    font-family: var(--font-heading--family);
+    font-weight: 600;
+    font-size: var(--font-size--xl);
+    line-height: var(--font-display--line-height);
+    color: var(--cd-color-muted);
+    margin: 0;
+    text-align: start;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .cd-message-panel__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--color-foreground);
+    line-height: 0;
+    flex-shrink: 0;
+  }
+
+  .cd-message-panel__close svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .cd-message-panel__body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    box-shadow: inset 0 5px 10px rgb(var(--color-shadow-rgb) / var(--opacity-5));
+  }
+
+  .cd-gm-content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 24px 16px;
+  }
+
+  .cd-gm-description {
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: var(--font-size--sm);
+    line-height: var(--font-body-small--line-height);
+    color: #464646;
+    margin: 0;
+  }
+
+  /* Tabs */
+  .cd-gm-tabs {
+    display: flex;
+    overflow: hidden;
+    align-items: center;
+    gap: 0;
+  }
+
+  .cd-gm-tab {
+    display: flex;
+    justify-content: center;
+    padding: 0 16px 8px;
+    border: none;
+    background: none;
+    border-bottom: 1px solid #C6C6C6;
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: var(--font-size--2xs);
+    line-height: var(--font-body-small--line-height);
+    text-align: center;
+    color: #1D1D1D;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: border-color 0.15s ease, font-weight 0.15s ease;
+  }
+
+  .cd-gm-tab--active {
+    border-bottom-color: #1D1D1D;
+    font-weight: 600;
+  }
+
+  /* Panels */
+  .cd-gm-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* Textarea */
+  .cd-gm-textarea-wrap {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .cd-gm-textarea {
+    width: 100%;
+    min-height: 169px;
+    padding: 15.5px 16px 28px;
+    border-radius: 8px;
+    border: 1px solid #C6C6C6;
+    background: #FFFFFF;
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: var(--font-size--md);
+    line-height: var(--font-body-regular--line-height);
+    color: #1D1D1D;
+    resize: none;
+    outline: none;
+    transition: border-color 0.15s ease;
+    box-sizing: border-box;
+  }
+
+  .cd-gm-textarea::placeholder {
+    color: #6B6B6B;
+  }
+
+  .cd-gm-textarea:focus {
+    border-color: #464646;
+  }
+
+  .cd-gm-textarea--filled {
+    border-color: #464646;
+  }
+
+  .cd-gm-textarea--error {
+    border-color: #E10600;
+  }
+
+  .cd-gm-counter {
+    position: absolute;
+    bottom: 10px;
+    right: 16px;
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: var(--font-size--2xs);
+    line-height: var(--font-body-small--line-height);
+    color: #6B6B6B;
+    pointer-events: none;
+  }
+
+  .cd-gm-counter--error {
+    color: #E10600;
+  }
+
+  .cd-gm-error {
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: var(--font-size--2xs);
+    line-height: var(--font-body-small--line-height);
+    color: #E10600;
+  }
+
+  /* Submit button */
+  .cd-gm-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 4px 24px;
+    min-height: 40px;
+    border-radius: 24px;
+    border: none;
+    background: #E10600;
+    font-family: var(--font-body--family);
+    font-weight: 600;
+    font-size: var(--font-size--sm);
+    line-height: var(--font-body-small--line-height);
+    text-align: center;
+    color: #FFFFFF;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+
+  .cd-gm-btn--disabled,
+  .cd-gm-btn:disabled {
+    background: #AAAAAA;
+    cursor: not-allowed;
+  }
+
+  /* Regenerate link */
+  .cd-gm-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .cd-gm-regenerate {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    background: none;
+    font-family: var(--font-body--family);
+    font-weight: 600;
+    font-size: var(--font-size--2xs);
+    line-height: var(--font-body-small--line-height);
+    text-align: center;
+    color: #E10600;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  /* Field (dropdown / input) */
+  .cd-gm-field {
+    position: relative;
+  }
+
+  .cd-gm-field__select {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    min-height: 48px;
+    border-radius: 8px;
+    border: 1px solid #C6C6C6;
+    background: #FFFFFF;
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+    box-sizing: border-box;
+  }
+
+  .cd-gm-field__select--filled,
+  .cd-gm-field__select--open {
+    border-color: #464646;
+  }
+
+  .cd-gm-field__label-wrap {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    gap: 0;
+  }
+
+  .cd-gm-field__label {
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: var(--font-size--2xs);
+    line-height: var(--font-body-small--line-height);
+    color: #6B6B6B;
+    transition: font-size 0.15s ease;
+  }
+
+  .cd-gm-field__value {
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: var(--font-size--2xs);
+    line-height: var(--font-body-small--line-height);
+    color: #1D1D1D;
+  }
+
+  .cd-gm-field__chevron {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+  }
+
+  .cd-gm-field__select--open .cd-gm-field__chevron {
+    transform: rotate(180deg);
+  }
+
+  .cd-gm-dropdown-list {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 5;
+    list-style: none;
+    margin: 0;
+    padding: 4px 0;
+    border-radius: 8px;
+    border: 1px solid #C6C6C6;
+    background: #FFFFFF;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .cd-gm-dropdown-item {
+    padding: 10px 16px;
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: var(--font-size--2xs);
+    line-height: var(--font-body-small--line-height);
+    color: #1D1D1D;
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+  }
+
+  .cd-gm-dropdown-item:hover {
+    background: #F5F1F1;
+  }
+
+  .cd-gm-dropdown-item--selected {
+    font-weight: 600;
+    background: #F5F1F1;
+  }
+
+  /* Name input */
+  .cd-gm-field__input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+    border-radius: 8px;
+    border: 1px solid #C6C6C6;
+    background: #FFFFFF;
+    padding: 10px 16px;
+    box-sizing: border-box;
+    transition: border-color 0.15s ease;
+  }
+
+  .cd-gm-field__input-wrap--filled,
+  .cd-gm-field__input-wrap--focused {
+    border-color: #464646;
+  }
+
+  .cd-gm-field__floating-label {
+    position: absolute;
+    top: 50%;
+    left: 16px;
+    transform: translateY(-50%);
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: var(--font-size--2xs);
+    line-height: var(--font-body-small--line-height);
+    color: #6B6B6B;
+    pointer-events: none;
+    transition: transform 0.15s ease, font-size 0.15s ease, top 0.15s ease;
+  }
+
+  .cd-gm-field__input-wrap--active .cd-gm-field__floating-label {
+    top: 10px;
+    transform: translateY(0);
+    font-size: var(--font-size--2xs);
+    line-height: var(--font-body-small--line-height);
+  }
+
+  .cd-gm-field__input {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: none;
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: var(--font-size--md);
+    line-height: var(--font-body-regular--line-height);
+    color: #1D1D1D;
+    padding: 0;
+    margin: 0;
+  }
+
+  .cd-gm-field__input-wrap--active .cd-gm-field__input {
+    padding-top: 14px;
+  }
+
+  /* Generated wrap */
+  .cd-gm-generated-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* Personalize card state styles */
+  .cd-personalize__card-text {
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: var(--font-size--2xs);
+    line-height: var(--font-body-small--line-height);
+    color: var(--color-foreground);
+    text-align: center;
+    display: block;
+    overflow-wrap: anywhere;
+  }
+
+  .cd-personalize__card-added-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .cd-personalize__card-action-btn {
+    font-family: var(--font-body--family);
+    cursor: pointer;
+  }
+
+  /* Remove — small white (secondary) button */
+  .cd-personalize__card-action-btn--remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 16px;
+    border-radius: 24px;
+    background: var(--color-secondary-button-background);
+    color: var(--color-secondary-button-text);
+    border: 1px solid var(--color-secondary-button-border);
+    font-weight: 600;
+    font-size: var(--font-size--2xs);
+    line-height: var(--font-body-small--line-height);
+    white-space: nowrap;
+  }
+
+  .cd-personalize__card-action-btn--remove:hover {
+    background: var(--color-secondary-button-hover-background);
+    color: var(--color-secondary-button-hover-text);
+    border-color: var(--color-secondary-button-hover-border);
+  }
+
+  /* Edit / Change — red underlined link */
+  .cd-personalize__card-action-btn--link {
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--color-primary-button-background);
+    text-decoration: underline;
+    font-weight: 600;
+    font-size: var(--font-size--sm);
+    line-height: var(--font-body-small--line-height);
+    white-space: nowrap;
+  }
+
+  @media screen and (max-width: 749px) {
+    .cd-personalize__card {
+      justify-content: space-between;
+      min-height: 160px;
+    }
+
+    .cd-personalize__card-info {
+      flex: 1;
+      justify-content: space-between;
+    }
+
+    .cd-personalize__card-added-actions {
+      gap: 8px;
+    }
+
+    .cd-personalize__card-action-btn--link {
+      font-size: var(--font-size--2xs);
+      line-height: var(--font-body-small--line-height);
+    }
+
+    .cd-personalize__card-action-btn--remove {
+      min-width: 0;
+      padding-inline: 12px;
+    }
+  }
+
+  /* ---------- Greeting Card Panel (subview) ---------- */
+
+  .cd-gc-panel {
+    position: absolute;
+    inset: 0;
+    background: var(--color-background);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 5;
+    transform: translateX(100%);
+    visibility: hidden;
+    transition: transform 0.2s ease, visibility 0.2s ease;
+  }
+
+  .cd-gc-panel[aria-hidden='true'] {
+    visibility: hidden;
+    transform: translateX(100%);
+  }
+
+  .cd-gc-panel[aria-hidden='false'] {
+    visibility: visible;
+    transform: translateX(0);
+  }
+
+  .cd-gc-panel__header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 20px 16px;
+    background: var(--color-background);
+    box-shadow: 0 5px 10px rgb(var(--color-shadow-rgb) / var(--opacity-5));
+    flex: 0 0 auto;
+    z-index: 2;
+  }
+
+  .cd-gc-panel__back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--color-foreground);
+    line-height: 0;
+    flex-shrink: 0;
+  }
+
+  .cd-gc-panel__back svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .cd-gc-panel__title {
+    font-family: var(--font-heading--family);
+    font-weight: 600;
+    font-size: var(--font-size--xl);
+    line-height: var(--font-display--line-height);
+    color: var(--cd-color-muted);
+    margin: 0;
+    text-align: start;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .cd-gc-panel__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--color-foreground);
+    line-height: 0;
+    flex-shrink: 0;
+  }
+
+  .cd-gc-panel__close svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* Body is a flex column: the occasion picker sits above a full-bleed iframe. */
+  .cd-gc-panel__body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: inset 0 5px 10px rgb(var(--color-shadow-rgb) / var(--opacity-5));
+  }
+
+  .cd-gc-occasion-wrap {
+    padding: 20px 16px;
+    flex-shrink: 0;
+  }
+
+  .cd-gc-iframe {
+    width: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
+    border: none;
+    display: block;
+  }
+
+  @media screen and (max-width: 749px) {
+    .cd-message-panel__header,
+    .cd-gc-panel__header,
+    .cd-gift-wrap-learn-more__header {
+      padding: 16px;
+    }
+
+    .cd-message-panel__title,
+    .cd-gc-panel__title,
+    .cd-gift-wrap-learn-more__title {
+      font-size: var(--font-size--md);
+      line-height: var(--font-body-regular--line-height);
+    }
+  }
+
+  /* ===== CYO Summary (inside parent card) ===== */
+  .cd-cyo-summary {
+    padding: 12px;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .cd-cyo-summary__label {
+    display: block;
+    font-family: var(--font-body--family);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-foreground);
+    opacity: 0.6;
+    margin-bottom: 8px;
+  }
+
+  .cd-cyo-summary__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .cd-cyo-summary__item {
+    font-family: var(--font-body--family);
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--color-foreground);
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Cart Drawer",
+  "limit": 1,
+  "disabled_on": {
+    "groups": ["footer"]
+  },
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Your Cart"
+    },
+    {
+      "type": "text",
+      "id": "edit_item_title",
+      "label": "Edit item title",
+      "default": "Edit your item"
+    },
+    {
+      "type": "color",
+      "id": "variant_delivery_availability_color",
+      "label": "Edit item delivery availability color",
+      "default": "#526F1B"
+    },
+    {
+      "type": "text",
+      "id": "gift_upgrades_title",
+      "label": "Gift upgrades title",
+      "default": "Upgrade your gift"
+    },
+    {
+      "type": "text",
+      "id": "progress_text",
+      "label": "Progress bar text",
+      "info": "Use [amount] for the remaining amount.",
+      "default": "Spend [amount] more to unlock free next day delivery!"
+    },
+    {
+      "type": "text",
+      "id": "progress_complete_text",
+      "label": "Progress unlocked text",
+      "info": "Shown when the free delivery threshold is reached.",
+      "default": "Yay! You have unlocked free next day delivery!"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_confetti_animation",
+      "label": "Show confetti animation",
+      "default": true
+    },
+    {
+      "type": "number",
+      "id": "free_delivery_threshold",
+      "label": "Free delivery threshold",
+      "default": 100
+    },
+    {
+      "type": "color",
+      "id": "progress_color",
+      "label": "Progress bar color",
+      "default": "#E10600"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_bundle_discount_progress",
+      "label": "Show different discount progress bar for bundle products",
+      "info": "When on, carts containing Bundle Builder items show the bundle discount tiers instead of the free-delivery bar. Turn off to always use the default bar.",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "checkout_button_text",
+      "label": "Checkout button text",
+      "default": "Continue to Checkout"
+    },
+    {
+      "type": "text",
+      "id": "delivery_price",
+      "label": "Delivery price",
+      "info": "Enter the amount only. Currency is formatted automatically for the active market.",
+      "default": "15.99"
+    },
+    {
+      "type": "text",
+      "id": "delivery_label",
+      "label": "Delivery label",
+      "default": "1-Hour Delivery"
+    },
+    {
+      "type": "header",
+      "content": "Empty cart"
+    },
+    {
+      "type": "text",
+      "id": "empty_heading",
+      "label": "Empty cart heading",
+      "default": "Your cart is empty"
+    },
+    {
+      "type": "text",
+      "id": "empty_text",
+      "label": "Empty cart subtitle",
+      "default": "Not sure where to start?",
+      "info": "Shown only when recommended collections are configured below"
+    },
+    {
+      "type": "collection_list",
+      "id": "empty_collections",
+      "label": "Recommended collections",
+      "limit": 4
+    },
+    {
+      "type": "color",
+      "id": "empty_bg_color_1",
+      "label": "Collection tile background 1",
+      "default": "#FBF7F5"
+    },
+    {
+      "type": "color",
+      "id": "empty_bg_color_2",
+      "label": "Collection tile background 2",
+      "default": "#F2E7DF"
+    },
+    {
+      "type": "header",
+      "content": "Gift wrap"
+    },
+    {
+      "type": "text",
+      "id": "gift_wrap_description",
+      "label": "Description",
+      "default": "Choose your premium gift wrapping!"
+    },
+    {
+      "type": "text",
+      "id": "gift_wrap_learn_more_text",
+      "label": "Learn More text",
+      "default": "Learn More"
+    },
+    {
+      "type": "text",
+      "id": "gift_wrap_learn_more_panel_title",
+      "label": "Learn More panel title",
+      "default": "Complimentary Gift Wrapping"
+    },
+    {
+      "type": "header",
+      "content": "Personal message",
+      "info": "Greeting-card product, price, Printible iframe URL, occasion list, max characters, tab labels and button/title copy are sourced from the Personalization Drawer's message-option blocks (single source of truth)."
+    },
+    {
+      "type": "text",
+      "id": "gift_message_title",
+      "label": "Section title",
+      "default": "Add a personal message"
+    },
+    {
+      "type": "text",
+      "id": "gift_message_subtitle",
+      "label": "Section subtitle",
+      "default": "Include a message or greeting card."
+    },
+    {
+      "type": "text",
+      "id": "gift_message_panel_title",
+      "label": "Gift message panel title",
+      "default": "Send a complimentary gift message"
+    },
+    {
+      "type": "text",
+      "id": "greeting_card_panel_title",
+      "label": "Greeting card panel title",
+      "default": "Customize Greeting Card"
+    },
+    {
+      "type": "color",
+      "id": "personal_message_background",
+      "label": "Section background",
+      "default": "#FBF7F5"
+    },
+    {
+      "type": "header",
+      "content": "Cart Conflict settings",
+      "info": "Copy for the popup shown when a shopper tries to combine bundle items with regular items."
+    },
+    {
+      "type": "text",
+      "id": "cart_conflict_title",
+      "label": "Title",
+      "default": "Before you start.."
+    },
+    {
+      "type": "textarea",
+      "id": "cart_conflict_description",
+      "label": "Description",
+      "default": "You cannot combine regular items with bundle items.\nDo you wish to replace items currently in your cart with your bundle?"
+    },
+    {
+      "type": "text",
+      "id": "cart_conflict_clear_cta_text",
+      "label": "Clear cart CTA text",
+      "default": "Clear Cart and Continue"
+    },
+    {
+      "type": "text",
+      "id": "cart_conflict_keep_cta_text",
+      "label": "Keep cart CTA text",
+      "default": "Keep my Cart"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Cart Drawer"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,395 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "main": {
+      "type": "main-page",
+      "blocks": {
+        "heading": {
+          "type": "text",
+          "name": "Title",
+          "settings": {
+            "text": "<h1>{{ closest.page.title }}</h1>",
+            "enable_read_more": false,
+            "read_more_label": "Read more",
+            "read_less_label": "Read less",
+            "characters_limit": 0,
+            "width": "100%",
+            "max_width": "normal",
+            "alignment": "left",
+            "type_preset": "h2",
+            "type_preset_desktop": "",
+            "weight": "",
+            "color": "",
+            "highlight_color": "var(--color-primary)",
+            "custom_highlight_color": "#1d1d1d",
+            "background": false,
+            "background_color": "#00000026",
+            "corner_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {}
+        },
+        "page-content": {
+          "type": "page-content",
+          "settings": {},
+          "blocks": {}
+        }
+      },
+      "block_order": [
+        "heading",
+        "page-content"
+      ],
+      "settings": {
+        "content_direction": "column",
+        "gap": 32,
+        "color_scheme": "",
+        "padding-block-start": 40,
+        "padding-block-end": 80
+      }
+    },
+    "hero_ktTWXr": {
+      "type": "hero",
+      "blocks": {
+        "text_xFtN6n": {
+          "type": "text",
+          "settings": {
+            "text": "<h1><strong>Live your most fruitful life.</strong></h1>",
+            "enable_read_more": false,
+            "read_more_label": "Read more",
+            "read_less_label": "Read less",
+            "characters_limit": 0,
+            "width": "fit-content",
+            "max_width": "narrow",
+            "alignment": "left",
+            "type_preset": "h1",
+            "type_preset_desktop": "",
+            "weight": "",
+            "color": "var(--color-foreground)",
+            "highlight_color": "var(--color-primary)",
+            "custom_highlight_color": "#1d1d1d",
+            "background": false,
+            "background_color": "#00000026",
+            "corner_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {}
+        },
+        "text_8wpcnA": {
+          "type": "text",
+          "settings": {
+            "text": "<p>Apply to work at EDIBLE® today.</p>",
+            "enable_read_more": false,
+            "read_more_label": "Read more",
+            "read_less_label": "Read less",
+            "characters_limit": 0,
+            "width": "fit-content",
+            "max_width": "narrow",
+            "alignment": "left",
+            "type_preset": "body-regular",
+            "type_preset_desktop": "",
+            "weight": "",
+            "color": "var(--color-foreground)",
+            "highlight_color": "var(--color-primary)",
+            "custom_highlight_color": "#1d1d1d",
+            "background": false,
+            "background_color": "#00000026",
+            "corner_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 32,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {}
+        },
+        "button_KaUFQG": {
+          "type": "button",
+          "name": "t:names.button",
+          "settings": {
+            "element_type": "link",
+            "label": "See Open Positions",
+            "link": "https://workforcenow.adp.com/mascsr/default/mdf/recruitment/recruitment.html?cid=3496665c-85f2-452a-8263-0aeb92099601&ccId=9200107036002_2&lang=en_US",
+            "open_in_new_tab": true,
+            "style_class": "button",
+            "weight": "",
+            "button_size": "theme",
+            "button_size_mobile": "theme",
+            "width": "fit-content",
+            "custom_width": 100,
+            "width_mobile": "fit-content",
+            "custom_width_mobile": 100
+          },
+          "blocks": {}
+        }
+      },
+      "block_order": [
+        "text_xFtN6n",
+        "text_8wpcnA",
+        "button_KaUFQG"
+      ],
+      "name": "t:names.hero",
+      "settings": {
+        "enable_on": "all",
+        "media_type_1": "image",
+        "image_1": "shopify://shop_images/Screenshot_2026-06-12_at_15.37.13_1.png",
+        "media_type_2": "image",
+        "border_radius": 0,
+        "stack_media_on_mobile": false,
+        "custom_mobile_media": false,
+        "media_type_1_mobile": "image",
+        "media_type_2_mobile": "image",
+        "link": "",
+        "open_in_new_tab": false,
+        "content_direction": "column",
+        "vertical_on_mobile": true,
+        "horizontal_alignment": "flex-start",
+        "vertical_alignment": "center",
+        "align_baseline": false,
+        "horizontal_alignment_flex_direction_column": "center",
+        "vertical_alignment_flex_direction_column": "center",
+        "gap": 16,
+        "section_width": "page-width",
+        "section_height": "large",
+        "section_height_custom": 50,
+        "color_scheme": "scheme-6",
+        "toggle_overlay": true,
+        "overlay_color": "#ffffff5c",
+        "overlay_style": "gradient",
+        "gradient_direction": "to top",
+        "overlay_end_color": "#000000",
+        "gradient_position": 100,
+        "blurred_reflection": false,
+        "reflection_opacity": 75,
+        "padding-block-start": 40,
+        "padding-block-end": 40,
+        "padding-inline-start": 0,
+        "padding-inline-end": 0,
+        "margin-block-start": 0,
+        "margin-block-end": 0,
+        "margin-inline-start": 0,
+        "margin-inline-end": 0,
+        "header_overlap": true
+      }
+    },
+    "section_xQQCVJ": {
+      "type": "section",
+      "blocks": {
+        "image_mxT9nc": {
+          "type": "image",
+          "settings": {
+            "image": "shopify://shop_images/Screenshot_2026-06-12_at_15.44.59.png",
+            "use_as_background": false,
+            "link": "",
+            "image_ratio": "square",
+            "custom_ratio_width": 1,
+            "custom_ratio_height": 1,
+            "image_ratio_mobile": "same",
+            "custom_ratio_width_mobile": 1,
+            "custom_ratio_height_mobile": 1,
+            "width": "fill",
+            "custom_width": 100,
+            "width_mobile": "fill",
+            "custom_width_mobile": 100,
+            "height": "fit",
+            "border": "none",
+            "border_width": 1,
+            "border_opacity": 100,
+            "border_radius": 0,
+            "enable_parallax": false,
+            "parallax_overflow": "bottom",
+            "parallax_image_style": "cover",
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {}
+        },
+        "group_C79DDw": {
+          "type": "group",
+          "settings": {
+            "content_direction": "column",
+            "vertical_on_mobile": true,
+            "horizontal_alignment": "flex-start",
+            "vertical_alignment": "center",
+            "align_baseline": false,
+            "horizontal_alignment_flex_direction_column": "flex-start",
+            "vertical_alignment_flex_direction_column": "center",
+            "gap": 12,
+            "grid_columns_desktop": 4,
+            "grid_columns_mobile": 1,
+            "grid_row_gap": 16,
+            "css_class": "",
+            "width": "custom",
+            "custom_width": 100,
+            "width_mobile": "fill",
+            "custom_width_mobile": 100,
+            "height": "fit",
+            "custom_height": 100,
+            "inherit_color_scheme": true,
+            "color_scheme": "",
+            "background_media": "none",
+            "video_position": "cover",
+            "background_image_position": "cover",
+            "border": "none",
+            "border_width": 1,
+            "border_opacity": 100,
+            "border_radius": 0,
+            "toggle_overlay": false,
+            "overlay_color": "#00000026",
+            "overlay_style": "solid",
+            "gradient_direction": "to top",
+            "overlay_end_color": "rgba(0,0,0,0)",
+            "gradient_position": 50,
+            "link": "",
+            "open_in_new_tab": false,
+            "placeholder": "",
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {
+            "text_ihCi4p": {
+              "type": "text",
+              "name": "t:names.heading",
+              "settings": {
+                "text": "<h1><strong>About Us</strong></h1><p></p>",
+                "enable_read_more": false,
+                "read_more_label": "Read more",
+                "read_less_label": "Read less",
+                "characters_limit": 0,
+                "width": "fit-content",
+                "max_width": "normal",
+                "alignment": "left",
+                "type_preset": "h3",
+                "type_preset_desktop": "",
+                "weight": "",
+                "color": "var(--color-foreground)",
+                "highlight_color": "var(--color-primary)",
+                "custom_highlight_color": "#1d1d1d",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "text_ftBYCz": {
+              "type": "text",
+              "settings": {
+                "text": "<h3>Edible was founded in 1999 with one deliciously different idea: a fruit bouquet. Since then, we’ve grown into America’s favorite gifting brand, with over 1,000 franchise locations, a world-class eCommerce function and millions of customers every year. Through all that growth, one thing hasn’t changed: our commitment to helping people celebrate what’s good in life!</h3>",
+                "enable_read_more": false,
+                "read_more_label": "Read more",
+                "read_less_label": "Read less",
+                "characters_limit": 0,
+                "width": "fit-content",
+                "max_width": "narrow",
+                "alignment": "left",
+                "type_preset": "body-regular",
+                "type_preset_desktop": "",
+                "weight": "",
+                "color": "var(--color-foreground)",
+                "highlight_color": "var(--color-primary)",
+                "custom_highlight_color": "#1d1d1d",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            }
+          },
+          "block_order": [
+            "text_ihCi4p",
+            "text_ftBYCz"
+          ]
+        }
+      },
+      "block_order": [
+        "image_mxT9nc",
+        "group_C79DDw"
+      ],
+      "name": "t:names.image_with_text",
+      "settings": {
+        "enable_on": "all",
+        "content_direction": "row",
+        "vertical_on_mobile": true,
+        "reverse_order_on_mobile": false,
+        "horizontal_alignment": "flex-start",
+        "vertical_alignment": "center",
+        "align_baseline": false,
+        "horizontal_alignment_flex_direction_column": "flex-start",
+        "vertical_alignment_flex_direction_column": "center",
+        "gap": 32,
+        "section_width": "page-width",
+        "section_height": "",
+        "section_height_custom": 50,
+        "color_scheme": "",
+        "background_media": "none",
+        "video_position": "cover",
+        "background_image_position": "cover",
+        "border": "none",
+        "border_width": 1,
+        "border_opacity": 100,
+        "border_radius": 0,
+        "toggle_overlay": false,
+        "overlay_color": "#00000026",
+        "overlay_style": "solid",
+        "gradient_direction": "to top",
+        "overlay_end_color": "rgba(0,0,0,0)",
+        "gradient_position": 50,
+        "padding-block-start": 40,
+        "padding-block-end": 40
+      }
+    },
+    "custom_liquid_kiA6d3": {
+      "type": "custom-liquid",
+      "name": "t:names.custom_liquid",
+      "settings": {
+        "custom_liquid": "<style>\n.benefits-section {\n  background-color: #0d2b8e;\n  padding: 60px 40px;\n  font-family: inherit;\n}\n.benefits-heading {\n  color: white;\n  font-size: 32px;\n  font-weight: 600;\n  margin-bottom: 12px;\n}\n.benefits-subtext {\n  color: white;\n  font-size: 16px;\n  margin-bottom: 40px;\n  max-width: 600px;\n}\n.benefits-grid {\n  display: flex;\n  flex-wrap: nowrap;\n  gap: 12px;\n  justify-content: center;\n  overflow-x: auto;\n}\n.flip-card {\n  width: 140px;\n  height: 180px;\n  perspective: 1000px;\n  cursor: pointer;\n  flex-shrink: 0;\n}\n.flip-card-inner {\n  position: relative;\n  width: 100%;\n  height: 100%;\n  transition: transform 0.6s;\n  transform-style: preserve-3d;\n}\n.flip-card:hover .flip-card-inner {\n  transform: rotateY(180deg);\n}\n.flip-card-front,\n.flip-card-back {\n  position: absolute;\n  width: 100%;\n  height: 100%;\n  backface-visibility: hidden;\n  -webkit-backface-visibility: hidden;\n  border-radius: 12px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 16px;\n  text-align: center;\n  box-sizing: border-box;\n}\n.flip-card-front {\n  background-color: #1a3a9f;\n  color: white;\n  flex-direction: column;\n  gap: 14px;\n}\n.flip-card-front svg {\n  width: 60px;\n  height: 60px;\n  fill: white;\n}\n.flip-card-front span {\n  font-size: 12px;\n  font-weight: 500;\n  line-height: 1.3;\n}\n.flip-card-back {\n  background-color: #cc0000;\n  color: white;\n  transform: rotateY(180deg);\n  font-size: 12px;\n  font-weight: 400;\n  line-height: 1.5;\n}\n</style>\n\n<div class=\"benefits-section\">\n  <div class=\"benefits-heading\">The fruits of your Labor</div>\n  <div class=\"benefits-subtext\">Of course, we've got you (chocolate) covered with all the usual benefits, but we also have a few perks that may not be so familiar:</div>\n\n  <div class=\"benefits-grid\">\n\n    <div class=\"flip-card\">\n      <div class=\"flip-card-inner\">\n        <div class=\"flip-card-front\">\n          <svg viewBox=\"0 0 64 64\" xmlns=\"http://www.w3.org/2000/svg\">\n            <circle cx=\"32\" cy=\"36\" r=\"20\"/>\n            <path d=\"M24 36 Q28 20 32 16 Q36 20 40 36\"/>\n            <line x1=\"32\" y1=\"16\" x2=\"28\" y2=\"8\" stroke=\"white\" stroke-width=\"2\"/>\n            <line x1=\"32\" y1=\"16\" x2=\"36\" y2=\"8\" stroke=\"white\" stroke-width=\"2\"/>\n          </svg>\n          <span>Top Secret Product Sampling</span>\n        </div>\n        <div class=\"flip-card-back\">\n          We work hard and snack harder. Enjoy the latest fruit innovations before they go global.\n        </div>\n      </div>\n    </div>\n\n    <div class=\"flip-card\">\n      <div class=\"flip-card-inner\">\n        <div class=\"flip-card-front\">\n          <svg viewBox=\"0 0 64 64\" xmlns=\"http://www.w3.org/2000/svg\">\n            <rect x=\"8\" y=\"16\" width=\"48\" height=\"40\" rx=\"4\"/>\n            <line x1=\"8\" y1=\"28\" x2=\"56\" y2=\"28\" stroke=\"#0d2b8e\" stroke-width=\"3\"/>\n            <line x1=\"20\" y1=\"8\" x2=\"20\" y2=\"20\" stroke=\"white\" stroke-width=\"3\"/>\n            <line x1=\"44\" y1=\"8\" x2=\"44\" y2=\"20\" stroke=\"white\" stroke-width=\"3\"/>\n            <circle cx=\"36\" cy=\"42\" r=\"8\" fill=\"#0d2b8e\"/>\n            <line x1=\"36\" y1=\"36\" x2=\"36\" y2=\"42\" stroke=\"white\" stroke-width=\"2\"/>\n            <line x1=\"36\" y1=\"42\" x2=\"41\" y2=\"42\" stroke=\"white\" stroke-width=\"2\"/>\n          </svg>\n          <span>Celebration of Life</span>\n        </div>\n        <div class=\"flip-card-back\">\n          Celebrating the birth of an immediate family member? Take three days off, on us!\n        </div>\n      </div>\n    </div>\n\n    <div class=\"flip-card\">\n      <div class=\"flip-card-inner\">\n        <div class=\"flip-card-front\">\n          <svg viewBox=\"0 0 64 64\" xmlns=\"http://www.w3.org/2000/svg\">\n            <path d=\"M20 12 C12 12 8 20 8 26 C8 36 20 46 20 46 C20 46 32 36 32 26 C32 20 28 12 20 12Z\"/>\n            <rect x=\"17\" y=\"20\" width=\"6\" height=\"12\" rx=\"1\"/>\n            <rect x=\"14\" y=\"23\" width=\"12\" height=\"6\" rx=\"1\" fill=\"#0d2b8e\"/>\n            <circle cx=\"46\" cy=\"32\" r=\"12\" fill=\"none\" stroke=\"white\" stroke-width=\"3\"/>\n            <circle cx=\"46\" cy=\"32\" r=\"5\"/>\n            <line x1=\"55\" y1=\"41\" x2=\"62\" y2=\"48\" stroke=\"white\" stroke-width=\"3\"/>\n          </svg>\n          <span>Medical/Dental/Vision Coverage</span>\n        </div>\n        <div class=\"flip-card-back\">\n          Our comprehensive health plans offer you the care you need when you need it most.\n        </div>\n      </div>\n    </div>\n\n    <div class=\"flip-card\">\n      <div class=\"flip-card-inner\">\n        <div class=\"flip-card-front\">\n          <svg viewBox=\"0 0 64 64\" xmlns=\"http://www.w3.org/2000/svg\">\n            <circle cx=\"26\" cy=\"40\" r=\"14\" fill=\"none\" stroke=\"white\" stroke-width=\"3\"/>\n            <line x1=\"26\" y1=\"26\" x2=\"26\" y2=\"16\" stroke=\"white\" stroke-width=\"2\"/>\n            <path d=\"M26 16 Q22 10 18 12 Q22 14 26 16Z\"/>\n            <circle cx=\"42\" cy=\"34\" r=\"10\" fill=\"none\" stroke=\"white\" stroke-width=\"3\"/>\n            <line x1=\"42\" y1=\"24\" x2=\"42\" y2=\"16\" stroke=\"white\" stroke-width=\"2\"/>\n            <path d=\"M42 16 Q46 10 50 12 Q46 14 42 16Z\"/>\n          </svg>\n          <span>We Celebrate You</span>\n        </div>\n        <div class=\"flip-card-back\">\n          We celebrate moments both big and small, from birthdays to milestone anniversaries.\n        </div>\n      </div>\n    </div>\n\n    <div class=\"flip-card\">\n      <div class=\"flip-card-inner\">\n        <div class=\"flip-card-front\">\n          <svg viewBox=\"0 0 64 64\" xmlns=\"http://www.w3.org/2000/svg\">\n            <rect x=\"20\" y=\"8\" width=\"24\" height=\"6\" rx=\"2\"/>\n            <path d=\"M22 14 L18 52 Q18 56 32 56 Q46 56 46 52 L42 14Z\"/>\n            <ellipse cx=\"32\" cy=\"36\" rx=\"10\" ry=\"4\" fill=\"#1a3a9f\"/>\n            <rect x=\"44\" y=\"28\" width=\"8\" height=\"4\" rx=\"2\"/>\n          </svg>\n          <span>Daily Smoothies</span>\n        </div>\n        <div class=\"flip-card-back\">\n          Fresh cut fruit will always be waiting for you, along with a few sweet toppings.\n        </div>\n      </div>\n    </div>\n\n    <div class=\"flip-card\">\n      <div class=\"flip-card-inner\">\n        <div class=\"flip-card-front\">\n          <svg viewBox=\"0 0 64 64\" xmlns=\"http://www.w3.org/2000/svg\">\n            <circle cx=\"32\" cy=\"32\" r=\"24\" fill=\"none\" stroke=\"white\" stroke-width=\"3\"/>\n            <circle cx=\"22\" cy=\"26\" r=\"3\"/>\n            <circle cx=\"42\" cy=\"26\" r=\"3\"/>\n            <path d=\"M20 40 Q32 52 44 40\" fill=\"none\" stroke=\"white\" stroke-width=\"3\" stroke-linecap=\"round\"/>\n          </svg>\n          <span>Surprise &amp; Delight</span>\n        </div>\n        <div class=\"flip-card-back\">\n          Special events, lunches, and celebrations are hosted throughout the year.\n        </div>\n      </div>\n    </div>\n\n  </div>\n</div>",
+        "color_scheme": "",
+        "section_width": "page-width",
+        "padding-block-start": 0,
+        "padding-block-end": 0
+      }
+    },
+    "custom_liquid_4LDwwx": {
+      "type": "custom-liquid",
+      "name": "t:names.custom_liquid",
+      "settings": {
+        "custom_liquid": "<style>\n.seeds-section {\n  padding: 60px 40px;\n  font-family: inherit;\n  background: white;\n}\n.seeds-header {\n  display: flex;\n  align-items: center;\n  gap: 40px;\n  margin-bottom: 40px;\n}\n.seeds-title {\n  color: #cc0000;\n  font-size: 36px;\n  font-weight: 700;\n  text-align: center;\n  min-width: 200px;\n  line-height: 1.2;\n}\n.seeds-subtitle {\n  color: #cc0000;\n  font-size: 18px;\n  text-align: center;\n  flex: 1;\n}\n.slider-wrapper {\n  position: relative;\n  overflow: hidden;\n  border: 1px solid #e0e0e0;\n  border-radius: 16px;\n}\n.slider-track {\n  display: flex;\n  width: 500%;\n  animation: slideAnim 20s infinite;\n}\n@keyframes slideAnim {\n  0%   { transform: translateX(0%); }\n  18%  { transform: translateX(0%); }\n  20%  { transform: translateX(-20%); }\n  38%  { transform: translateX(-20%); }\n  40%  { transform: translateX(-40%); }\n  58%  { transform: translateX(-40%); }\n  60%  { transform: translateX(-60%); }\n  78%  { transform: translateX(-60%); }\n  80%  { transform: translateX(-80%); }\n  98%  { transform: translateX(-80%); }\n  100% { transform: translateX(0%); }\n}\n.slide {\n  width: 20%;\n  display: flex;\n  overflow: hidden;\n  min-height: 320px;\n}\n.slide-content {\n  flex: 1;\n  padding: 50px 40px;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  text-align: center;\n}\n.slide-number {\n  background-color: #cc0000;\n  color: white;\n  width: 40px;\n  height: 40px;\n  border-radius: 50%;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 18px;\n  font-weight: 700;\n  margin-bottom: 16px;\n}\n.slide-title {\n  font-size: 28px;\n  font-weight: 700;\n  margin-bottom: 10px;\n  font-family: Georgia, serif;\n}\n.slide-tagline {\n  font-size: 15px;\n  color: #333;\n  margin-bottom: 12px;\n}\n.slide-body {\n  font-size: 14px;\n  color: #444;\n  line-height: 1.7;\n  max-width: 480px;\n}\n.slide-image-placeholder {\n  width: 380px;\n  min-height: 300px;\n  background: #f0f0f0;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  color: #999;\n  font-size: 14px;\n  flex-shrink: 0;\n}\n</style>\n\n<div class=\"seeds-section\">\n  <div class=\"seeds-header\">\n    <div class=\"seeds-title\">The Seeds Of Our Success</div>\n    <div class=\"seeds-subtitle\">They're called 'The 5Ps' and they inform every decision we make, product we create, and customer we serve.</div>\n  </div>\n\n  <div class=\"slider-wrapper\">\n    <div class=\"slider-track\">\n\n      <!-- Slide 1 -->\n      <div class=\"slide\">\n        <div class=\"slide-content\">\n          <div class=\"slide-number\">1</div>\n          <div class=\"slide-title\">Our Promise</div>\n          <div class=\"slide-tagline\">To WOW customers.</div>\n          <div class=\"slide-body\">When Tariq Farid first started Edible, he hoped to take each customer's special moment and make it even better. Put simply, his goal was to WOW them. Today, everyone at Edible continues that tradition, providing innovative products and delightful experiences to each and every guest.</div>\n        </div>\n        <div class=\"slide-image-placeholder\">📷 Add image here</div>\n      </div>\n\n      <!-- Slide 2 -->\n      <div class=\"slide\">\n        <div class=\"slide-content\">\n          <div class=\"slide-number\">2</div>\n          <div class=\"slide-title\">Our People</div>\n          <div class=\"slide-tagline\">Caring, loving Edible Experts.</div>\n          <div class=\"slide-body\">Whether they're in our stores, running our franchises, or working at our Support Center, our people live by one simple rule: treat everyone the way you want to be treated, only sweeter. Talented, diverse and driven, our employees are filling the world with goodness on a daily basis.</div>\n        </div>\n        <div class=\"slide-image-placeholder\">📷 Add image here</div>\n      </div>\n\n      <!-- Slide 3 -->\n      <div class=\"slide\">\n        <div class=\"slide-content\">\n          <div class=\"slide-number\">3</div>\n          <div class=\"slide-title\">Our Products</div>\n          <div class=\"slide-tagline\">Remarkably fresh.</div>\n          <div class=\"slide-body\">Edible started with a simple fresh fruit arrangement. Since then, we've created everything from gift boxes to party platters to gourmet baked goods. Through it all, we've never lost sight of what makes our products unique: real ingredients, inspired designs and, of course, premium chocolate.</div>\n        </div>\n        <div class=\"slide-image-placeholder\">📷 Add image here</div>\n      </div>\n\n      <!-- Slide 4 -->\n      <div class=\"slide\">\n        <div class=\"slide-content\">\n          <div class=\"slide-number\">4</div>\n          <div class=\"slide-title\">Our Places</div>\n          <div class=\"slide-tagline\">Playful, fun and healthy.</div>\n          <div class=\"slide-body\">We want guests who visit us anywhere to feel welcome and inspired. Whether you're perusing edible.com, receiving a one-of-a-kind gift from our delivery vans, or visiting one of our 1000+ stores, you'll see that we love what we do and, of course, have fun doing it.</div>\n        </div>\n        <div class=\"slide-image-placeholder\">📷 Add image here</div>\n      </div>\n\n      <!-- Slide 5 -->\n      <div class=\"slide\">\n        <div class=\"slide-content\">\n          <div class=\"slide-number\">5</div>\n          <div class=\"slide-title\">Our Purpose</div>\n          <div class=\"slide-tagline\">To celebrate what's good in life.</div>\n          <div class=\"slide-body\">The world is more connected than ever before, but true, authentic connection is getting more and more difficult to come by. Sure, we sell gifts and treats, but our ultimate purpose is to help people celebrate what's good in life. Because life's sweetest moments deserve special attention.</div>\n        </div>\n        <div class=\"slide-image-placeholder\">📷 Add image here</div>\n      </div>\n\n    </div>\n  </div>\n</div>",
+        "color_scheme": "",
+        "section_width": "page-width",
+        "padding-block-start": 0,
+        "padding-block-end": 0
+      }
+    }
+  },
+  "order": [
+    "main",
+    "hero_ktTWXr",
+    "section_xQQCVJ",
+    "custom_liquid_kiA6d3",
+    "custom_liquid_4LDwwx"
+  ]
+}

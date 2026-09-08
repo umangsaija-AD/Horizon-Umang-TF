@@ -1,0 +1,345 @@
+{% liquid
+  assign block_settings = block.settings
+  assign submenu_menu = block_settings.submenu
+  assign has_submenu = false
+  if submenu_menu != blank and submenu_menu.links.size > 0
+    assign has_submenu = true
+  endif
+
+  assign top_href = block_settings.link | default: routes.root_url
+  assign top_title = block_settings.title | default: '' | strip
+  if top_title == blank
+    assign top_title = 'Menu'
+  endif
+
+  assign top_link_active = false
+  if block_settings.link != blank and block_settings.link == request.path
+    assign top_link_active = true
+  endif
+  if top_link_active == false and request.path == '/' and block_settings.link == blank
+    assign top_link_active = true
+  endif
+
+  assign top_child_active = false
+  if has_submenu
+    for sublink in submenu_menu.links
+      if top_child_active == false
+        if sublink.current or sublink.child_active
+          assign top_child_active = true
+        endif
+      endif
+    endfor
+  endif
+
+  assign nav_item_color_style = ''
+  if block_settings.text_color != blank
+    assign nav_item_color_style = 'color: ' | append: block_settings.text_color | append: ';'
+  endif
+
+  assign highlight_titles_raw = block_settings.highlight_titles | default: ''
+  assign highlight_titles = highlight_titles_raw | split: ','
+  assign highlight_color = block_settings.highlight_color | default: ''
+%}
+{% capture nav_promo_banners_html %}
+  {%- content_for 'blocks' -%}
+{% endcapture %}
+{% assign nav_promo_banners_html = nav_promo_banners_html | strip %}
+
+{% assign block_id = block.id %}
+{% if request.design_mode %}
+  <script>
+    document.addEventListener('shopify:block:select', function (e) {
+      if (e.detail.blockId !== '{{ block_id }}') return;
+
+      const headerComponent = e.target.closest('header-component');
+      if (!headerComponent) return;
+
+      const $desktopMenu = document.getElementById('desktop-menu-{{ block_id }}');
+      const $mobileMenu = document.getElementById('mobile-menu-{{ block_id }}');
+
+      const breakpoint = window.matchMedia('(min-width: 1024px)');
+      const [isDesktop, isMobile] = [breakpoint.matches, !breakpoint.matches];
+
+      if (isDesktop) {
+        if (!$desktopMenu) return;
+        headerComponent.handleNavTriggerMouseEnter({ target: e.target.querySelector('.js-nav-trigger') });
+        return;
+      }
+
+      if (isMobile) {
+        if (!$mobileMenu) return;
+        headerComponent.openMobileNav({ currentTarget: $mobileMenu });
+      }
+    });
+  </script>
+{% endif %}
+
+<div {{ block.shopify_attributes }}>
+  <!-- Desktop menu -->
+  {% if block_settings.visibility == 'desktop' or block_settings.visibility == 'both' %}
+    <div
+      id="desktop-menu-{{ block_id }}"
+      class="tw-hidden lg:!tw-block"
+      role="presentation"
+    >
+      <details
+        class="tw-desktop-menu-item js-nav-trigger"
+        name="desktop-menu-item"
+        data-has-submenu="{{ has_submenu }}"
+      >
+        <summary
+          class="tw-flex tw-items-center tw-justify-between tw-gap-2 tw-p-2"
+          {% if nav_item_color_style != blank %}
+            style="{{ nav_item_color_style }}"
+          {% endif %}
+        >
+          <a
+            {% if top_href != blank %}
+              href="{{ top_href }}"
+            {% endif %}
+            class="tw-whitespace-nowrap tw-text-body-small tw-font-semibold tw-text-inherit"
+          >
+            {{ top_title | escape }}
+          </a>
+          {%- if has_submenu -%}
+            <span
+              class="tw-inline-flex tw-h-4 tw-w-4 tw-shrink-0 tw-items-center tw-justify-center tw-text-inherit"
+              aria-hidden="true"
+            >
+              {{ 'chevron-down.svg' | inline_asset_content }}
+            </span>
+          {%- elsif block_settings.icon != blank -%}
+            <span
+              class="tw-inline-flex tw-h-4 tw-w-4 tw-shrink-0 tw-items-center tw-justify-center tw-overflow-hidden"
+              aria-hidden="true"
+            >
+              <img
+                src="{{ block_settings.icon | image_url: width: 16 }}"
+                alt="{{ block_settings.icon.alt }}"
+                width="16"
+                height="16"
+                class="tw-h-full tw-w-full tw-object-contain"
+              >
+            </span>
+          {%- endif -%}
+        </summary>
+
+        {% if has_submenu %}
+          <div class="tw-absolute tw-left-0 tw-top-full tw-w-full tw-rounded-b-lg tw-border-t tw-border-t-secondary-50 tw-bg-white tw-px-16 tw-py-12">
+            <div class="tw-lg:gap-16 tw-flex tw-items-start tw-justify-between tw-gap-12">
+              <ul class="tw-list-unstyled tw-flex tw-shrink-0 tw-flex-wrap tw-gap-16" role="list">
+                {% for link in submenu_menu.links %}
+                  <li class="tw-flex tw-flex-col tw-gap-6">
+                    <span class="tw-cursor-default tw-text-tag tw-font-medium tw-uppercase tw-text-secondary-500">
+                      {{ link.title | escape }}
+                    </span>
+                    {% if link.links != blank %}
+                      <ul class="tw-list-unstyled tw-flex tw-flex-col tw-gap-4" role="list">
+                        {% for child_link in link.links %}
+                          {%- liquid
+                            assign is_highlighted = false
+                            assign child_title_stripped = child_link.title | strip
+                            for ht in highlight_titles
+                              assign ht_stripped = ht | strip
+                              if ht_stripped == child_title_stripped
+                                assign is_highlighted = true
+                                break
+                              endif
+                            endfor
+                          -%}
+                          <li>
+                            <a
+                              class="tw-text-body-small tw-font-semibold{% if is_highlighted %} tw-underline{% endif %}"
+                              href="{{ child_link.url }}"
+                              {% if is_highlighted and highlight_color != blank %}
+                                style="color: {{ highlight_color }};"
+                              {% endif %}
+                            >
+                              {{ child_link.title | escape }}
+                            </a>
+                          </li>
+                        {% endfor %}
+                      </ul>
+                    {% endif %}
+                  </li>
+                {% endfor %}
+              </ul>
+              {% if nav_promo_banners_html != blank %}
+                <div class="tw-lg:gap-10 tw-flex tw-flex-wrap tw-items-start tw-justify-end tw-gap-6">
+                  {{ nav_promo_banners_html }}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
+      </details>
+    </div>
+  {% endif %}
+
+  <!-- Mobile menu -->
+  {% if block_settings.visibility == 'mobile' or block_settings.visibility == 'both' %}
+    <div id="mobile-menu-{{ block_id }}" class="tw-relative lg:tw-hidden">
+      <div
+        class="js-mobile-menu-item tw-flex tw-items-center tw-gap-2 tw-py-3"
+        data-has-submenu="{{ has_submenu }}"
+        data-trigger-id="{{ block.id }}"
+        {% if nav_item_color_style != blank %}
+          style="{{ nav_item_color_style }}"
+        {% endif %}
+      >
+        {%- if has_submenu -%}
+          <button class="tw-whitespace-nowrap tw-text-body-regular tw-font-semibold">
+            {{ top_title | escape }}
+          </button>
+        {%- else -%}
+          <a
+            class="tw-whitespace-nowrap tw-text-body-regular tw-font-semibold"
+            href="{{ top_href }}"
+          >
+            {{ top_title | escape }}
+          </a>
+        {%- endif -%}
+        {%- if has_submenu -%}
+          <span
+            class="tw-ml-auto tw-inline-flex tw-h-6 tw-w-6 tw-shrink-0 -tw-rotate-90 tw-items-center tw-justify-center tw-text-inherit lg:tw-h-4 lg:tw-w-4"
+            aria-hidden="true"
+          >
+            {{ 'chevron-down.svg' | inline_asset_content | replace: '<svg', '<svg class="tw-w-full"' }}
+          </span>
+        {%- elsif block_settings.icon != blank -%}
+          <span
+            class="tw-inline-flex tw-h-4 tw-w-4 tw-shrink-0 tw-items-center tw-justify-center tw-overflow-hidden"
+            aria-hidden="true"
+          >
+            <img
+              src="{{ block_settings.icon | image_url: width: 16 }}"
+              alt="{{ block_settings.icon.alt }}"
+              width="16"
+              height="16"
+              class="tw-h-full tw-w-full tw-object-contain"
+            >
+          </span>
+        {%- endif -%}
+      </div>
+    </div>
+
+    <!-- Mobile submenu -->
+    {% if has_submenu %}
+      <div
+        id="mobile-submenu-{{ block.id }}"
+        class="js-mobile-submenu tw-absolute tw-left-0 tw-top-0 tw-hidden tw-w-full tw-translate-x-full tw-flex-col tw-gap-3 tw-p-6 [&.--is-open]:!tw-flex"
+      >
+        <button class="js-mobile-submenu-back-btn flex tw-items-center tw-gap-2 tw-py-3 tw-text-tag tw-font-semibold tw-uppercase tw-text-inherit">
+          <span
+            class="tw-inline-flex tw-h-6 tw-w-6 tw-shrink-0 tw-rotate-90 tw-items-center tw-justify-center tw-text-inherit"
+            aria-hidden="true"
+          >
+            {{ 'chevron-down.svg' | inline_asset_content | replace: '<svg', '<svg class="tw-w-full"' }}
+          </span>
+          {{ top_title | escape }}
+        </button>
+        <ul class="list-unstyled tw-flex tw-flex-col tw-gap-4" role="list">
+          {% for link in submenu_menu.links %}
+            <li>
+              <a class="tw-text-body-small tw-font-semibold" href="{{ link.url }}">{{ link.title | escape }}</a>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+  {% endif %}
+</div>
+{% schema %}
+{
+  "name": "t:names.menu_item",
+  "tag": null,
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "t:content.header_menu_item_help"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "t:settings.navigation_item_title",
+      "default": "Menu"
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "t:settings.navigation_item_link"
+    },
+    {
+      "type": "link_list",
+      "id": "submenu",
+      "label": "t:settings.submenu",
+      "info": "t:info.submenu_optional"
+    },
+    {
+      "type": "header",
+      "content": "t:content.appearance"
+    },
+    {
+      "type": "image_picker",
+      "id": "icon",
+      "label": "Icon"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text color",
+      "default": "#000000"
+    },
+    {
+      "type": "header",
+      "content": "Highlight links"
+    },
+    {
+      "type": "text",
+      "id": "highlight_titles",
+      "label": "Link titles to highlight",
+      "info": "Comma-separated link titles (e.g. Shop All, New Arrivals)"
+    },
+    {
+      "type": "color",
+      "id": "highlight_color",
+      "label": "Highlight color"
+    },
+    {
+      "type": "header",
+      "content": "Visibility"
+    },
+    {
+      "type": "select",
+      "id": "visibility",
+      "label": "Visibility",
+      "options": [
+        {
+          "value": "both",
+          "label": "Both"
+        },
+        {
+          "value": "desktop",
+          "label": "Desktop"
+        },
+        {
+          "value": "mobile",
+          "label": "Mobile"
+        }
+      ],
+      "default": "both"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "_header-nav-promo-banner"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:names.menu_item",
+      "category": "t:categories.header"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,458 @@
+
+
+<script
+  src="{{ 'blog-posts-list.js' | asset_url }}"
+  type="module"
+  fetchpriority="low"
+></script>
+
+<blog-posts-list section-id="{{ section.id }}">
+  <div class="section-background color-{{ section.settings.color_scheme }}"></div>
+  <div
+    class="
+      section
+      color-{{ section.settings.color_scheme }}
+      blog-posts
+      spacing-style
+      size-style
+    "
+    data-testid="blog-posts"
+    style="{% render 'spacing-style', settings: section.settings %}"
+  >
+    <div class="blog-posts__header">
+      {% content_for 'blocks' %}
+
+      {% if blog.metafields.blog.description != blank %}
+        <div class="blog-description body-small">
+          {{ blog.metafields.blog.description | metafield_tag }}
+        </div>
+      {% endif %}
+    </div>
+
+    {% paginate blog.articles by 6 %}
+      <div
+        ref="grid"
+        class="blog-posts-container"
+      >
+        {% for article in blog.articles %}
+          {% liquid
+            assign global_index = paginate.current_offset | plus: forloop.index
+
+            assign col_span = 2
+            assign scale = 0.6
+            assign is_horizontal = false
+
+            if global_index == 1
+              assign col_span = 6
+              assign scale = 1
+              assign is_horizontal = true
+            elsif global_index <= 3
+              assign col_span = 3
+              assign scale = 0.8
+            endif
+
+            if col_span == 6
+              assign item_variant = 'hero'
+            elsif col_span == 3
+              assign item_variant = 'standard'
+            else
+              assign item_variant = 'compact'
+            endif
+          %}
+          <div
+            class="blog-post-item blog-post-item--{{ item_variant }}{% if is_horizontal %} blog-post-item--horizontal{% endif %}"
+            data-testid="blog-post-item"
+            data-blog-index="{{ section.id }}-{{ global_index }}"
+            style="--col-span: {{ col_span }}; --blog-post-card-scale: {{ scale }};"
+          >
+            {% content_for 'block', id: 'static-blog-post-card', type: '_blog-post-card', article: article %}
+          </div>
+        {% endfor %}
+      </div>
+
+      {% if paginate.next %}
+        <div class="blog-posts-load-more">
+          <button
+            class="blog-posts-load-more__btn"
+            data-url="{{ paginate.next.url }}"
+            data-loading-label="{{ 'blog.loading' | t }}"
+          >
+            {{ 'blog.load_more' | t }}
+          </button>
+        </div>
+      {% endif %}
+    {% endpaginate %}
+  </div>
+</blog-posts-list>
+
+{% stylesheet %}
+  /* ─── Header ─── */
+  .blog-posts__header {
+    padding-bottom: 30px;
+  }
+
+  .blog-posts__header h1 {
+    color: var(--color-foreground-heading);
+  }
+
+  .blog-posts__header > .spacing-style {
+    padding-bottom: 10px;
+  }
+
+  /* ─── Layout ─── */
+  .blog-posts {
+    --page-content-width: var(--narrow-page-width);
+    --page-width: calc(var(--page-content-width) + (var(--page-margin) * 2));
+    --columns-gap: 36px;
+    --rows-gap: 32px;
+    padding-top: 15px;
+  }
+
+  .blog-posts-container {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    width: 100%;
+    column-gap: var(--columns-gap);
+    row-gap: var(--rows-gap);
+  }
+
+  /* ─── Grid Items ─── */
+  .blog-post-item {
+    grid-column: 1 / -1;
+    border: 1px solid rgb(var(--color-foreground-rgb) / var(--opacity-20));
+    padding: 0 1rem 1rem;
+  }
+
+  .blog-post-item:has(.blog-post-card__image-container) {
+    border: none;
+    padding: 0;
+  }
+
+  .blog-post-item:not(:has(.blog-post-card__image-container)) {
+    padding-block-start: 1rem;
+  }
+
+  /* ─── Blog Description ─── */
+  .blog-description {
+    color: rgb(var(--color-foreground-rgb));
+    max-width: 480px;
+  }
+
+  .blog-description p {
+    margin: 0;
+  }
+
+  /* ─── Card Image ─── */
+  .blog-posts-container .blog-post-card__image-container {
+    overflow: hidden;
+    border-radius: var(--style-border-radius-inputs);
+    aspect-ratio: 3 / 2;
+  }
+
+  .blog-posts-container .blog-post-item--hero .blog-post-card__image-container {
+    aspect-ratio: 7 / 4;
+  }
+
+  .blog-posts-container .blog-post-card__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--hover-transition-duration) var(--hover-transition-timing);
+  }
+
+  .blog-posts-container .blog-post-item:hover .blog-post-card__image {
+    transform: scale(1.04);
+  }
+
+  /* ─── Card Layout ─── */
+  .blog-posts-container .blog-post-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .blog-posts-container .blog-post-card__content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    padding-block-start: 1rem;
+  }
+
+  .blog-posts-container .blog-post-card__content > a {
+    padding-block-start: 0;
+  }
+
+  /* Hero card — mobile stacks image above content */
+  .blog-posts-container .blog-post-item--horizontal .blog-post-card__content {
+    padding: 1rem 0 0;
+  }
+
+  /* ─── Card Typography ─── */
+  .blog-posts-container .blog-post-card__content > a .text-block {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    font-size: var(--font-h3--size);
+    font-weight: 600;
+    color: var(--color-foreground-heading);
+    line-height: 1.3;
+  }
+
+  .blog-posts-container .blog-post-card__content-text {
+    font-size: var(--font-body-small--size);
+    color: var(--color-foreground);
+    font-weight: 400;
+    line-height: 1.6;
+  }
+
+  .blog-posts-container .blog-post-details {
+    font-size: var(--font-body-small--size);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .blog-posts-container .blog-post-card__content-text a {
+    display: block;
+    margin-block-start: 0.5rem;
+    padding-top: 0;
+    font-size: var(--font-body-regular--size);
+    font-weight: 600;
+    color: var(--color-foreground-heading);
+    text-decoration: underline;
+    text-underline-offset: 3.5px;
+  }
+
+  .blog-posts-container .blog-post-card__content-text a:hover {
+    color: var(--color-primary-button-background);
+  }
+
+  /* ─── Load More ─── */
+  .blog-posts-load-more {
+    display: flex;
+    justify-content: center;
+    padding-block-start: 3rem;
+  }
+
+  .blog-posts-load-more__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--button-padding-block) var(--button-padding-inline);
+    font-size: var(--font-body-regular--size);
+    font-weight: 600;
+    font-family: inherit;
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: var(--style-border-radius-pills);
+    cursor: pointer;
+    transition: background var(--hover-transition-duration) var(--hover-transition-timing), color var(--hover-transition-duration) var(--hover-transition-timing);
+    letter-spacing: 0.03em;
+  }
+
+  .blog-posts-load-more__btn:hover:not(:disabled) {
+    background: var(--color-border);
+  }
+
+  .blog-posts-load-more__btn:disabled {
+    opacity: var(--disabled-opacity);
+    cursor: not-allowed;
+  }
+
+  /* ─── Desktop ─── */
+  @media screen and (min-width: 750px) {
+    .blog-posts__header {
+      padding-bottom: 40px;
+    }
+
+    .blog-posts__header > .spacing-style {
+      /* padding-top: 33px; */
+      padding-bottom: 15px;
+    }
+
+    .blog-posts {
+      --rows-gap: 48px;
+    }
+
+    .blog-post-item {
+      grid-column: span var(--col-span);
+      position: relative;
+    }
+
+    .blog-posts-container .blog-post-item--horizontal .blog-post-card__content {
+      padding-left: 0;
+      padding-top: 20px;
+      justify-content: flex-start;
+    }
+
+    .blog-posts-container .blog-post-item--hero .blog-post-card__content > a .text-block {
+      font-size: var(--font-h1--size);
+      line-height: 1.19;
+      -webkit-line-clamp: 4;
+      line-clamp: 4;
+    }
+
+    .blog-posts-container .blog-post-item--compact .blog-post-card__content > a .text-block {
+      font-size: var(--font-h4--size);
+      line-height: 1.25;
+    }
+
+    .blog-posts-container .blog-post-card__content-text {
+      padding-bottom: 32px;
+    }
+
+    .blog-posts-container .blog-post-item:not(.blog-post-item--hero) .blog-post-card__content-text a {
+      position: absolute;
+      bottom: 0;
+      margin-top: 12px;
+      text-underline-offset: 6px;
+    }
+
+    .blog-posts-container .blog-post-card__image {
+      height: auto;
+    }
+
+    .blog-posts { 
+      padding-top: 50px;
+    }
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  function getGrid(btn) {
+    return btn.closest('.blog-posts')?.querySelector('.blog-posts-container') ?? null;
+  }
+
+  function parseNextUrl(doc) {
+    return doc.querySelector('.blog-posts-load-more__btn')?.dataset.url ?? null;
+  }
+
+  function appendItems(grid, doc) {
+    doc.querySelectorAll('.blog-post-item').forEach((item) => grid.appendChild(item));
+  }
+
+  function setLoading(btn) {
+    btn.disabled = true;
+    btn.dataset.label = btn.textContent.trim();
+    btn.textContent = btn.dataset.loadingLabel || 'Loading…';
+  }
+
+  function resetBtn(btn) {
+    btn.disabled = false;
+    btn.textContent = btn.dataset.label || 'Load more';
+  }
+
+  async function fetchPage(url) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const html = await res.text();
+    return new DOMParser().parseFromString(html, 'text/html');
+  }
+
+  async function handleLoadMore(btn) {
+    const url = btn.dataset.url;
+    if (!url) return;
+
+    const grid = getGrid(btn);
+    if (!grid) return;
+
+    setLoading(btn);
+
+    try {
+      const doc = await fetchPage(url);
+      appendItems(grid, doc);
+
+      const nextUrl = parseNextUrl(doc);
+      if (nextUrl) {
+        btn.dataset.url = nextUrl;
+        resetBtn(btn);
+      } else {
+        btn.closest('.blog-posts-load-more')?.remove();
+      }
+    } catch (err) {
+      console.error('[Blog Load More] Failed to load page:', err);
+      resetBtn(btn);
+    }
+  }
+
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.blog-posts-load-more__btn');
+    if (!btn || btn.disabled) return;
+    e.preventDefault();
+    handleLoadMore(btn);
+  });
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "t:names.blog_posts",
+  "blocks": [
+    {
+      "type": "@theme"
+    },
+    {
+      "type": "@app"
+    },
+    {
+      "type": "text"
+    },
+    {
+      "type": "icon"
+    },
+    {
+      "type": "image"
+    },
+    {
+      "type": "button"
+    },
+    {
+      "type": "video"
+    },
+    {
+      "type": "group"
+    },
+    {
+      "type": "spacer"
+    },
+    {
+      "type": "_divider"
+    }
+  ],
+  "disabled_on": {
+    "groups": ["header"]
+  },
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:settings.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "t:content.padding"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "t:settings.top",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "t:settings.bottom",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,734 @@
+{% assign form_id = section.id | prepend: 'ContactFormCustom-' %}
+
+<div
+  class="contact-form-custom color-{{ section.settings.color_scheme }}"
+  style="
+    --section-padding-top: {{ section.settings.padding-block-start }}px;
+    --section-padding-bottom: {{ section.settings.padding-block-end }}px;
+  "
+>
+  <div class="contact-form-custom__container">
+    {% if section.settings.intro_text != blank %}
+      <p class="contact-form-custom__intro">
+        {{- section.settings.intro_text | newline_to_br -}}
+      </p>
+    {% endif %}
+
+    <zendesk-contact-form
+      class="contact-form-custom__app"
+      data-endpoint="{{ section.settings.api_endpoint | escape }}"
+      data-subscription-key="{{ section.settings.api_subscription_key | escape }}"
+      data-brand-id="{{ section.settings.brand_id | escape }}"
+      data-group-id="{{ section.settings.group_id | escape }}"
+    >
+      <script type="application/json" data-reasons>
+        {%- if section.settings.reasons_json != blank -%}
+          {{- section.settings.reasons_json -}}
+        {%- else -%}
+          [
+            {"label":"Delivery Question / Issue","requestedBy":true,"orderNumber":true,"image":false,"subs":[
+              {"label":"My delivery is late","orderNumber":true,"photo":false},
+              {"label":"My delivery has not arrived","orderNumber":true,"photo":false},
+              {"label":"My delivery arrived, but parts of my order are missing","orderNumber":true,"photo":false},
+              {"label":"Where is my order?","orderNumber":true,"photo":false},
+              {"label":"Other","orderNumber":true,"photo":false}
+            ]},
+            {"label":"Product Quality Issues","requestedBy":true,"orderNumber":true,"image":true,"subs":[
+              {"label":"Fruit is too ripe","orderNumber":true,"photo":true},
+              {"label":"Product is expired and/or stale","orderNumber":true,"photo":true},
+              {"label":"Product is damaged","orderNumber":true,"photo":true},
+              {"label":"Produdct does not appear as displayed on the website","orderNumber":true,"photo":true},
+              {"label":"Other","orderNumber":true,"photo":true}
+            ]},
+            {"label":"Other Order Question / Issue","requestedBy":true,"orderNumber":true,"image":true,"subs":[
+              {"label":"My order arrived, but contains the wrong product","orderNumber":true,"photo":true},
+              {"label":"My delivery arrived, but parts of my order are missing","orderNumber":true,"photo":false},
+              {"label":"Cancel my order","orderNumber":true,"photo":false},
+              {"label":"Change a product in my order","orderNumber":true,"photo":false},
+              {"label":"Change or add a card message to my order","orderNumber":true,"photo":false},
+              {"label":"Other","orderNumber":true,"photo":false}
+            ]},
+            {"label":"Edible Rewards Program","requestedBy":false,"orderNumber":false,"image":false,"subs":[
+              {"label":"Change the email on my Edible Rewards account","orderNumber":false,"photo":false},
+              {"label":"Edible Reward redemption issue","orderNumber":true,"photo":false},
+              {"label":"Other","orderNumber":true,"photo":false}
+            ]},
+            {"label":"Corporate Gifting Inquiries","requestedBy":false,"orderNumber":false,"image":false,"subs":[
+              {"label":"I'd like to place a new Corporate Gifting / bulk order","orderNumber":false,"photo":false},
+              {"label":"I need help with my existing Corporate Gifting order","orderNumber":true,"photo":false},
+              {"label":"Other","orderNumber":true,"photo":false}
+            ]},
+            {"label":"Other Question, Issue or Feedback","requestedBy":true,"orderNumber":true,"image":true,"subs":[]}
+          ]
+        {%- endif -%}
+      </script>
+
+      <div
+        class="contact-form-custom__message"
+        data-messages
+        tabindex="-1"
+        hidden
+      >
+        {{- 'icon-error.svg' | inline_asset_content -}}
+        <span data-message-text></span>
+      </div>
+
+      <form class="contact-form-custom__form" data-form novalidate>
+        {% comment %} What can we help you with? {% endcomment %}
+        <div class="contact-form-custom__field">
+          <label class="visually-hidden" for="{{ form_id }}-category">
+            {{ section.settings.dropdown_label }}
+          </label>
+          <select
+            id="{{ form_id }}-category"
+            class="contact-form-custom__input contact-form-custom__select"
+            data-field="category"
+            required
+          >
+            <option value="" disabled selected>{{ section.settings.dropdown_label }}</option>
+          </select>
+        </div>
+
+        {% comment %} Further Details (sub-reason) {% endcomment %}
+        <div class="contact-form-custom__field" data-row="subCategory" hidden>
+          <label class="visually-hidden" for="{{ form_id }}-subcategory">Further Details</label>
+          <select
+            id="{{ form_id }}-subcategory"
+            class="contact-form-custom__input contact-form-custom__select"
+            data-field="subCategory"
+            disabled
+          >
+            <option value="" disabled selected>Further Details</option>
+          </select>
+        </div>
+
+        {% comment %} Order Number {% endcomment %}
+        <div class="contact-form-custom__field" data-row="orderNumber" hidden>
+          <label class="visually-hidden" for="{{ form_id }}-order">Order Number</label>
+          <input
+            type="text"
+            id="{{ form_id }}-order"
+            class="contact-form-custom__input"
+            data-field="orderNumber"
+            placeholder="Order Number*"
+            disabled
+          >
+        </div>
+
+        {% comment %} Are You The Customer Or Recipient? {% endcomment %}
+        <div class="contact-form-custom__field" data-row="requestedBy" hidden>
+          <label class="visually-hidden" for="{{ form_id }}-requested-by">
+            Are You The Customer Or Recipient?
+          </label>
+          <select
+            id="{{ form_id }}-requested-by"
+            class="contact-form-custom__input contact-form-custom__select"
+            data-field="requestedBy"
+            disabled
+          >
+            <option value="" disabled selected>Are You The Customer Or Recipient?</option>
+            <option value="1">Customer</option>
+            <option value="2">Recipient</option>
+          </select>
+        </div>
+
+        {% comment %} First Name {% endcomment %}
+        <div class="contact-form-custom__field">
+          <label class="visually-hidden" for="{{ form_id }}-first-name">First Name</label>
+          <input
+            type="text"
+            id="{{ form_id }}-first-name"
+            class="contact-form-custom__input"
+            autocomplete="given-name"
+            data-field="firstName"
+            placeholder="First Name*"
+            required
+          >
+        </div>
+
+        {% comment %} Last Name {% endcomment %}
+        <div class="contact-form-custom__field">
+          <label class="visually-hidden" for="{{ form_id }}-last-name">Last Name</label>
+          <input
+            type="text"
+            id="{{ form_id }}-last-name"
+            class="contact-form-custom__input"
+            autocomplete="family-name"
+            data-field="lastName"
+            placeholder="Last Name*"
+            required
+          >
+        </div>
+
+        {% comment %} Phone Number {% endcomment %}
+        <div class="contact-form-custom__field">
+          <label class="visually-hidden" for="{{ form_id }}-phone">Phone Number</label>
+          <input
+            type="tel"
+            id="{{ form_id }}-phone"
+            class="contact-form-custom__input"
+            autocomplete="tel"
+            data-field="phone"
+            inputmode="numeric"
+            maxlength="12"
+            placeholder="Phone Number*"
+            required
+          >
+        </div>
+
+        {% comment %} Email Address {% endcomment %}
+        <div class="contact-form-custom__field">
+          <label class="visually-hidden" for="{{ form_id }}-email">Email Address</label>
+          <input
+            type="email"
+            id="{{ form_id }}-email"
+            class="contact-form-custom__input"
+            autocomplete="email"
+            data-field="email"
+            spellcheck="false"
+            autocapitalize="off"
+            placeholder="Email Address*"
+            required
+          >
+        </div>
+
+        {% comment %} Message {% endcomment %}
+        <div class="contact-form-custom__field">
+          <label class="visually-hidden" for="{{ form_id }}-body">Message</label>
+          <textarea
+            id="{{ form_id }}-body"
+            class="contact-form-custom__input contact-form-custom__textarea"
+            data-field="message"
+            maxlength="3800"
+            placeholder="Message*"
+            required
+          ></textarea>
+        </div>
+
+        {% comment %} Upload Images (conditional, optional) {% endcomment %}
+        <div class="contact-form-custom__field" data-row="attachments" hidden>
+          <label class="contact-form-custom__file-label" for="{{ form_id }}-files">
+            Upload Image (PNG or JPEG)
+          </label>
+          <input
+            type="file"
+            id="{{ form_id }}-files"
+            class="contact-form-custom__file"
+            data-field="attachments"
+            accept="image/png,image/jpeg"
+            disabled
+          >
+          <ul class="contact-form-custom__previews" data-file-previews hidden></ul>
+        </div>
+
+        {% comment %} Submit button {% endcomment %}
+        <div class="contact-form-custom__field">
+          <button
+            type="submit"
+            class="contact-form-custom__submit button"
+            data-submit
+            aria-disabled="true"
+          >
+            {{ section.settings.submit_label }}
+          </button>
+        </div>
+      </form>
+
+      <div class="contact-form-custom__success" data-success tabindex="-1" hidden>
+        {{- 'icon-checkmark.svg' | inline_asset_content -}}
+        <p class="contact-form-custom__success-title">{{ section.settings.success_title }}</p>
+        <p class="contact-form-custom__success-text">
+          {{- section.settings.success_text | newline_to_br -}}
+        </p>
+        {% if section.settings.success_button_label != blank %}
+          <a
+            href="{{ section.settings.success_button_url | default: routes.root_url }}"
+            class="contact-form-custom__success-button button"
+          >
+            {{- section.settings.success_button_label -}}
+          </a>
+        {% endif %}
+      </div>
+    </zendesk-contact-form>
+  </div>
+</div>
+
+<script src="{{ 'contact-form-zendesk.js' | asset_url }}" type="module"></script>
+
+{% style %}
+  #shopify-section-{{ section.id }} .contact-form-custom__select {
+    background-image: url({{ 'chevron-down.svg' | asset_url }});
+  }
+{% endstyle %}
+
+{% stylesheet %}
+  .contact-form-custom {
+    padding-block-start: 24px;
+    padding-block-end: 48px;
+    padding-inline: 16px;
+    background-color: rgb(var(--color-background-rgb));
+  }
+
+  @media screen and (min-width: 750px) {
+    .contact-form-custom {
+      padding-block-start: var(--section-padding-top, 64px);
+      padding-block-end: var(--section-padding-bottom, 64px);
+      padding-inline: 40px;
+    }
+  }
+
+  .contact-form-custom__container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    max-width: 896px;
+    margin: 0 auto;
+  }
+
+  @media screen and (min-width: 750px) {
+    .contact-form-custom__container {
+      gap: 32px;
+    }
+  }
+
+  .contact-form-custom__intro {
+    font-family: var(--font-body--family);
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--color-foreground);
+    margin: 0;
+  }
+
+  .contact-form-custom__form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .contact-form-custom__field {
+    width: 100%;
+  }
+
+  @media screen and (min-width: 750px) {
+    .contact-form-custom__field {
+      max-width: 448px;
+    }
+  }
+
+  .contact-form-custom__input {
+    width: 100%;
+    height: 48px;
+    font-family: var(--font-body--family);
+    font-size: 16px;
+    line-height: 22px;
+    color: var(--color-foreground);
+    background-color: #FFFFFF;
+    border: 1px solid #C6C6C6;
+    border-radius: 8px;
+    padding: 10px 16px;
+    -webkit-font-smoothing: antialiased;
+    box-sizing: border-box;
+  }
+
+  @media screen and (min-width: 750px) {
+    .contact-form-custom__input {
+      height: 64px;
+      font-size: 16px;
+      line-height: 22px;
+    }
+  }
+
+  .contact-form-custom__textarea {
+    height: auto;
+    min-height: 120px;
+    resize: vertical;
+  }
+
+  .contact-form-custom__input::placeholder {
+    color: var(--color-foreground);
+    opacity: 1;
+  }
+
+  .contact-form-custom__input:focus {
+    outline: none;
+    border-color: var(--color-foreground);
+  }
+
+  .contact-form-custom__select {
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    padding-inline-end: 48px;
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    background-size: 20px 20px;
+    background-color: #FFFFFF;
+  }
+
+  .contact-form-custom__file-label {
+    display: block;
+    font-family: var(--font-body--family);
+    font-size: 12px;
+    line-height: 17px;
+    color: var(--color-foreground);
+    margin-bottom: 8px;
+  }
+
+  @media screen and (min-width: 750px) {
+    .contact-form-custom__file-label {
+      font-size: 14px;
+      line-height: 20px;
+    }
+  }
+
+  .contact-form-custom__file {
+    width: 100%;
+    font-family: var(--font-body--family);
+    font-size: 12px;
+    color: var(--color-foreground);
+  }
+
+  @media screen and (min-width: 750px) {
+    .contact-form-custom__file {
+      font-size: 14px;
+    }
+  }
+
+  .contact-form-custom__previews {
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .contact-form-custom__previews[hidden] {
+    display: none;
+  }
+
+  .contact-form-custom__preview {
+    position: relative;
+    width: 100%;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #C6C6C6;
+    background-color: #FFFFFF;
+  }
+
+  .contact-form-custom__preview-image {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .contact-form-custom__preview-remove {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.6);
+    color: #FFFFFF;
+    font-size: 14px;
+    line-height: 20px;
+    text-align: center;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .contact-form-custom__preview-remove:hover {
+    background-color: rgba(0, 0, 0, 0.8);
+  }
+
+  .contact-form-custom__submit {
+    width: 100%;
+    height: 40px;
+    border-radius: 24px;
+    font-family: var(--font-body--family);
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 4px 24px;
+  }
+
+  @media screen and (min-width: 750px) {
+    .contact-form-custom__submit {
+      height: 48px;
+      font-size: 16px;
+      line-height: 22px;
+      padding: 4px 32px;
+    }
+  }
+
+  .contact-form-custom__submit:disabled {
+    background-color: #AAAAAA;
+    color: #FFFFFF;
+    cursor: not-allowed;
+    opacity: 1;
+    pointer-events: none;
+  }
+
+  /* Visually inactive but still clickable, so clicks can surface field errors. */
+  .contact-form-custom__submit[aria-disabled='true']:not(:disabled) {
+    background-color: #AAAAAA;
+    color: #FFFFFF;
+    cursor: pointer;
+    opacity: 1;
+  }
+
+  .contact-form-custom__submit[data-loading='true'] {
+    opacity: 0.6;
+    cursor: progress;
+  }
+
+  .contact-form-custom__input--error {
+    border-color: #cc0000;
+  }
+
+  .contact-form-custom__input--error:focus {
+    border-color: #cc0000;
+  }
+
+  .contact-form-custom__field-error {
+    display: block;
+    margin-top: 6px;
+    font-family: var(--font-body--family);
+    font-size: 12px;
+    line-height: 16px;
+    color: #cc0000;
+  }
+
+  @media screen and (min-width: 750px) {
+    .contact-form-custom__field-error {
+      font-size: 13px;
+      line-height: 18px;
+    }
+  }
+
+  .contact-form-custom__form[hidden],
+  .contact-form-custom__message[hidden],
+  .contact-form-custom__success[hidden] {
+    display: none;
+  }
+
+  .contact-form-custom__message {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    max-width: 448px;
+    margin: 0 auto;
+    font-family: var(--font-body--family);
+    font-size: 14px;
+    line-height: 20px;
+    color: #cc0000;
+  }
+
+  .contact-form-custom__message svg {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+  }
+
+  .contact-form-custom__success {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
+    width: 100%;
+    max-width: 448px;
+    margin: 0 auto;
+    font-family: var(--font-body--family);
+    color: var(--color-foreground);
+  }
+
+  .contact-form-custom__success svg {
+    width: 48px;
+    height: 48px;
+    color: #008000;
+  }
+
+  .contact-form-custom__success-title {
+    font-size: 20px;
+    line-height: 28px;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .contact-form-custom__success-text {
+    font-size: 14px;
+    line-height: 20px;
+    margin: 0;
+  }
+
+  .contact-form-custom__success-button {
+    margin-top: 16px;
+    height: 40px;
+    border-radius: 24px;
+    font-family: var(--font-body--family);
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    padding: 4px 32px;
+  }
+
+  @media screen and (min-width: 750px) {
+    .contact-form-custom__success-button {
+      height: 48px;
+      font-size: 16px;
+      line-height: 22px;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Contact form custom",
+  "tag": "section",
+  "class": "contact-form-custom-wrapper",
+  "settings": [
+    {
+      "type": "textarea",
+      "id": "intro_text",
+      "label": "Intro text"
+    },
+    {
+      "type": "header",
+      "content": "Form"
+    },
+    {
+      "type": "text",
+      "id": "dropdown_label",
+      "label": "Reason label",
+      "default": "What can we help you with?"
+    },
+    {
+      "type": "text",
+      "id": "submit_label",
+      "label": "Submit label",
+      "default": "Submit"
+    },
+    {
+      "type": "textarea",
+      "id": "reasons_json",
+      "label": "Reason tree (JSON)",
+      "info": "Optional. Overrides the built-in reason/sub-reason tree. Leave blank to use the default. Each reason: {label, requestedBy, orderNumber, image, subs:[{label, orderNumber, photo}]}."
+    },
+    {
+      "type": "header",
+      "content": "Zendesk"
+    },
+    {
+      "type": "text",
+      "id": "api_endpoint",
+      "label": "API endpoint",
+      "default": "https://api.edible.tech/zendesk/v1/postTicket"
+    },
+    {
+      "type": "text",
+      "id": "api_subscription_key",
+      "label": "API subscription key",
+      "default": "78824a5c6e674e6fa7f425abd31ab679",
+      "info": "ocp-apim-subscription-key header value"
+    },
+    {
+      "type": "text",
+      "id": "brand_id",
+      "label": "Brand ID",
+      "default": "31944278133140",
+      "info": "x-brand-id header value (numeric brand id, not a slug)"
+    },
+    {
+      "type": "text",
+      "id": "group_id",
+      "label": "Group ID",
+      "default": "32648155430932",
+      "info": "x-group-id header value (numeric group id)"
+    },
+    {
+      "type": "header",
+      "content": "Success state"
+    },
+    {
+      "type": "text",
+      "id": "success_title",
+      "label": "Success title",
+      "default": "Submission confirmed"
+    },
+    {
+      "type": "textarea",
+      "id": "success_text",
+      "label": "Success text",
+      "default": "Thanks for reaching out! We'll get back to you as soon as possible. Please check the email address you provided in the form for updates."
+    },
+    {
+      "type": "text",
+      "id": "success_button_label",
+      "label": "Button label",
+      "default": "Back to homepage"
+    },
+    {
+      "type": "url",
+      "id": "success_button_url",
+      "label": "Button link",
+      "info": "Defaults to the homepage when left blank."
+    },
+    {
+      "type": "header",
+      "content": "Style"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "Padding"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "Top",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 64
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "Bottom",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 64
+    }
+  ],
+  "presets": [
+    {
+      "name": "Contact form custom"
+    }
+  ]
+}
+{% endschema %}

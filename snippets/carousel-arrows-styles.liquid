@@ -1,0 +1,183 @@
+{%- doc -%}
+  Fixed carousel arrow appearance (white circle, #1d1d1d icon, 50% opacity when disabled).
+  Used by carousel-arrows snippet and resource-list carousels (slideshow-arrows).
+{%- enddoc -%}
+
+{% stylesheet %}
+  /* ── External carousel-arrows snippet ── */
+  .carousel-arrows {
+    gap: var(--carousel-arrow-gap, 24px);
+  }
+
+  .carousel-arrows .swipable-group__arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--carousel-arrow-size, 32px);
+    height: var(--carousel-arrow-size, 32px);
+    min-width: var(--carousel-arrow-size, 32px);
+    min-height: var(--carousel-arrow-size, 32px);
+    border-radius: 50%;
+    background-color: #ffffff !important;
+    color: #1d1d1d !important;
+    box-shadow: var(--carousel-arrow-shadow, 0 5px 20px rgba(0, 0, 0, 0.1)) !important;
+    transition: opacity 0.2s ease;
+    pointer-events: auto;
+    border: none !important;
+    padding: 0 !important;
+    overflow: visible;
+    appearance: none;
+    cursor: pointer;
+    box-sizing: border-box;
+    font: inherit;
+    margin: 0;
+  }
+
+  .carousel-arrows .swipable-group__arrow:disabled,
+  .carousel-arrows .swipable-group__arrow:disabled:hover {
+    opacity: 0.5 !important;
+    cursor: not-allowed;
+  }
+
+  .carousel-arrows .swipable-group__arrow:not(:disabled):hover {
+    opacity: 0.8;
+  }
+
+  .carousel-arrows .svg-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--carousel-arrow-icon-size, 24px);
+    height: var(--carousel-arrow-icon-size, 24px);
+    color: #1d1d1d;
+  }
+
+  .carousel-arrows .svg-wrapper svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .carousel-arrows--icon-caret .icon-caret {
+    rotate: -90deg;
+  }
+
+  .carousel-arrows--icon-caret .icon-caret.flip-x {
+    rotate: 90deg;
+  }
+
+  /* ── Resource-list carousel (separated-centered slideshow-arrows) ── */
+  .resource-list__carousel slideshow-arrows {
+    mix-blend-mode: normal !important;
+    align-items: center;
+    gap: var(--carousel-arrow-gap, 24px);
+  }
+
+  .resource-list__carousel slideshow-arrows .slideshow-control {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    min-width: var(--carousel-arrow-size, 32px);
+    min-height: var(--carousel-arrow-size, 32px);
+    width: var(--carousel-arrow-size, 32px);
+    height: var(--carousel-arrow-size, 32px);
+    padding: 0 !important;
+    border-radius: 50%;
+    background-color: #ffffff !important;
+    color: #1d1d1d !important;
+    box-shadow: var(--carousel-arrow-shadow, 0 5px 20px rgba(0, 0, 0, 0.1)) !important;
+    transition: opacity 0.2s ease;
+    pointer-events: auto;
+    border: none !important;
+    overflow: visible;
+    box-sizing: border-box;
+  }
+
+  .resource-list__carousel slideshow-arrows .slideshow-control[disabled],
+  .resource-list__carousel slideshow-arrows .slideshow-control[disabled]:hover,
+  .resource-list__carousel .slideshow-control[disabled],
+  .resource-list__carousel .slideshow-control[disabled]:hover {
+    display: flex !important;
+    opacity: 0.5 !important;
+    cursor: not-allowed;
+    animation: none;
+    translate: 0;
+  }
+
+  .resource-list__carousel:is(slideshow-component:hover, slideshow-component:focus-within):not(
+      :has(slideshow-controls:hover)
+    )
+    > slideshow-container
+    > slideshow-arrows
+    .slideshow-control[disabled] {
+    opacity: 0.5 !important;
+    animation: none;
+    translate: 0;
+  }
+
+  .resource-list__carousel slideshow-arrows .slideshow-control:not([disabled]):hover {
+    opacity: 0.8;
+  }
+
+  .resource-list__carousel slideshow-arrows .slideshow-control .svg-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--carousel-arrow-icon-size, 24px);
+    height: var(--carousel-arrow-icon-size, 24px);
+    color: #1d1d1d;
+  }
+
+  .resource-list__carousel slideshow-arrows .slideshow-control .svg-wrapper svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .resource-list__carousel slideshow-arrows .slideshow-control--previous:has(.icon-arrow).flip-x {
+    scale: none;
+  }
+
+  .resource-list__carousel slideshow-arrows .slideshow-control--previous .svg-wrapper.icon-arrow,
+  .resource-list__carousel slideshow-arrows .slideshow-control--previous[disabled] .svg-wrapper.icon-arrow,
+  .resource-list__carousel slideshow-arrows .slideshow-control--previous[disabled]:hover .svg-wrapper.icon-arrow {
+    rotate: 180deg;
+  }
+
+  .resource-list__carousel .slideshow-control--previous:has(.icon-caret).flip-x {
+    scale: none;
+  }
+
+  .resource-list__carousel .slideshow-control--next.slideshow-control--style-chevron .icon-caret,
+  .resource-list__carousel .slideshow-control--next.slideshow-control--style-chevron_large .icon-caret,
+  .resource-list__carousel slideshow-arrows .slideshow-control--next.slideshow-control--style-chevron .icon-caret,
+  .resource-list__carousel
+    slideshow-arrows
+    .slideshow-control--next.slideshow-control--style-chevron_large
+    .icon-caret {
+    rotate: -90deg;
+  }
+
+  .resource-list__carousel .slideshow-control--previous.slideshow-control--style-chevron .icon-caret,
+  .resource-list__carousel .slideshow-control--previous.slideshow-control--style-chevron_large .icon-caret,
+  .resource-list__carousel .slideshow-control--previous[disabled].slideshow-control--style-chevron .icon-caret,
+  .resource-list__carousel .slideshow-control--previous[disabled].slideshow-control--style-chevron_large .icon-caret,
+  .resource-list__carousel .slideshow-control--previous[disabled]:hover.slideshow-control--style-chevron .icon-caret,
+  .resource-list__carousel
+    .slideshow-control--previous[disabled]:hover.slideshow-control--style-chevron_large
+    .icon-caret,
+  .resource-list__carousel slideshow-arrows .slideshow-control--previous.slideshow-control--style-chevron .icon-caret,
+  .resource-list__carousel
+    slideshow-arrows
+    .slideshow-control--previous.slideshow-control--style-chevron_large
+    .icon-caret,
+  .resource-list__carousel
+    slideshow-arrows
+    .slideshow-control--previous[disabled].slideshow-control--style-chevron
+    .icon-caret,
+  .resource-list__carousel
+    slideshow-arrows
+    .slideshow-control--previous[disabled].slideshow-control--style-chevron_large
+    .icon-caret {
+    rotate: 90deg;
+  }
+{% endstylesheet %}

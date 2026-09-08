@@ -1,0 +1,223 @@
+{% comment %}
+  Cart conflict modal.
+  Copy is merchant-editable via the Cart Drawer section's "Cart Conflict settings".
+
+  Accepts:
+    title          {string} - modal heading
+    description    {string} - modal body (newlines become <br>)
+    clear_cta_text {string} - label for the "clear cart and continue" button
+    keep_cta_text  {string} - label for the "keep my cart" button
+{% endcomment %}
+{%- capture cc_default_description -%}You cannot combine regular items with bundle items.
+Do you wish to replace items currently in your cart with your bundle?{%- endcapture -%}
+{% liquid
+  assign cc_title = title | default: 'Before you start..'
+  assign cc_description = description | default: cc_default_description
+  assign cc_clear = clear_cta_text | default: 'Clear Cart and Continue'
+  assign cc_keep = keep_cta_text | default: 'Keep my Cart'
+%}
+<dialog
+  id="cart-conflict-modal"
+  class="cart-conflict-modal"
+  aria-label="Cart conflict"
+>
+  <div class="cart-conflict-modal__overlay" data-cart-conflict-close></div>
+  <div class="cart-conflict-modal__card">
+    <div class="cart-conflict-modal__close-row">
+      <button
+        type="button"
+        class="cart-conflict-modal__close-btn"
+        data-cart-conflict-close
+        aria-label="Close"
+      >
+        {{ 'location-close-button.svg' | inline_asset_content }}
+      </button>
+    </div>
+    <div class="cart-conflict-modal__content">
+      <div class="cart-conflict-modal__text-group">
+        <p class="cart-conflict-modal__heading">{{ cc_title | escape }}</p>
+        <p class="cart-conflict-modal__body">{{ cc_description | escape | newline_to_br }}</p>
+      </div>
+      <div class="cart-conflict-modal__actions">
+        <button
+          type="button"
+          class="cart-conflict-modal__btn cart-conflict-modal__btn--clear"
+          data-cart-conflict-clear
+        >
+          {{ cc_clear | escape }}
+        </button>
+        <button
+          type="button"
+          class="cart-conflict-modal__btn cart-conflict-modal__btn--keep"
+          data-cart-conflict-keep
+        >
+          {{ cc_keep | escape }}
+        </button>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<style>
+  /* Native <dialog> opened with showModal() so it renders in the browser TOP
+     LAYER — required to sit ABOVE the Personalization / Cart drawers, which are
+     themselves modal <dialog>s (a plain z-index can never beat the top layer). */
+  .cart-conflict-modal {
+    /* reset UA dialog defaults so the fixed/full-viewport pin wins */
+    margin: 0;
+    padding: 0;
+    border: none;
+    max-width: none;
+    max-height: none;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    position: fixed;
+    inset: 0;
+    z-index: var(--layer-temporary, 20);
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-body--family, 'Poppins', sans-serif);
+    overflow: visible;
+  }
+
+  .cart-conflict-modal[open] {
+    display: flex;
+  }
+
+  .cart-conflict-modal:not([open]) {
+    display: none;
+  }
+
+  .cart-conflict-modal::backdrop {
+    background: transparent;
+  }
+
+  .cart-conflict-modal__overlay {
+    position: absolute;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+  }
+
+  .cart-conflict-modal__card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+    justify-content: center;
+    max-width: 555px;
+    width: calc(100% - 32px);
+    padding: 24px 24px 32px 24px;
+    background-color: #FBF7F5;
+    border-radius: 8px;
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+  }
+
+  .cart-conflict-modal__close-row {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .cart-conflict-modal__close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    margin: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+
+  .cart-conflict-modal__close-btn svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .cart-conflict-modal__content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    width: 100%;
+  }
+
+  .cart-conflict-modal__text-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+
+  .cart-conflict-modal__heading {
+    font-family: var(--font-body--family, 'Poppins', sans-serif);
+    font-weight: 600;
+    font-size: 20px;
+    line-height: 24px;
+    color: var(--color-black-light, #464646);
+    margin: 0;
+  }
+
+  .cart-conflict-modal__body {
+    font-family: var(--font-body--family, 'Poppins', sans-serif);
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 17px;
+    color: var(--color-black-secondary, #1D1D1D);
+    margin: 0;
+  }
+
+  .cart-conflict-modal__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+  }
+
+  .cart-conflict-modal__btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 212px;
+    height: 40px;
+    padding: 4px 24px;
+    border-radius: 24px;
+    white-space: nowrap;
+    font-family: var(--font-body--family, 'Poppins', sans-serif);
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 20px;
+    text-align: center;
+    cursor: pointer;
+    text-decoration: none;
+    border: none;
+  }
+
+  .cart-conflict-modal__btn--clear {
+    background-color: #E10600;
+    color: #FFFFFF;
+  }
+
+  .cart-conflict-modal__btn--keep {
+    background-color: #FFFFFF;
+    color: var(--color-black-secondary, #1D1D1D);
+    border: 1px solid #F2E7DF;
+  }
+
+  @media screen and (max-width: 749px) {
+    .cart-conflict-modal__card {
+      max-width: 326px;
+      padding: 16px 16px 32px 16px;
+    }
+
+    .cart-conflict-modal__actions {
+      gap: 12px;
+    }
+  }
+</style>

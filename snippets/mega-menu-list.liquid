@@ -1,0 +1,101 @@
+{%- doc -%}
+  Renders mega menu list markup (text links and columns only).
+
+  @param {object} parent_link - The linklist (menu root) to render.
+  @param {string} id - Unique ID for the list and grid CSS hooks.
+  @param {number} [grid_columns_count] - Grid columns on desktop (default 6).
+  @param {number} [grid_columns_count_tablet] - Grid columns on tablet (default 4).
+  @param {object} [section] - The section object (for Section Rendering API eager loading checks).
+  @param {boolean} [parent_is_menu_root] - When true, `parent_link` is a menu linklist root.
+{%- enddoc -%}
+
+{% liquid
+  assign open_column_span = false
+  assign column_count = 0
+  assign links_before_wrap = 10
+  assign max_menu_columns = grid_columns_count | default: 6
+  assign max_menu_columns_tablet = grid_columns_count_tablet | default: 4
+%}
+<ul
+  data-menu-list-id="{{ id }}"
+  class="mega-menu__list list-unstyled"
+  style="--menu-image-border-radius: 0px;"
+>
+  {% for link in parent_link.links %}
+    {% liquid
+      if forloop.first or open_column_span == false
+        assign open_column_span = true
+        assign break_after_modulo = link.links.size | modulo: links_before_wrap
+        if break_after_modulo == 1
+          assign links_before_wrap = links_before_wrap | minus: 1
+        endif
+        assign break_after_float = links_before_wrap | times: 1.0
+        assign column_span = link.links.size | divided_by: break_after_float | ceil | at_least: 1
+        assign column_count = column_count | plus: column_span
+        assign should_break_columns = true
+        assign span_class = 'mega-menu__column--span-' | append: column_span
+        echo '<li class="mega-menu__column ' | append: span_class | append: '">'
+      endif
+    %}
+    <div>
+      <a
+        href="{{ link.url }}"
+        class="mega-menu__link {% if link.links != blank %}mega-menu__link--parent{% endif %}"
+      >
+        <span class="wrap-text">
+          {{- link.title -}}
+        </span>
+      </a>
+      {% if link.links != blank %}
+        <ul
+          class="list-unstyled"
+          {% if should_break_columns %}
+            style="column-count: {{ column_span }};"
+          {% endif %}
+        >
+          {% for childLink in link.links %}
+            {% assign break_after_modulo = forloop.index | modulo: links_before_wrap %}
+            <li
+              {% if break_after_modulo == 0 and should_break_columns %}
+                style="break-after: column;"
+              {% endif %}
+            >
+              <a
+                href="{{ childLink.url }}"
+                class="mega-menu__link"
+              >
+                <span class="wrap-text">{{- childLink.title -}}</span>
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </div>
+
+    {% liquid
+      assign next_linklist = parent_link.links[forloop.index]
+      if forloop.last
+        assign open_column_span = false
+      elsif next_linklist.links != blank
+        assign open_column_span = false
+      elsif link.links != blank and next_linklist.links == blank
+        assign open_column_span = false
+      endif
+      if open_column_span == false
+        echo '</li>'
+      endif
+    %}
+  {% endfor %}
+</ul>
+
+{% style %}
+  [data-menu-grid-id="{{ id }}"] {
+    --menu-columns-desktop: {{ max_menu_columns }};
+    --menu-columns-tablet: {{ max_menu_columns_tablet }};
+  }
+
+  [data-menu-list-id="{{ id }}"] {
+    --menu-columns-desktop: {{ max_menu_columns }};
+    --menu-columns-tablet: {{ max_menu_columns_tablet }};
+  }
+{% endstyle %}

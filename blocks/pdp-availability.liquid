@@ -1,0 +1,772 @@
+{%- assign current_variant = product.selected_or_first_available_variant -%}
+<pdp-availability-component
+  {{ block.shopify_attributes }}
+  data-mode="delivery"
+  data-variant-available="{{ current_variant.available | default: true, allow_false: true }}"
+>
+  {%- comment -%} Block settings for JS {%- endcomment -%}
+  <script ref="blockSettings" type="application/json">{{ block.settings | json }}</script>
+
+  {%- comment -%} ZIP input row {%- endcomment -%}
+  <div class="pdp-avail__zip-row">
+    <div class="pdp-avail__zip-field">
+      <input
+        ref="zipInput"
+        type="text"
+        inputmode="numeric"
+        pattern="\d{5}"
+        maxlength="5"
+        class="pdp-avail__zip-input"
+        placeholder="{{ block.settings.zip_placeholder }}"
+        autocomplete="postal-code"
+        aria-label="{{ block.settings.zip_placeholder }}"
+      >
+      <button
+        ref="checkButton"
+        type="button"
+        class="button pdp-avail__check-btn"
+        on:click="/handleCheck"
+      >
+        {{ block.settings.check_button_label }}
+      </button>
+    </div>
+    <p
+      ref="zipError"
+      class="pdp-avail__zip-error body-small"
+      hidden
+      role="alert"
+    >
+      {{ block.settings.zip_invalid_error }}
+    </p>
+  </div>
+
+  {%- comment -%} Fulfillment toggle {%- endcomment -%}
+  <div class="pdp-avail__toggle">
+    <div class="pdp-avail__toggle-row" role="group" aria-label="{{ block.settings.toggle_group_label }}">
+      <button
+        ref="deliveryToggle"
+        type="button"
+        class="pdp-avail__toggle-btn label"
+        data-mode="delivery"
+        aria-pressed="true"
+        on:click="/handleToggleMode/delivery"
+      >
+        {{ block.settings.delivery_label }}
+      </button>
+      <button
+        ref="pickupToggle"
+        type="button"
+        class="pdp-avail__toggle-btn label"
+        data-mode="pickup"
+        aria-pressed="false"
+        on:click="/handleToggleMode/pickup"
+      >
+        {{ block.settings.pickup_label }}
+      </button>
+    </div>
+    <div ref="toggleSecondary" class="pdp-avail__toggle-secondary">
+      <button
+        type="button"
+        class="pdp-avail__toggle-link body-small"
+        data-mode="pickup"
+        on:click="/handleToggleMode/pickup"
+        hidden
+      >
+        {{ block.settings.toggle_to_pickup }}
+      </button>
+      <button
+        type="button"
+        class="pdp-avail__toggle-link body-small"
+        data-mode="delivery"
+        on:click="/handleToggleMode/delivery"
+        hidden
+      >
+        {{ block.settings.toggle_to_delivery }}
+      </button>
+    </div>
+  </div>
+
+  {%- comment -%} Time selector {%- endcomment -%}
+  <div ref="timeOptions" class="pdp-avail__time-options">
+    <div class="pdp-avail__time-row">
+      <button
+        type="button"
+        class="pdp-avail__time-btn label"
+        data-option="one-hour"
+        aria-pressed="false"
+        on:click="/handleTimeOption/one-hour"
+      >
+        {{ block.settings.option_one_hour }}
+      </button>
+      <button
+        type="button"
+        class="pdp-avail__time-btn label"
+        data-option="same-day"
+        aria-pressed="false"
+        on:click="/handleTimeOption/same-day"
+      >
+        {{ block.settings.option_same_day }}
+      </button>
+      <button
+        type="button"
+        class="pdp-avail__time-btn label"
+        data-option="next-day"
+        aria-pressed="false"
+        on:click="/handleTimeOption/next-day"
+      >
+        {{ block.settings.option_next_day }}
+      </button>
+      <button
+        type="button"
+        class="pdp-avail__time-btn label"
+        data-option="select-date"
+        aria-pressed="false"
+        on:click="/handleTimeOption/select-date"
+      >
+        {{ block.settings.option_select_date }}
+      </button>
+    </div>
+    <button
+      ref="clearButton"
+      type="button"
+      class="pdp-avail__clear-btn body-small"
+      on:click="/handleClear"
+    >
+      {{ block.settings.clear_label }}
+    </button>
+  </div>
+
+  {%- comment -%} Date picker container {%- endcomment -%}
+  <div ref="datepickerContainer" class="pdp-avail__datepicker" hidden></div>
+
+  {%- comment -%} Store list {%- endcomment -%}
+  <div ref="storeList" class="pdp-avail__stores" role="radiogroup" aria-label="{{ block.settings.store_list_label }}" hidden></div>
+
+  {%- comment -%} Status line {%- endcomment -%}
+  <p ref="status" class="pdp-avail__status body-small" role="status" hidden></p>
+
+  {%- comment -%} Auto-select notice {%- endcomment -%}
+  <div ref="autoNotice" class="pdp-avail__notice body-small" hidden>
+    <span ref="autoNoticeText"></span>
+    <button
+      ref="changeStoreBtn"
+      type="button"
+      class="pdp-avail__notice-link body-small"
+      on:click="/handleChangeStore"
+    >
+      {{ block.settings.change_store_label }}
+    </button>
+  </div>
+</pdp-availability-component>
+
+<script src="{{ 'pdp-availability.js' | asset_url }}" type="module"></script>
+
+{% stylesheet %}
+  pdp-availability-component {
+    display: block;
+  }
+
+  /* ---- ZIP row ---- */
+  .pdp-avail__zip-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .pdp-avail__zip-field {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  .pdp-avail__zip-input {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 12px;
+    border: 1px solid var(--color-border, #ccc);
+    border-radius: var(--input-border-radius, 4px);
+    background: var(--color-background, #fff);
+    color: var(--color-foreground, #1d1d1d);
+    font-family: var(--font-body--family);
+  }
+
+  .pdp-avail__zip-input:focus {
+    outline: 2px solid var(--color-primary, #e10600);
+    outline-offset: -2px;
+  }
+
+  .pdp-avail__zip-input[aria-invalid="true"] {
+    border-color: var(--color-primary, #e10600);
+  }
+
+  .pdp-avail__check-btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .pdp-avail__zip-error {
+    color: var(--color-primary, #e10600);
+    margin: 0;
+  }
+
+  /* ---- Fulfillment toggle ---- */
+  .pdp-avail__toggle {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-block-start: 16px;
+  }
+
+  .pdp-avail__toggle-row {
+    display: flex;
+    border: 1px solid var(--color-border, #ccc);
+    border-radius: var(--input-border-radius, 4px);
+    overflow: hidden;
+  }
+
+  .pdp-avail__toggle-btn {
+    flex: 1;
+    padding: 10px 16px;
+    border: none;
+    background: var(--color-background, #fff);
+    color: var(--color-foreground, #1d1d1d);
+    cursor: pointer;
+    text-align: center;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+
+  .pdp-avail__toggle-btn[aria-pressed="true"] {
+    background: var(--color-foreground, #1d1d1d);
+    color: var(--color-background, #fff);
+  }
+
+  .pdp-avail__toggle-btn + .pdp-avail__toggle-btn {
+    border-inline-start: 1px solid var(--color-border, #ccc);
+  }
+
+  .pdp-avail__toggle-secondary {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .pdp-avail__toggle-link {
+    border: none;
+    background: none;
+    padding: 0;
+    color: var(--color-link, #2563eb);
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  /* ---- Time options ---- */
+  .pdp-avail__time-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-block-start: 16px;
+  }
+
+  .pdp-avail__time-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  @media screen and (max-width: 749px) {
+    .pdp-avail__time-row {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .pdp-avail__time-btn {
+    padding: 10px 8px;
+    border: 1px solid var(--color-border, #ccc);
+    border-radius: var(--input-border-radius, 4px);
+    background: var(--color-background, #fff);
+    color: var(--color-foreground, #1d1d1d);
+    cursor: pointer;
+    text-align: center;
+    white-space: nowrap;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+  }
+
+  .pdp-avail__time-btn[aria-pressed="true"] {
+    border-color: var(--color-foreground, #1d1d1d);
+    background: var(--color-foreground, #1d1d1d);
+    color: var(--color-background, #fff);
+  }
+
+  .pdp-avail__clear-btn {
+    align-self: flex-end;
+    border: none;
+    background: none;
+    padding: 0;
+    color: var(--color-link, #2563eb);
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  /* ---- Date picker ---- */
+  .pdp-avail__datepicker {
+    margin-block-start: 12px;
+  }
+
+  /* ---- Store list ---- */
+  .pdp-avail__stores {
+    margin-block-start: 16px;
+    max-height: 420px;
+    overflow-y: auto;
+    overscroll-behavior: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .pdp-avail__stores:empty {
+    display: none;
+  }
+
+  /* ---- Store card ---- */
+  .pdp-avail__store-card {
+    border: 1px solid var(--color-border, #ccc);
+    border-radius: var(--input-border-radius, 4px);
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+  }
+
+  .pdp-avail__store-card:hover {
+    border-color: var(--color-foreground, #1d1d1d);
+  }
+
+  .pdp-avail__store-card:focus-visible {
+    outline: 2px solid var(--color-primary, #e10600);
+    outline-offset: 2px;
+  }
+
+  .pdp-avail__store-card[aria-checked="true"] {
+    border-color: var(--color-foreground, #1d1d1d);
+    border-width: 2px;
+    padding: 11px 15px;
+  }
+
+  .pdp-avail__store-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .pdp-avail__store-name {
+    font-weight: 600;
+  }
+
+  .pdp-avail__store-distance {
+    flex-shrink: 0;
+    opacity: 0.65;
+  }
+
+  .pdp-avail__store-address {
+    margin-block-start: 2px;
+    opacity: 0.65;
+  }
+
+  .pdp-avail__store-details {
+    margin-block-start: 8px;
+  }
+
+  .pdp-avail__store-details summary {
+    cursor: pointer;
+    color: var(--color-link, #2563eb);
+    font-size: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    list-style: none;
+  }
+
+  .pdp-avail__store-details summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .pdp-avail__store-info {
+    margin-block-start: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .pdp-avail__store-features {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-block-start: 4px;
+  }
+
+  .pdp-avail__store-feature {
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--color-gray-light, #ededed);
+    color: var(--color-foreground, #1d1d1d);
+  }
+
+  .pdp-avail__other-heading {
+    margin: 0;
+    padding-block-start: 8px;
+    font-weight: 600;
+  }
+
+  /* ---- Status line ---- */
+  .pdp-avail__status {
+    margin-block-start: 12px;
+    color: var(--color-foreground, #1d1d1d);
+  }
+
+  /* ---- Auto-select notice ---- */
+  .pdp-avail__notice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-block-start: 8px;
+    padding: 8px 12px;
+    border-radius: var(--input-border-radius, 4px);
+    background: var(--color-gray-light, #ededed);
+  }
+
+  .pdp-avail__notice-link {
+    border: none;
+    background: none;
+    padding: 0;
+    color: var(--color-link, #2563eb);
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    white-space: nowrap;
+  }
+
+  /* ---- Loading state ---- */
+  pdp-availability-component[data-loading="true"] .pdp-avail__toggle,
+  pdp-availability-component[data-loading="true"] .pdp-avail__time-options,
+  pdp-availability-component[data-loading="true"] .pdp-avail__stores {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Product availability",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Fulfillment mode"
+    },
+    {
+      "type": "text",
+      "id": "delivery_label",
+      "label": "Delivery label",
+      "default": "Delivery"
+    },
+    {
+      "type": "text",
+      "id": "pickup_label",
+      "label": "Pickup label",
+      "default": "Pickup"
+    },
+    {
+      "type": "text",
+      "id": "toggle_to_pickup",
+      "label": "Toggle to pickup text",
+      "default": "Or pick up instead"
+    },
+    {
+      "type": "text",
+      "id": "toggle_to_delivery",
+      "label": "Toggle to delivery text",
+      "default": "Or get it delivered"
+    },
+    {
+      "type": "text",
+      "id": "toggle_group_label",
+      "label": "Toggle group aria label",
+      "default": "Fulfillment mode"
+    },
+    {
+      "type": "header",
+      "content": "ZIP input"
+    },
+    {
+      "type": "text",
+      "id": "zip_placeholder",
+      "label": "ZIP placeholder",
+      "default": "Enter ZIP code"
+    },
+    {
+      "type": "text",
+      "id": "check_button_label",
+      "label": "Check button label",
+      "default": "Check"
+    },
+    {
+      "type": "text",
+      "id": "zip_error",
+      "label": "ZIP error message",
+      "default": "We couldn't find availability for this ZIP code."
+    },
+    {
+      "type": "text",
+      "id": "zip_invalid_error",
+      "label": "ZIP invalid error",
+      "default": "Please enter a valid 5-digit ZIP code."
+    },
+    {
+      "type": "header",
+      "content": "Time options"
+    },
+    {
+      "type": "text",
+      "id": "option_one_hour",
+      "label": "1-Hour option label",
+      "default": "1-Hour"
+    },
+    {
+      "type": "text",
+      "id": "option_same_day",
+      "label": "Same Day option label",
+      "default": "Same Day"
+    },
+    {
+      "type": "text",
+      "id": "option_next_day",
+      "label": "Next Day option label",
+      "default": "Next Day"
+    },
+    {
+      "type": "text",
+      "id": "option_select_date",
+      "label": "Select Date option label",
+      "default": "Select Date"
+    },
+    {
+      "type": "text",
+      "id": "clear_label",
+      "label": "Clear button label",
+      "default": "Clear"
+    },
+    {
+      "type": "header",
+      "content": "Status messages"
+    },
+    {
+      "type": "text",
+      "id": "status_loading",
+      "label": "Loading status",
+      "default": "Checking availability..."
+    },
+    {
+      "type": "text",
+      "id": "status_no_results",
+      "label": "No results status",
+      "default": "No stores found for this ZIP code."
+    },
+    {
+      "type": "text",
+      "id": "status_check_failed",
+      "label": "Check failed status",
+      "default": "Something went wrong. Please try again."
+    },
+    {
+      "type": "text",
+      "id": "status_label",
+      "label": "Status label",
+      "default": "Availability"
+    },
+    {
+      "type": "text",
+      "id": "no_variant_ids_message",
+      "label": "No variant IDs message",
+      "default": "Please select a size to check availability."
+    },
+    {
+      "type": "header",
+      "content": "Availability messages"
+    },
+    {
+      "type": "text",
+      "id": "unavailable_message",
+      "label": "Unavailable message",
+      "default": "Not available for the selected date."
+    },
+    {
+      "type": "text",
+      "id": "unavailable_locked_message",
+      "label": "Unavailable locked message",
+      "default": "This item is not available for your selected store and date."
+    },
+    {
+      "type": "text",
+      "id": "select_store_message",
+      "label": "Select store message",
+      "default": "Select a store to continue."
+    },
+    {
+      "type": "text",
+      "id": "delivery_unavailable_message",
+      "label": "Delivery unavailable",
+      "default": "Delivery is not available for this ZIP code."
+    },
+    {
+      "type": "text",
+      "id": "pickup_unavailable_message",
+      "label": "Pickup unavailable",
+      "default": "Pickup is not available for this ZIP code."
+    },
+    {
+      "type": "header",
+      "content": "Notice messages"
+    },
+    {
+      "type": "text",
+      "id": "auto_notice_text",
+      "label": "Auto notice text",
+      "default": "Closest store automatically selected."
+    },
+    {
+      "type": "text",
+      "id": "selected_notice_text",
+      "label": "Selected notice text",
+      "default": "Store selected."
+    },
+    {
+      "type": "text",
+      "id": "shipment_notice_ok",
+      "label": "Shipment notice OK",
+      "default": "Available for shipment."
+    },
+    {
+      "type": "text",
+      "id": "shipment_notice_unavailable",
+      "label": "Shipment notice unavailable",
+      "default": "Not available for shipment to this ZIP code."
+    },
+    {
+      "type": "text",
+      "id": "zip_unavailable_message",
+      "label": "ZIP unavailable message",
+      "default": "No availability for this ZIP code."
+    },
+    {
+      "type": "header",
+      "content": "Ship dates"
+    },
+    {
+      "type": "text",
+      "id": "ship_dates_title",
+      "label": "Ship dates title",
+      "default": "Available ship dates"
+    },
+    {
+      "type": "text",
+      "id": "ship_surcharge_note",
+      "label": "Ship surcharge note",
+      "default": "Surcharge may apply for expedited shipping."
+    },
+    {
+      "type": "header",
+      "content": "Store card labels"
+    },
+    {
+      "type": "text",
+      "id": "store_list_label",
+      "label": "Store list aria label",
+      "default": "Nearby stores"
+    },
+    {
+      "type": "text",
+      "id": "change_store_label",
+      "label": "Change store label",
+      "default": "Change store"
+    },
+    {
+      "type": "text",
+      "id": "cart_lock_message",
+      "label": "Cart lock message",
+      "default": "Your cart is set to a different store. Clear your cart to change stores."
+    },
+    {
+      "type": "text",
+      "id": "cart_lock_clear_label",
+      "label": "Cart lock clear label",
+      "default": "Clear cart & switch"
+    },
+    {
+      "type": "text",
+      "id": "store_unavailable_message",
+      "label": "Store unavailable message",
+      "default": "This store is not available for the selected date."
+    },
+    {
+      "type": "text",
+      "id": "store_unavailable_locked_message",
+      "label": "Store unavailable locked",
+      "default": "This store is not available."
+    },
+    {
+      "type": "text",
+      "id": "store_unavailable_tag",
+      "label": "Store unavailable tag",
+      "default": "Unavailable"
+    },
+    {
+      "type": "text",
+      "id": "other_stores_heading",
+      "label": "Other stores heading",
+      "default": "Other stores nearby"
+    },
+    {
+      "type": "text",
+      "id": "view_details",
+      "label": "View details label",
+      "default": "View details"
+    },
+    {
+      "type": "text",
+      "id": "hide_details",
+      "label": "Hide details label",
+      "default": "Hide details"
+    },
+    {
+      "type": "text",
+      "id": "distance_unit",
+      "label": "Distance unit",
+      "default": "mi"
+    },
+    {
+      "type": "text",
+      "id": "store_fallback",
+      "label": "Store fallback name",
+      "default": "Edible Store"
+    },
+    {
+      "type": "text",
+      "id": "feature_curbside",
+      "label": "Curbside feature label",
+      "default": "Curbside pickup"
+    },
+    {
+      "type": "text",
+      "id": "feature_smoothies",
+      "label": "Smoothies feature label",
+      "default": "Smoothies"
+    },
+    {
+      "type": "text",
+      "id": "feature_kosher",
+      "label": "Kosher feature label",
+      "default": "Kosher"
+    }
+  ]
+}
+{% endschema %}

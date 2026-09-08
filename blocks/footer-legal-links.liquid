@@ -1,0 +1,103 @@
+{% liquid
+  assign menu = block.settings.menu
+%}
+
+{% if menu != blank %}
+  <ul
+    class="footer-legal list-unstyled custom-typography tw-gap-x-3 tw-gap-y-2 max-md:tw-justify-center"
+    style="{% render 'typography-style', preset: 'custom', settings: block.settings %}"
+    {{ block.shopify_attributes }}
+  >
+    {% for link in menu.links %}
+      <li>
+        <a
+          href="{% render 'localized-url', url: link.url %}"
+          class="footer-utilities__text tw-decoration-inherit tw-decoration-0 hover:tw-underline max-md:tw-underline"
+        >
+          {{ link.title }}
+        </a>
+      </li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+{% stylesheet %}
+  .footer-legal {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .footer-legal li {
+    display: flex;
+  }
+
+  .footer-legal a {
+    color: inherit;
+    font-size: var(--font-size, 0.75rem);
+    text-transform: var(--text-transform, none);
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:names.legal_links",
+  "tag": null,
+  "settings": [
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "t:settings.menu"
+    },
+    {
+      "type": "select",
+      "id": "font_size",
+      "label": "t:settings.size",
+      "options": [
+        {
+          "value": "0.625rem",
+          "label": "10px"
+        },
+        {
+          "value": "0.75rem",
+          "label": "12px"
+        },
+        {
+          "value": "0.875rem",
+          "label": "14px"
+        },
+        {
+          "value": "1rem",
+          "label": "16px"
+        },
+        {
+          "value": "1.125rem",
+          "label": "18px"
+        }
+      ],
+      "default": "0.75rem"
+    },
+    {
+      "type": "select",
+      "id": "case",
+      "label": "t:settings.case",
+      "options": [
+        {
+          "value": "none",
+          "label": "t:options.default"
+        },
+        {
+          "value": "uppercase",
+          "label": "t:options.uppercase"
+        }
+      ],
+      "default": "none"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:names.legal_links",
+      "category": "t:categories.footer"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,454 @@
+{% liquid
+  assign faq_collections = section.settings.faq_collections
+%}
+
+{% if faq_collections.size > 0 %}
+  <div class="section-background color-{{ section.settings.color_scheme }}"></div>
+
+  <div
+    class="
+      section
+      section--{{ section.settings.section_width }}
+      color-{{ section.settings.color_scheme }}
+      faq-tabbed-section
+      spacing-style gap-style
+    "
+    style="
+      {%- render 'spacing-style', settings: section.settings -%}
+      {%- render 'gap-style', value: section.settings.gap -%}
+    "
+  >
+    <faq-tabs-component>
+      <div class="faq-tabbed__nav" role="tablist">
+        {%- for faq_collection in faq_collections -%}
+          <button
+            class="faq-tabbed__tab"
+            role="tab"
+            id="faq-tab-{{ section.id }}-{{ forloop.index0 }}"
+            aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
+            aria-controls="faq-panel-{{ section.id }}-{{ forloop.index0 }}"
+            tabindex="0"
+          >
+            {{- faq_collection.title.value -}}
+          </button>
+        {%- endfor -%}
+      </div>
+
+      {%- for faq_collection in faq_collections -%}
+        <div
+          class="faq-tabbed__panel faq-tabbed__accordion-wrapper"
+          role="tabpanel"
+          id="faq-panel-{{ section.id }}-{{ forloop.index0 }}"
+          aria-labelledby="faq-tab-{{ section.id }}-{{ forloop.index0 }}"
+          {%- unless forloop.first %} inert{% endunless -%}
+        >
+          {%- assign items = faq_collection.items.value -%}
+          {%- if items.size > 0 -%}
+            {%- for item in items -%}
+              {%- capture accordion_row_children -%}
+                <details
+                  class="details tw-py-4 md:tw-py-5 [&:open_.details--header]:!tw-mb-2 {% if section.settings.dividers %}tw-border-b tw-border-chocolate-100{% endif %}"
+                  {%- if forloop.first and section.settings.open_first %} open{% endif -%}
+                >
+                  <summary class="details--header tw-mb-0 tw-flex tw-cursor-pointer tw-list-none tw-items-center tw-justify-between tw-gap-4 tw-p-0">
+                    <span class="tw-min-w-0 tw-flex-1 tw-font-semibold tw-text-brand-black" style="font-size: 16px; line-height: 22px;">
+                      {{ item.question.value }}
+                    </span>
+
+                    {%- if section.settings.icon == 'caret' -%}
+                      <span class="icon-caret tw-flex tw-h-6 tw-w-6 tw-shrink-0 tw-items-center tw-justify-center tw-text-brand-black">
+                        {{- 'icon-caret.svg' | inline_asset_content -}}
+                      </span>
+                    {%- else -%}
+                      <span class="icon-plus tw-flex tw-h-6 tw-w-6 tw-shrink-0 tw-items-center tw-justify-center tw-text-brand-black">
+                        {{- 'icon-plus.svg' | inline_asset_content -}}
+                      </span>
+                    {%- endif -%}
+                  </summary>
+
+                  <div class="details-content">
+                    <div class="tw-leading-[1.4] tw-text-secondary-500" style="font-size: 14px; line-height: 20px;">
+                      {{ item.answer | metafield_tag }}
+                    </div>
+                  </div>
+                </details>
+              {%- endcapture -%}
+
+              {%- assign open_first = false -%}
+              {%- if forloop.first and section.settings.open_first -%}
+                {%- assign open_first = true -%}
+              {%- endif -%}
+
+              {%-
+                render 'accordion-custom-component',
+                children: accordion_row_children,
+                open_by_default_on_desktop: open_first,
+                open_by_default_on_mobile: open_first
+              -%}
+            {%- endfor -%}
+          {%- endif -%}
+        </div>
+      {%- endfor -%}
+    </faq-tabs-component>
+  </div>
+
+  {% comment %}
+    FAQPage structured data — one FAQPage aggregating the Q&A from every tab,
+    generated from the same metaobjects rendered above (only marks up visible
+    content; a single FAQPage per page as Google recommends).
+  {% endcomment %}
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {%- assign faq_first_done = false -%}
+        {%- for faq_collection in faq_collections -%}
+          {%- for item in faq_collection.items.value -%}
+            {%- if item.question.value != blank -%}
+              {%- if faq_first_done -%},{%- endif -%}
+              {%- capture faq_answer -%}{{ item.answer | metafield_tag }}{%- endcapture -%}
+              {
+                "@type": "Question",
+                "name": {{ item.question.value | strip_html | strip_newlines | json }},
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": {{ faq_answer | strip_html | strip_newlines | json }}
+                }
+              }
+              {%- assign faq_first_done = true -%}
+            {%- endif -%}
+          {%- endfor -%}
+        {%- endfor -%}
+      ]
+    }
+  </script>
+{% endif %}
+
+<script>
+  if (!customElements.get('faq-tabs-component')) {
+    class FaqTabsComponent extends HTMLElement {
+      connectedCallback() {
+        this.tabButtons = [...this.querySelectorAll('[role="tab"]')];
+        this.panels = [...this.querySelectorAll('[role="tabpanel"]')];
+
+        if (!this.tabButtons.length || !this.panels.length) return;
+
+        this.setAttribute('data-initialized', '');
+
+        for (const [i, tab] of this.tabButtons.entries()) {
+          tab.addEventListener('click', () => this.selectTab(i));
+        }
+
+        this.addEventListener('keydown', (e) => this.handleKeydown(e));
+      }
+
+      selectTab(index) {
+        for (const [i, tab] of this.tabButtons.entries()) {
+          const isActive = i === index;
+          tab.setAttribute('aria-selected', String(isActive));
+        }
+
+        for (const [i, panel] of this.panels.entries()) {
+          panel.toggleAttribute('inert', i !== index);
+        }
+      }
+
+      handleKeydown(e) {
+        const target = e.target;
+        if (target.getAttribute('role') !== 'tab') return;
+
+        const index = this.tabButtons.indexOf(target);
+        if (index === -1) return;
+
+        const navMap = {
+          ArrowLeft: -1,
+          ArrowRight: 1,
+          Home: -index,
+          End: this.tabButtons.length - 1 - index,
+        };
+
+        const offset = navMap[e.key];
+        if (offset !== undefined) {
+          e.preventDefault();
+          const nextIndex = (index + offset + this.tabButtons.length) % this.tabButtons.length;
+          this.tabButtons[nextIndex].focus();
+          this.selectTab(nextIndex);
+        }
+      }
+    }
+
+    customElements.define('faq-tabs-component', FaqTabsComponent);
+  }
+</script>
+
+{% stylesheet %}
+  .faq-tabbed-section {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  faq-tabs-component {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .faq-tabbed__nav {
+    position: sticky;
+    /* The header's white wrapper is inset by the header's ~16px padding, so its
+       drop shadow falls inside that bottom band. Pin the tab bar up into that
+       band so it sits flush under the header wrapper, blends with it, and the
+       header drop shadow casts onto the tab bar instead of onto scrolling
+       content. --header-height is measured at runtime (mobile + desktop). */
+    top: calc(var(--header-height, 0px) - 16px);
+    /* Sit in the header's sticky layer, just below it so the header drop shadow
+       renders on top of the tab bar. */
+    z-index: calc(var(--layer-sticky, 8) - 1);
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    max-width: 896px;
+    margin-inline: auto;
+    width: 100%;
+    /* Room for the header drop shadow above the tab labels */
+    padding-block-start: 24px;
+    background: var(--color-background);
+    /* One combined bottom line under all tabs (per Figma) */
+    border-bottom: 1px solid #BBB2AA;
+  }
+
+  .faq-tabbed__nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .faq-tabbed__accordion-wrapper {
+    max-width: 896px;
+    margin-inline: auto;
+    width: 100%;
+  }
+
+  .faq-tabbed__tab {
+    background: none;
+    border: none;
+    /* No per-tab line; transparent keeps the label baseline aligned with the
+       active tab. The nav carries the combined line; the active tab's colored
+       border sits directly on top of it. */
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    padding: 0 16px 8px 16px;
+    font-size: 16px;
+    line-height: 22px;
+    font-weight: 400;
+    color: #464646;
+    white-space: nowrap;
+    transition: border-color 0.2s ease;
+  }
+
+  .faq-tabbed__tab[aria-selected='true'] {
+    border-bottom-color: var(--color-foreground, #464646);
+    font-weight: 600;
+  }
+
+  .faq-tabbed__tab:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 4px;
+    border-radius: 2px;
+  }
+
+  faq-tabs-component:not([data-initialized]) .faq-tabbed__panel ~ .faq-tabbed__panel {
+    display: none;
+  }
+
+  .faq-tabbed__panel[inert] {
+    display: none;
+  }
+
+  /* Plus -> minus on open is handled by the base theme (assets/base.css).
+     Do not override .icon-plus strokes here, or both strokes get hidden. */
+  .faq-tabbed-section details[open] .icon-caret {
+    transform: rotate(180deg);
+  }
+
+  .faq-tabbed-section .icon-caret {
+    transition: transform 0.3s ease;
+  }
+
+  @media screen and (max-width: 749px) {
+    .faq-tabbed-section {
+      --padding-inline-start: 0px;
+      --padding-inline-end: 0px;
+      padding-inline: 0;
+    }
+
+    .faq-tabbed__tab {
+      font-size: 14px;
+      line-height: 20px;
+    }
+
+    .faq-tabbed__nav {
+      padding-inline: var(--page-margin, 1rem);
+    }
+
+    .faq-tabbed__accordion-wrapper {
+      padding-inline: var(--page-margin, 1rem);
+    }
+  }
+
+  /* Question/icon color (#464646) and answer-link styling are applied per page
+     via the section's "custom_css" (see template JSON), so the section defaults
+     to the theme's brand-black and un-restyled links when reused elsewhere. */
+
+  /* Safari/iOS open animation fallback.
+     The shared accordion snippet animates height via interpolate-size +
+     ::details-content + @starting-style, none of which run in Safari/iOS — so
+     the panel snaps open there with no height animation. grid-template-rows
+     0fr -> 1fr animates to content height and is supported in Safari 16+,
+     Firefox and Chrome. Gated to browsers WITHOUT interpolate-size so Chrome
+     keeps its existing path, and scoped to FAQ so filter/footer accordions are
+     untouched. */
+  @supports not (interpolate-size: allow-keywords) {
+    .faq-tabbed-section accordion-custom .details-content {
+      display: grid;
+      grid-template-rows: 0fr;
+      block-size: auto;
+      overflow: clip;
+      transition: grid-template-rows var(--animation-speed-slow, 0.3s) var(--animation-easing, ease),
+        opacity var(--animation-speed-slow, 0.3s) var(--animation-easing, ease),
+        padding-block var(--animation-speed-slow, 0.3s) var(--animation-easing, ease);
+    }
+
+    .faq-tabbed-section accordion-custom .details-content > * {
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .faq-tabbed-section accordion-custom details[open] .details-content {
+      grid-template-rows: 1fr;
+      block-size: auto;
+    }
+  }
+
+  @media screen and (min-width: 750px) {
+    .section--page-width.faq-tabbed-section faq-tabs-component {
+      grid-column: 1 / -1;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "FAQ Tabs",
+  "tag": "section",
+  "class": "faq-tabbed-wrapper",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "settings": [
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "metaobject_list",
+      "id": "faq_collections",
+      "label": "FAQ collections",
+      "metaobject_type": "faq_collection",
+      "limit": 12
+    },
+    {
+      "type": "header",
+      "content": "Accordion"
+    },
+    {
+      "type": "select",
+      "id": "icon",
+      "label": "Icon",
+      "options": [
+        { "value": "caret", "label": "Caret" },
+        { "value": "plus", "label": "Plus" }
+      ],
+      "default": "caret"
+    },
+    {
+      "type": "checkbox",
+      "id": "dividers",
+      "label": "Show dividers",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "open_first",
+      "label": "Open first item",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Width",
+      "options": [
+        { "value": "page-width", "label": "Page width" },
+        { "value": "full-width", "label": "Full width" }
+      ],
+      "default": "page-width"
+    },
+    {
+      "type": "range",
+      "id": "gap",
+      "label": "Gap",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 24
+    },
+    {
+      "type": "header",
+      "content": "Appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "Padding"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "Top",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 24
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "Bottom",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 64
+    }
+  ],
+  "presets": [
+    {
+      "name": "FAQ Tabs"
+    }
+  ]
+}
+{% endschema %}

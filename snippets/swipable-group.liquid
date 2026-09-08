@@ -1,0 +1,225 @@
+{%- doc -%}
+  Renders a swipable group block. When swipe is enabled, children are laid out
+  in a horizontally scrollable container with optional navigation arrows.
+  When swipe is disabled, renders as a standard flex layout (like Group).
+
+  @param {string} children - The DOM content of the child blocks.
+  @param {object} settings - The settings of the swipable group block.
+  @param {string} shopify_attributes - String with Shopify attributes for the editor.
+  @param {string} [class] - Custom classes for the block.
+  @param {number} slide_count - Number of child blocks.
+  @param {boolean} [is_overflow_full] - Whether the swipable group should break out to full viewport width.
+
+  @example
+  {% render 'swipable-group', children: children, settings: block.settings, shopify_attributes: block.shopify_attributes, slide_count: block.blocks.size, is_overflow_full: false %}
+{%- enddoc -%}
+
+{%- liquid
+  assign enable_swipe = settings.enable_swipe
+  assign show_arrows_desktop = settings.show_arrows_desktop
+  assign show_arrows_mobile = settings.show_arrows_mobile
+  assign show_arrows = false
+  if show_arrows_desktop or show_arrows_mobile
+    assign show_arrows = true
+  endif
+  assign arrows_position = settings.arrows_position | default: 'bottom-right'
+  assign columns = settings.columns | default: 4
+  assign gap = settings.gap | default: 32
+  assign mobile_gap = settings.mobile_gap | default: 16
+  assign mobile_card_size = settings.mobile_card_size | default: '79cqw'
+  assign arrows_gap = settings.arrows_gap | default: 16
+  assign arrows_icon = settings.arrows_icon | default: 'arrow'
+  assign content_aspect_ratio = settings.content_aspect_ratio | default: 'auto'
+  assign content_aspect_ratio_mobile = settings.content_aspect_ratio_mobile | default: 'auto'
+
+  assign color_class = ''
+  if settings.inherit_color_scheme == false
+    assign color_class = 'color-' | append: settings.color_scheme
+  endif
+-%}
+
+{% if enable_swipe %}
+  <swipable-group-component
+    class="
+      swipable-group
+      swipable-group--height-{{ settings.height | default: 'fit' }}
+      swipable-group--width-{{ settings.width | default: 'fill' }}
+      {% if is_overflow_full %}swipable-group--overflow-full{% endif %}
+      spacing-style
+      {{ color_class }}
+      {{ class }}
+    "
+    style="
+      --swipable-columns: {{ columns }};
+      --swipable-gap: {{ gap }}px;
+      --swipable-mobile-gap: {{ mobile_gap }}px;
+      --swipable-mobile-card-size: {{ mobile_card_size }};
+      --swipable-arrows-gap: {{ arrows_gap }}px;
+      {% if content_aspect_ratio != 'auto' %}--swipable-content-ratio: {{ content_aspect_ratio }};{% endif %}
+      {% if content_aspect_ratio_mobile != 'auto' %}--swipable-content-ratio-mobile: {{ content_aspect_ratio_mobile }};{% endif %}
+      {% render 'spacing-style', settings: settings %}
+    "
+    {{ shopify_attributes }}
+  >
+    {%- liquid
+      assign arrows_visibility_class = ''
+      if show_arrows_desktop and show_arrows_mobile == false
+        assign arrows_visibility_class = 'hidden--mobile'
+      elsif show_arrows_mobile and show_arrows_desktop == false
+        assign arrows_visibility_class = 'hidden--desktop'
+      endif
+    -%}
+
+    {% if show_arrows and arrows_position contains 'top' %}
+      {% render 'carousel-arrows', position: arrows_position, icon: arrows_icon, visibility_class: arrows_visibility_class %}
+    {% endif %}
+
+    <div class="swipable-group__scroller" data-scroller>
+      {{- children -}}
+    </div>
+
+    {% if show_arrows and arrows_position contains 'bottom' %}
+      {% render 'carousel-arrows', position: arrows_position, icon: arrows_icon, visibility_class: arrows_visibility_class %}
+    {% endif %}
+  </swipable-group-component>
+
+{% else %}
+  <div
+    class="
+      group-block
+      group-block--height-{{ settings.height | default: 'fit' }}
+      group-block--width-{{ settings.width | default: 'fill' }}
+      spacing-style
+      {{ color_class }}
+      {{ class }}
+    "
+    style="      {% render 'spacing-style', settings: settings %}"
+    {{ shopify_attributes }}
+  >
+    <div
+      class="
+        group-block-content
+        {% if request.design_mode %}group-block-content--design-mode{% endif %}
+        layout-panel-flex
+        layout-panel-flex--{{ settings.content_direction | default: 'row' }}
+        {% if settings.vertical_on_mobile %} mobile-column{% endif %}
+      "
+      style="gap: {{ gap }}px;"
+    >
+      {{- children -}}
+    </div>
+  </div>
+{% endif %}
+
+<script src="{{ 'swipable-group.js' | asset_url }}" type="module" fetchpriority="low"></script>
+
+{% stylesheet %}
+  swipable-group-component {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    container-type: inline-size;
+    container-name: swipable-group;
+  }
+
+  .swipable-group--width-fill {
+    width: 100%;
+  }
+
+  .swipable-group--width-fit-content {
+    width: fit-content;
+  }
+
+  .swipable-group--height-fill {
+    height: 100%;
+  }
+
+  .swipable-group--height-fit {
+    height: fit-content;
+  }
+
+  .swipable-group__scroller {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    column-gap: var(--swipable-mobile-gap, 16px);
+    will-change: scroll-position;
+    overscroll-behavior-x: contain;
+
+    /* Prevent hover effects from clipping */
+    margin-block: -16px;
+    padding-block: 16px;
+  }
+
+  @container swipable-group (min-width: 750px) {
+    .swipable-group__scroller {
+      column-gap: var(--swipable-gap, 32px);
+    }
+  }
+
+  .swipable-group__scroller::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Mouse drag-to-scroll feedback */
+  .swipable-group__scroller.is-dragging {
+    cursor: grabbing;
+    user-select: none;
+    scroll-behavior: auto;
+  }
+
+  .swipable-group__scroller > * {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+    width: clamp(150px, var(--swipable-mobile-card-size, 79cqw), 100%);
+    aspect-ratio: var(--swipable-content-ratio-mobile, auto);
+    overflow: hidden;
+  }
+
+  @container swipable-group (min-width: 750px) {
+    .swipable-group__scroller > * {
+      width: calc((100% - (var(--swipable-gap, 32px) * (var(--swipable-columns, 4) - 1))) / var(--swipable-columns, 4));
+      min-width: 264px;
+      aspect-ratio: var(--swipable-content-ratio, auto);
+    }
+  }
+
+  /* Full-width overflow: component expands to full viewport, slides align to page content */
+  .swipable-group--overflow-full {
+    --swipable-page-offset: max(var(--page-margin), calc((100vw - var(--page-content-width)) / 2));
+    width: 100vw;
+    max-width: 100vw;
+    margin-left: calc(-50vw + 50%);
+  }
+
+  .swipable-group--overflow-full .swipable-group__scroller {
+    padding-inline: var(--swipable-page-offset);
+    scroll-padding-inline-start: var(--swipable-page-offset);
+  }
+
+  .swipable-group--overflow-full .swipable-group__arrows {
+    padding-inline: var(--swipable-page-offset);
+  }
+
+  /* Arrows container layout */
+  .swipable-group__arrows {
+    display: flex;
+    padding-block: var(--swipable-arrows-gap, 16px) 0;
+  }
+
+  .swipable-group__arrows--bottom-right,
+  .swipable-group__arrows--top-right {
+    align-self: flex-end;
+  }
+
+  .swipable-group__arrows--bottom-left,
+  .swipable-group__arrows--top-left {
+    align-self: flex-start;
+  }
+
+  .swipable-group__arrows--top-right,
+  .swipable-group__arrows--top-left {
+    padding-block: 0 var(--swipable-arrows-gap, 16px);
+  }
+{% endstylesheet %}

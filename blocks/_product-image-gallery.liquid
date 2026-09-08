@@ -1,0 +1,103 @@
+{% liquid
+  assign product = closest.product
+  assign url = product.url
+  assign images = product.images
+  assign gradient_key = block.settings.gradient_style
+  assign gradient = null
+
+  if gradient_key != 'none'
+    assign gradient = shop.metaobjects.gradient_styles[gradient_key]
+  endif
+
+  # On catering collection pages the image opens the Quick View drawer (handled
+  # by catering-quick-view.js) instead of navigating to the PDP. Render the
+  # clickable element WITHOUT an href so a click during the JS-load gap can't
+  # navigate; expose the handle so the drawer always resolves the right product.
+  assign is_catering = false
+  if template.suffix == 'catering'
+    assign is_catering = true
+  endif
+%}
+{%- capture image_link_attrs -%}
+  {%- if is_catering -%}
+    data-cqv-image data-cqv-handle="{{ product.handle }}" role="button" tabindex="0" aria-label="{{ product.title | escape }} — quick view"
+  {%- else -%}
+    href="{{ url }}"
+  {%- endif -%}
+{%- endcapture -%}
+
+<product-image-gallery class="tw-relative tw-block tw-aspect-1">
+  {% if gradient %}
+    <div
+      class="product-card__gradient tw-pointer-events-none tw-absolute tw-inset-0 tw-z-[1] tw-rounded-[inherit]"
+      style="background: linear-gradient({{ gradient.gradient_direction.value }}, {{ gradient.gradient_start_color.value }} 0%, {{ gradient.gradient_end_color.value }} 100%);"
+    ></div>
+  {% endif %}
+  {% if images.size > 1 %}
+    <div class="swiper tw-h-full tw-w-full">
+      <div class="swiper-wrapper">
+        {% for image in images %}
+          <div class="swiper-slide">
+            <a {{ image_link_attrs }} class="tw-block tw-h-full">
+              <img
+                src="{{ image | image_url: width: 600 }}"
+                alt="{{ image.alt | escape }}"
+                loading="lazy"
+                width="{{ image.width }}"
+                height="{{ image.height }}"
+                class="tw-block tw-aspect-1 tw-h-full tw-w-full tw-object-cover"
+              >
+            </a>
+          </div>
+        {% endfor %}
+      </div>
+      <div
+        class="product-card-pagination tw-absolute !tw-bottom-4 tw-left-0 tw-right-0 tw-z-10 tw-flex tw-justify-center tw-gap-2"
+      ></div>
+    </div>
+  {% elsif images.size == 1 %}
+    <a {{ image_link_attrs }} class="tw-block tw-h-full">
+      <img
+        src="{{ images.first | image_url: width: 600 }}"
+        alt="{{ images.first.alt | escape }}"
+        loading="lazy"
+        width="{{ images.first.width }}"
+        height="{{ images.first.height }}"
+        class="tw-block tw-aspect-1 tw-h-full tw-w-full tw-object-cover"
+      >
+    </a>
+  {% else %}
+    <a {{ image_link_attrs }} class="tw-flex tw-h-full tw-w-full tw-items-center tw-justify-center tw-text-gray-400">
+      No image
+    </a>
+  {% endif %}
+</product-image-gallery>
+
+{% schema %}
+{
+  "name": "Product Image Gallery",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Background Gradient"
+    },
+    {
+      "type": "select",
+      "id": "gradient_style",
+      "label": "Gradient Style",
+      "options": [
+        { "value": "none", "label": "None" },
+        { "value": "product-media-primary", "label": "Primary" },
+        { "value": "product-media-secondary", "label": "Secondary" }
+      ],
+      "default": "none"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Product Image Gallery",
+      "category": "Product"
+    }
+  ]
+}
+{% endschema %}

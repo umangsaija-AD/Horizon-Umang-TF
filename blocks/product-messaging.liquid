@@ -1,0 +1,231 @@
+{% liquid
+  assign product_resource = closest.product
+  assign block_settings = block.settings
+
+  if request.visual_preview_mode and product_resource == blank
+    assign product_resource = collections.all.products.first
+  endif
+
+  assign brand_metaobject = shop.metaobjects.on_goody_brand.global
+  assign get_it_soon_label = brand_metaobject.get_it_soon_label
+  assign cannot_ship_label = brand_metaobject.cannot_ship_label
+  assign eta_days = brand_metaobject.get_it_soon_eta_days | default: 5 | times: 1
+  assign restricted_places = product_resource.metafields.ediblearrangement.restricted_states | strip
+  assign has_message = false
+
+  if get_it_soon_label != blank
+    assign has_message = true
+  elsif cannot_ship_label != blank and restricted_places != blank
+    assign has_message = true
+  endif
+
+  capture text_classes
+    echo block_settings.type_preset
+    echo ' custom-font-weight'
+  endcapture
+%}
+
+{% if brand_metaobject != blank and has_message %}
+  <div
+    class="product-messaging spacing-style {{ text_classes }}"
+    style="
+      --color: {{ block_settings.color }};
+      --font-weight: 400;
+      {% render 'spacing-padding', settings: block_settings %}
+    "
+    {{ block.shopify_attributes }}
+  >
+    {% if get_it_soon_label != blank %}
+      <div class="product-messaging__row">
+        {% if brand_metaobject.get_it_soon_icon.value != blank %}
+          {{
+            brand_metaobject.get_it_soon_icon.value
+            | image_url: width: 32
+            | image_tag:
+              class: 'product-messaging__icon',
+              loading: 'lazy',
+              widths: '16, 32',
+              sizes: '16px',
+              alt: ''
+          }}
+        {% endif %}
+
+        {% liquid  
+          assign eta_seconds = eta_days | times: 24 | times: 60 | times: 60
+          assign eta_timestamp = 'now' | date: '%s' | plus: eta_seconds
+          assign eta_day = eta_timestamp | date: '%A'
+          assign eta_month = eta_timestamp | date: '%B'
+          assign eta_date_number = eta_timestamp | date: '%e' | strip
+          assign eta_date = eta_day | append: ', ' | append: eta_month | append: ' ' | append: eta_date_number
+        %}
+
+        {% capture eta_markup %}
+          <span style="font-weight: 600;">{{ eta_date | escape }}</span>
+        {% endcapture %}
+
+        <span>
+          {{ get_it_soon_label | strip | replace: '[get_it_soon_eta]', eta_markup }}
+        </span>
+      </div>
+    {% endif %}
+
+    {% if cannot_ship_label != blank and restricted_places != blank %}
+      <div class="product-messaging__row">
+        {{ cannot_ship_label | replace: '[places]', restricted_places | strip | escape }}
+      </div>
+    {% endif %}
+  </div>
+{% endif %}
+
+{% stylesheet %}
+  .product-messaging {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    color: var(--color, var(--color-foreground));
+    text-align: center;
+  }
+
+  .product-messaging__row {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    max-width: 100%;
+    white-space: normal;
+  }
+
+  .product-messaging__icon {
+    display: block;
+    flex: 0 0 16px;
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Product messaging",
+  "tag": null,
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Get it soon and Cannot ship messaging. Source: Shopify Admin → Content → Metaobjects → On Goody Brand → global."
+    },
+    {
+      "type": "header",
+      "content": "t:content.typography"
+    },
+    {
+      "type": "select",
+      "id": "type_preset",
+      "label": "t:settings.preset",
+      "options": [
+        {
+          "value": "h4",
+          "label": "t:options.h4"
+        },
+        {
+          "value": "h5",
+          "label": "t:options.h5"
+        },
+        {
+          "value": "h6",
+          "label": "t:options.h6"
+        },
+        {
+          "value": "body-regular",
+          "label": "t:options.body_regular"
+        },
+        {
+          "value": "body-small",
+          "label": "t:options.body_small"
+        },
+        {
+          "value": "label",
+          "label": "t:options.label"
+        },
+        {
+          "value": "tag",
+          "label": "t:options.tag"
+        }
+      ],
+      "default": "label"
+    },
+    {
+      "type": "select",
+      "id": "color",
+      "label": "t:settings.color",
+      "options": [
+        {
+          "value": "var(--color-foreground)",
+          "label": "t:options.text"
+        },
+        {
+          "value": "var(--color-foreground-heading)",
+          "label": "t:options.heading"
+        },
+        {
+          "value": "var(--color-primary)",
+          "label": "t:options.link"
+        }
+      ],
+      "default": "var(--color-foreground)"
+    },
+    {
+      "type": "header",
+      "content": "t:content.padding"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "t:settings.top",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "t:settings.bottom",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-start",
+      "label": "t:settings.left",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-end",
+      "label": "t:settings.right",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    }
+  ],
+  "presets": [
+    {
+      "name": "Product messaging",
+      "category": "t:categories.product"
+    }
+  ]
+}
+{% endschema %}

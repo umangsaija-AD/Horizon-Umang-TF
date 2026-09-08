@@ -1,0 +1,104 @@
+{% comment %}
+  Bundle Builder product card.
+  Server-rendered card used inside the Bundle Builder Drawer tab panels.
+  Carries the data-attributes the drawer JS reads to manage cart state.
+
+  Multi-variant products carry a data-variants JSON payload; clicking "Add"
+  on them swaps the step grid for the variant picker (handled in JS).
+
+  Accepts:
+    - product: a Product object (from the bundle config metaobject's eligible_products)
+    - badge_icon_url: asset url for the "1 Hour Delivery" badge icon
+    - is_addon: (optional) boolean — true if this card is a Step 2 add-on product
+{% endcomment %}
+
+{% liquid
+  assign variant = product.selected_or_first_available_variant
+  unless variant
+    assign variant = product.variants.first
+  endunless
+
+  assign variant_count = product.variants | size
+  assign is_multi = false
+  if variant_count > 1
+    assign is_multi = true
+  endif
+
+  assign price = variant.price
+  assign min_price = product.price_min | default: price
+  assign compare = variant.compare_at_price | default: 0
+  assign image = product.featured_image
+
+  assign has_trending = false
+  if product.tags contains 'trending'
+    assign has_trending = true
+  endif
+
+  assign has_delivery = false
+  if product.tags contains '1-hour-delivery'
+    assign has_delivery = true
+  endif
+%}
+
+{% if variant %}
+  {%- capture variants_json -%}
+    [{% for v in product.variants %}{% assign v_image = v.image | default: image %}{"id":{{ v.id }},"title":{{ v.title | json }},"price":{{ v.price }},"compare":{{ v.compare_at_price | default: 0 }},"available":{{ v.available }},"image":{{ v_image | image_url: width: 200 | json }},"delivery":{{ v.metafields.ediblearrangement.delivery_availability.value.name | default: '' | json }}}{% unless forloop.last %},{% endunless %}{% endfor %}]
+  {%- endcapture -%}
+  <div class="bb-card" data-variant-id="{{ variant.id }}" data-product-id="{{ product.id }}"{% if is_addon %} data-addon="true"{% endif %}>
+    <div class="bb-card__image-wrapper">
+      {% if image %}
+        <img
+          class="bb-card__image"
+          src="{{ image | image_url: width: 338 }}"
+          alt="{{ product.title | escape }}"
+          width="169"
+          height="169"
+          loading="lazy"
+        >
+      {% else %}
+        <div class="bb-card__image-placeholder"></div>
+      {% endif %}
+      {% if has_trending %}
+        <span class="bb-card__callout">Trending Now!</span>
+      {% endif %}
+    </div>
+    <div class="bb-card__info">
+      <div class="bb-card__details">
+        {% if has_delivery and badge_icon_url != blank %}
+          <div class="bb-card__badge">
+            <img class="bb-card__badge-icon" src="{{ badge_icon_url }}" alt="" width="16" height="16">
+            <span class="bb-card__badge-text">1 Hour Delivery</span>
+          </div>
+        {% endif %}
+        <h4 class="bb-card__title">{{ product.title | escape }}</h4>
+        <div class="bb-card__pricing">
+          {% if is_multi %}
+            <span class="bb-card__price">Starting at ${{ min_price | money_without_currency }}</span>
+          {% else %}
+            <span class="bb-card__price">Starting at ${{ price | money_without_currency }}</span>
+            {% if compare > price %}
+              <span class="bb-card__compare-price">${{ compare | money_without_currency }}</span>
+            {% endif %}
+          {% endif %}
+        </div>
+      </div>
+      <button
+        type="button"
+        class="bb-card__action bb-card__action--add"
+        data-variant-id="{{ variant.id }}"
+        data-product-id="{{ product.id }}"
+        data-title="{{ product.title | escape }}"
+        data-image="{{ image | image_url: width: 338 | escape }}"
+        data-price="{{ price }}"
+        data-compare-price="{{ compare }}"
+        data-handle="{{ product.handle | escape }}"
+        data-badge="{% if has_trending %}trending{% endif %}"
+        data-multi-variant="{{ is_multi }}"
+        data-wrap-available="{{ product.metafields.ediblearrangement.wrap_available }}"
+        {% if is_multi %}data-variants="{{ variants_json | strip | escape }}"{% endif %}
+        {% if is_addon %}data-addon="true"{% endif %}
+        {% unless variant.available %}disabled{% endunless %}
+      >{% if variant.available %}Add{% else %}Sold out{% endif %}</button>
+    </div>
+  </div>
+{% endif %}

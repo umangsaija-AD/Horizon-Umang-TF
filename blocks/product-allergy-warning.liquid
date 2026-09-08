@@ -1,0 +1,49 @@
+{% liquid
+  assign product_resource = closest.product
+  if request.visual_preview_mode and product_resource == blank
+    assign product_resource = collections.all.products.first
+  endif
+
+  assign allergy_information = product_resource.metafields.ediblearrangement.allergy_information
+%}
+
+{% if allergy_information != blank %}
+  <div
+    class="product-highlight-points"
+    style="--highlight-point-background: {{ block.settings.background_color }};"
+    {{ block.shopify_attributes }}
+  >
+    <div class="product-highlight-point">
+      <span class="product-highlight-point__icon">
+        {{- 'icon-info-circle.svg' | inline_asset_content -}}
+      </span>
+      <span class="product-highlight-point__text">
+        <span class="product-highlight-point__label">{{ 'blocks.product_allergy_warning.label' | t }}:</span>
+        <span class="product-highlight-point__rich-text">
+          {{ allergy_information | metafield_tag | strip_html }}
+        </span>
+      </span>
+    </div>
+  </div>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Product allergy warning",
+  "tag": null,
+  "settings": [
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background color",
+      "default": "#FBF7F5"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Product allergy warning",
+      "category": "t:categories.product"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,19 @@
+<div class="product-message-highlight">
+  {% if highlight.icon.value != blank %}
+    <span class="product-message-highlight__icon-wrapper">
+      {{
+        highlight.icon.value
+        | image_url: width: 72
+        | image_tag:
+          class: 'product-message-highlight__icon',
+          loading: 'lazy',
+          widths: '36, 72',
+          sizes: '2.25rem',
+          alt: ''
+      }}
+    </span>
+  {% endif %}
+  <span class="product-message-highlight__text {{ text_classes }}">
+    {{ message | strip | escape }}
+  </span>
+</div>

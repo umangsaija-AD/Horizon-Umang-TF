@@ -1,0 +1,119 @@
+{%- comment -%}
+  Personalization message config island.
+
+  Renders the Personalization Drawer message-option block configuration as a JSON
+  data island so OTHER components (the Cart Drawer) can reuse the exact same
+  source of truth — paid greeting-card product/price/iframe, occasion list,
+  max characters, tab labels and button/title copy — without duplicating
+  merchant settings.
+
+  Accepts:
+    section - the personalization-drawer section (provides section.blocks)
+{%- endcomment -%}
+
+{%- liquid
+  assign paid_block = nil
+  assign free_block = nil
+  for block in section.blocks
+    if block.type == 'message-option'
+      assign block_title_downcase = block.settings.title | downcase
+      assign block_button_downcase = block.settings.button_label | downcase
+      assign block_product_handle = block.settings.product.handle | default: block.settings.product | downcase
+      assign is_gift_message_block = false
+      if block.settings.is_complementary or block_product_handle contains 'complimentary' or block_title_downcase contains 'complimentary' or block_button_downcase contains 'free'
+        assign is_gift_message_block = true
+      endif
+
+      if is_gift_message_block
+        assign free_block = block
+      else
+        assign paid_block = block
+      endif
+    endif
+  endfor
+
+  assign default_occasions = 'Birthday,Get Well,Thank You,Congratulations,Anniversary,Just Because,Sympathy,New Baby,Wedding,Graduation'
+
+  assign greeting_card_variant_id = ''
+  assign paid_price = 0
+  assign paid_price_formatted = ''
+  assign paid_title = 'Add a real custom greeting card'
+  assign paid_button_label = 'Add'
+  assign paid_iframe_url = ''
+  assign occasion_list = default_occasions
+
+  if paid_block
+    assign paid_product = paid_block.settings.product
+    if paid_product != blank and paid_product.id == blank
+      assign paid_product = all_products[paid_product]
+    endif
+    assign paid_variant = paid_product.selected_or_first_available_variant
+    if paid_variant
+      assign greeting_card_variant_id = paid_variant.id
+      assign paid_price = paid_variant.price
+      assign paid_price_formatted = paid_price | money
+    endif
+    assign paid_title = paid_block.settings.title | default: paid_title
+    assign paid_button_label = paid_block.settings.button_label | default: 'Add'
+    assign paid_iframe_url = paid_block.settings.iframe_url
+    assign occasion_list = default_occasions
+  endif
+
+  assign free_title = 'Send a complimentary gift message'
+  assign free_button_label = 'Add - FREE'
+  assign free_description = 'Tell your loved one how much they mean to you.'
+  assign gift_message_variant_id = ''
+  assign gm_max_chars = 300
+  assign gm_tab_write = 'Write my own'
+  assign gm_tab_generate = 'Write one for me'
+
+  if free_block
+    assign free_product = free_block.settings.product
+    if free_product != blank and free_product.id == blank
+      assign free_product = all_products[free_product]
+    endif
+    assign free_variant = free_product.selected_or_first_available_variant
+    if free_variant
+      assign gift_message_variant_id = free_variant.id
+    endif
+    assign free_title = free_block.settings.title | default: free_title
+    assign free_button_label = free_block.settings.button_label | default: 'Add - FREE'
+    assign free_description = free_block.settings.description_text | default: free_description
+    assign gm_max_chars = free_block.settings.max_characters | default: 300 | plus: 0
+    if gm_max_chars <= 0
+      assign gm_max_chars = 300
+    endif
+    assign gm_tab_write = free_block.settings.tab_write_own | default: 'Write my own'
+    assign gm_tab_generate = free_block.settings.tab_generate | default: 'Write one for me'
+  endif
+
+  assign occasions = occasion_list | split: ','
+-%}
+<script type="application/json" id="cd-personalization-message-config">
+{
+  "greetingCardVariantId": {% if greeting_card_variant_id != blank %}{{ greeting_card_variant_id | json }}{% else %}null{% endif %},
+  "giftMessageVariantId": {% if gift_message_variant_id != blank %}{{ gift_message_variant_id | json }}{% else %}null{% endif %},
+  "paidPrice": {{ paid_price | json }},
+  "paidPriceFormatted": {{ paid_price_formatted | strip | json }},
+  "paidTitle": {{ paid_title | json }},
+  "paidButtonLabel": {{ paid_button_label | json }},
+  "iframeUrl": {{ paid_iframe_url | json }},
+  "freeTitle": {{ free_title | json }},
+  "freeButtonLabel": {{ free_button_label | json }},
+  "freeDescription": {{ free_description | json }},
+  "maxChars": {{ gm_max_chars | json }},
+  "tabWriteOwn": {{ gm_tab_write | json }},
+  "tabGenerate": {{ gm_tab_generate | json }},
+  "occasions": [
+    {%- assign first = true -%}
+    {%- for occasion in occasions -%}
+      {%- assign o = occasion | strip -%}
+      {%- if o == blank -%}{%- continue -%}{%- endif -%}
+      {%- unless first -%},{%- endunless -%}
+      {%- assign oid = o | downcase | replace: ' ', '_' | replace: '-', '_' -%}
+      { "label": {{ o | json }}, "id": {{ oid | json }} }
+      {%- assign first = false -%}
+    {%- endfor -%}
+  ]
+}
+</script>

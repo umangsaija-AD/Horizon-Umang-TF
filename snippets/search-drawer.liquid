@@ -1,0 +1,34 @@
+{% liquid
+  assign configured_empty_state_title = empty_state_title | default: ''
+  assign configured_collection = empty_state_collection
+  assign configured_top_searches = empty_state_top_searches | default: ''
+%}
+
+{{ 'predictive-search.css' | asset_url | stylesheet_tag }}
+
+<div
+  class="ps-wrapper"
+  id="predictive-search"
+  data-root-url="{{ routes.root_url }}"
+  data-search-url="{{ routes.search_url }}"
+  data-label-search="{{ 'content.search_input_label' | t | escape }}"
+  data-label-placeholder="{{ 'content.search_input_placeholder' | t | escape }}"
+  data-label-clear="{{ 'actions.clear' | t | escape }}"
+  data-label-close="{{ 'accessibility.close_dialog' | t | escape }}"
+  data-label-products="{{ 'content.search_results_resource_products' | t | escape }}"
+  data-label-pages="{{ 'content.search_results_resource_pages' | t | escape }}"
+  data-label-articles="{{ 'content.search_results_resource_articles' | t | escape }}"
+  data-label-collections="{{ 'content.search_results_resource_collections' | t | escape }}"
+  data-label-queries="{{ 'Top Searches' | escape }}"
+  data-label-view-all="{{ 'content.search_results_view_all' | t | escape }}"
+  data-label-no-results="{{ 'content.search_results_no_results' | t: terms: '__TERMS__' | escape }}"
+  data-label-no-products="{{ 'content.no_products_found' | t | escape }}"
+  data-label-sidebar-aria="{{ 'content.search_results' | t | escape }}"
+  data-empty-title="{{ configured_empty_state_title | escape }}"
+  data-empty-top-searches="{{ configured_top_searches | escape }}"
+  data-empty-collection-title="{{ configured_collection.title | default: '' | escape }}"
+  data-empty-collection-url="{{ configured_collection.url | default: '' | escape }}"
+></div>
+
+<script src="{{ 'predictive-search.js' | asset_url }}" type="module"></script>
+<script src="{{ 'product-image-gallery.js' | asset_url }}" type="module"></script>

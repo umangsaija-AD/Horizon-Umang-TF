@@ -1,0 +1,149 @@
+{% liquid
+  assign bg_color = block.settings.background_color
+  assign col_index = block.settings.column_index
+  assign row_index = block.settings.row_index
+  assign col_span = block.settings.column_span
+  assign row_index_mobile = block.settings.row_index_mobile
+  assign col_index_mobile = block.settings.column_index_mobile
+  assign v_align = block.settings.vertical_alignment
+  assign h_align = block.settings.horizontal_alignment
+
+  case v_align
+    when 'top'
+      assign justify_class = 'tw-justify-start'
+    when 'center'
+      assign justify_class = 'tw-justify-center'
+    when 'bottom'
+      assign justify_class = 'tw-justify-end'
+  endcase
+
+  case h_align
+    when 'left'
+      assign items_class = 'tw-items-start'
+    when 'center'
+      assign items_class = 'tw-items-center'
+    when 'right'
+      assign items_class = 'tw-items-end'
+  endcase
+-%}
+column_span:{{ col_span }}|row_index:{{ row_index }}|column_index:{{ col_index }}|row_index_mobile:{{ row_index_mobile }}|column_index_mobile:{{ col_index_mobile }}
+<!-- settings end -->
+<div
+  {{ block.shopify_attributes }}
+  class="promotional-card tw-relative tw-flex tw-h-full tw-min-h-[335px] tw-flex-col {{ justify_class }} {{ items_class }} tw-overflow-hidden tw-rounded-lg tw-p-4 md:tw-p-6 [&>*:not(.image-block--background)]:tw-relative color-{{ block.settings.color_scheme }}"
+  style="background-color: {{ bg_color }};"
+>
+  {% content_for 'blocks' %}
+</div>
+
+{% schema %}
+{
+  "name": "Promotional Card",
+  "tag": null,
+  "blocks": [{ "type": "text" }, { "type": "image" }, { "type": "button" }],
+  "settings": [
+    {
+      "type": "header",
+      "content": "Grid Position"
+    },
+    {
+      "type": "range",
+      "id": "row_index",
+      "label": "Row Index",
+      "min": 0,
+      "max": 20,
+      "step": 1,
+      "default": 0,
+      "info": "0-based row position in the grid"
+    },
+    {
+      "type": "range",
+      "id": "column_index",
+      "label": "Column Index",
+      "min": 0,
+      "max": 2,
+      "step": 1,
+      "default": 0,
+      "info": "0-based column position (0-1 mobile, 0-2 desktop)"
+    },
+    {
+      "type": "range",
+      "id": "column_span",
+      "label": "Column Span",
+      "min": 1,
+      "max": 3,
+      "step": 1,
+      "default": 1,
+      "info": "Number of columns to span"
+    },
+    {
+      "type": "range",
+      "id": "row_index_mobile",
+      "label": "Row Index (mobile)",
+      "min": -1,
+      "max": 20,
+      "step": 1,
+      "default": -1,
+      "info": "0-based row on mobile. -1 = same as desktop."
+    },
+    {
+      "type": "range",
+      "id": "column_index_mobile",
+      "label": "Column Index (mobile)",
+      "min": -1,
+      "max": 1,
+      "step": 1,
+      "default": -1,
+      "info": "0-based column on mobile (0-1). -1 = same as desktop."
+    },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "select",
+      "id": "vertical_alignment",
+      "label": "Vertical Alignment",
+      "options": [
+        { "value": "top", "label": "Top" },
+        { "value": "center", "label": "Center" },
+        { "value": "bottom", "label": "Bottom" }
+      ],
+      "default": "bottom"
+    },
+    {
+      "type": "select",
+      "id": "horizontal_alignment",
+      "label": "Horizontal Alignment",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" },
+        { "value": "right", "label": "Right" }
+      ],
+      "default": "left"
+    },
+    {
+      "type": "header",
+      "content": "Style"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:settings.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background Color",
+      "default": "#1a1a1a"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Promotional Card",
+      "category": "Collection Viewer"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,228 @@
+{% doc %}
+  UGC Group Block
+
+  A media card for the UGC carousel. Accepts a single native Image or Video block
+  (so videos keep their poster thumbnail and the theme's play icon) and layers a
+  configurable text overlay on top.
+
+  @example
+  {% content_for 'block', type: '_ugc-group', id: 'ugc-1' %}
+{% enddoc %}
+
+{% liquid
+  assign s = block.settings
+  assign opacity = s.overlay_opacity | default: 80 | divided_by: 100.0
+  assign overlay_color = s.overlay_color | default: '#000000' | color_modify: 'alpha', opacity
+  assign position = s.content_position | default: 'bottom'
+%}
+
+<div
+  class="ugc-group ugc-group--{{ position }}"
+  style="
+    --ugc-text-color: {{ s.text_color | default: '#ffffff' }};
+    --ugc-overlay-color: {{ overlay_color }};
+    --ugc-radius: {{ s.border_radius | default: 8 }}px;
+  "
+  {{ block.shopify_attributes }}
+>
+  <div class="ugc-group__media">
+    {% content_for 'blocks' %}
+  </div>
+
+  {% if s.overlay_text != blank %}
+    <div class="ugc-group__overlay" aria-hidden="true"></div>
+    <div class="ugc-group__content">
+      <p class="ugc-group__text body-regular">{{ s.overlay_text | escape }}</p>
+    </div>
+  {% endif %}
+</div>
+
+{% stylesheet %}
+  .ugc-group {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    border-radius: var(--ugc-radius, 8px);
+  }
+
+  /* Fill the card with the nested image/video block */
+  .ugc-group__media {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+
+  .ugc-group__media > * {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Shopify theme blocks cannot limit nested blocks as a group. Render only
+     the first media child if an extra Image or Video is added accidentally. */
+  .ugc-group__media > :not(:first-child) {
+    display: none;
+  }
+
+  .ugc-group__media .image-block {
+    display: block;
+    height: 100%;
+  }
+
+  .ugc-group__media .image-block__image,
+  .ugc-group__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    aspect-ratio: auto;
+  }
+
+  .ugc-group__media deferred-media,
+  .ugc-group__media .deferred-media__poster-button,
+  .ugc-group__media .video-placeholder-wrapper {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .ugc-group__media video,
+  .ugc-group__media iframe,
+  .ugc-group__media .deferred-media__poster-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* Gradient/solid overlay behind the text, never blocks clicks */
+  .ugc-group__overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .ugc-group--bottom .ugc-group__overlay {
+    background: linear-gradient(to top, var(--ugc-overlay-color) 0%, transparent 60%);
+  }
+
+  .ugc-group--top .ugc-group__overlay {
+    background: linear-gradient(to bottom, var(--ugc-overlay-color) 0%, transparent 60%);
+  }
+
+  .ugc-group--center .ugc-group__overlay {
+    background: var(--ugc-overlay-color);
+  }
+
+  .ugc-group__content {
+    position: absolute;
+    inset-inline: 0;
+    z-index: 2;
+    padding: 16px;
+    pointer-events: none;
+    --color: var(--ugc-text-color, #ffffff);
+  }
+
+  .ugc-group--bottom .ugc-group__content {
+    bottom: 0;
+  }
+
+  .ugc-group--top .ugc-group__content {
+    top: 0;
+  }
+
+  .ugc-group--center .ugc-group__content {
+    top: 50%;
+    transform: translateY(-50%);
+    text-align: center;
+  }
+
+  /* Once a nested video has been played, hide the overlay + text for good.
+     deferred-media keeps [data-media-loaded] set even while paused, so it
+     loads once and stays hidden. */
+  .ugc-group:has(deferred-media[data-media-loaded]) .ugc-group__overlay,
+  .ugc-group:has(deferred-media[data-media-loaded]) .ugc-group__content {
+    display: none;
+  }
+
+  .ugc-group__text {
+    margin: 0;
+  }
+
+  @media screen and (max-width: 749px) {
+    .ugc-group__content {
+      padding: 12px;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "UGC Group",
+  "tag": null,
+  "blocks": [
+    { "type": "image" },
+    { "type": "video" }
+  ],
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Add one Image or Video block. If more than one media block is added, only the first is displayed."
+    },
+    {
+      "type": "textarea",
+      "id": "overlay_text",
+      "label": "Overlay text"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text color",
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "color",
+      "id": "overlay_color",
+      "label": "Overlay color",
+      "default": "#000000"
+    },
+    {
+      "type": "range",
+      "id": "overlay_opacity",
+      "label": "Overlay opacity",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "default": 80
+    },
+    {
+      "type": "select",
+      "id": "content_position",
+      "label": "Content position",
+      "options": [
+        { "value": "top", "label": "Top" },
+        { "value": "center", "label": "Center" },
+        { "value": "bottom", "label": "Bottom" }
+      ],
+      "default": "bottom"
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "label": "Border radius",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 8
+    }
+  ],
+  "presets": [
+    {
+      "name": "UGC Group",
+      "category": "Media"
+    }
+  ]
+}
+{% endschema %}

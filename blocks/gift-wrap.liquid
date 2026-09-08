@@ -1,0 +1,397 @@
+{% liquid
+  assign block_settings = block.settings
+  assign gift_wrap = shop.metaobjects.gift_wrap.global
+  assign wrap_available = closest.product.metafields.ediblearrangement.wrap_available.value | default: false
+
+  capture heading_classes
+    echo block_settings.heading_type_preset
+    if block_settings.heading_weight != blank
+      echo ' custom-font-weight'
+    endif
+  endcapture
+
+  capture text_classes
+    echo block_settings.text_type_preset
+    if block_settings.text_weight != blank
+      echo ' custom-font-weight'
+    endif
+  endcapture
+
+  capture drawer_content
+    render 'gift-wrap-drawer-content', gift_wrap: gift_wrap
+  endcapture
+%}
+
+{% if gift_wrap != blank and wrap_available %}
+  <div
+    class="gift-wrap-block-wrapper spacing-style"
+    style="{% render 'spacing-style', settings: block_settings %}"
+    {{ block.shopify_attributes }}
+  >
+    {% if block_settings.divider_position == 'top' or block_settings.divider_position == 'both' %}
+      {% assign top_divider_id = block.id | append: '-top' %}
+      {% render 'divider', id: top_divider_id, settings: block_settings, spacing: false %}
+    {% endif %}
+
+    <div class="gift-wrap-block">
+      {% if gift_wrap.section_image.value != blank %}
+        {{
+          gift_wrap.section_image.value
+          | image_url: width: 176
+          | image_tag:
+            class: 'gift-wrap-block__image',
+            loading: 'lazy',
+            widths: '88, 176',
+            sizes: '88px',
+            alt: gift_wrap.section_title
+        }}
+      {% endif %}
+
+      <div class="gift-wrap-block__content">
+        <h3
+          class="gift-wrap-block__heading {{ heading_classes }}"
+          style="
+            {% if block_settings.heading_weight != blank %} --font-weight: {{ block_settings.heading_weight }};{% endif %}
+            --color: {{ block_settings.heading_color }};
+          "
+        >
+          {{ gift_wrap.section_title | escape }}
+        </h3>
+
+        <span
+          class="gift-wrap-block__text {{ text_classes }}"
+          style="
+            {% if block_settings.text_weight != blank %} --font-weight: {{ block_settings.text_weight }};{% endif %}
+            --color: {{ block_settings.text_color }};
+          "
+        >
+          {{ gift_wrap.section_description | escape }}
+        </span>
+        <button
+          type="button"
+          class="button-unstyled gift-wrap-block__trigger gift-wrap-block__link {{ text_classes }} custom-font-weight"
+          style="
+            --font-weight: 600;
+            --color: {{ block_settings.text_color }};
+          "
+          data-global-drawer-trigger
+          data-drawer-title="{{ gift_wrap.drawer_title | escape }}"
+          data-drawer-title-style='{"preset":"h3","color":"#5f0300"}'
+          data-drawer-close-style='{"size":"32px","desktopSize":"40px"}'
+          data-content="{{ drawer_content | escape }}"
+        >
+          {{ gift_wrap.section_link_label | escape }}
+        </button>
+      </div>
+    </div>
+
+    {% if block_settings.divider_position == 'bottom' or block_settings.divider_position == 'both' %}
+      {% assign bottom_divider_id = block.id | append: '-bottom' %}
+      {% render 'divider', id: bottom_divider_id, settings: block_settings, spacing: false %}
+    {% endif %}
+  </div>
+{% endif %}
+
+{% stylesheet %}
+  .gift-wrap-block-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+    width: 100%;
+  }
+
+  .gift-wrap-block {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    width: 100%;
+  }
+
+  .gift-wrap-block__image {
+    display: block;
+    flex: 0 0 88px;
+    width: 88px;
+    height: 88px;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+
+  .gift-wrap-block__content {
+    display: flex;
+    min-width: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-start;
+  }
+
+  .gift-wrap-block__heading {
+    margin: 0;
+  }
+
+  .gift-wrap-block__trigger {
+    display: inline;
+    width: auto;
+    padding: 0;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .gift-wrap-block__text,
+  .gift-wrap-block__link {
+    display: inline;
+  }
+
+  .gift-wrap-block__link {
+    text-decoration: underline;
+    text-underline-offset: 0.08em;
+  }
+
+  @media screen and (max-width: 749px) {
+    .gift-wrap-block__text,
+    .gift-wrap-block__link {
+      display: block;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Gift wrap",
+  "tag": null,
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Display: Shown only when the product's Wrap Available metafield is true."
+    },
+    {
+      "type": "paragraph",
+      "content": "Source: Shopify Admin → Content → Metaobjects → Gift Wrap → global. Clicking the section link opens the Complimentary Gift Wrap drawer."
+    },
+    {
+      "type": "header",
+      "content": "Heading"
+    },
+    {
+      "type": "select",
+      "id": "heading_type_preset",
+      "label": "t:settings.preset",
+      "options": [
+        { "value": "h1", "label": "t:options.h1" },
+        { "value": "h2", "label": "t:options.h2" },
+        { "value": "h3", "label": "t:options.h3" },
+        { "value": "h4", "label": "t:options.h4" },
+        { "value": "h5", "label": "t:options.h5" },
+        { "value": "h6", "label": "t:options.h6" },
+        { "value": "display", "label": "t:options.display" },
+        { "value": "body-regular", "label": "t:options.body_regular" },
+        { "value": "body-small", "label": "t:options.body_small" },
+        { "value": "label", "label": "t:options.label" },
+        { "value": "tag", "label": "t:options.tag" }
+      ],
+      "default": "body-small"
+    },
+    {
+      "type": "select",
+      "id": "heading_weight",
+      "label": "t:settings.weight",
+      "options": [
+        { "value": "", "label": "t:options.default" },
+        { "value": "400", "label": "Normal" },
+        { "value": "500", "label": "Medium" },
+        { "value": "600", "label": "Semibold" },
+        { "value": "700", "label": "Bold" }
+      ],
+      "default": "600"
+    },
+    {
+      "type": "select",
+      "id": "heading_color",
+      "label": "t:settings.color",
+      "options": [
+        {
+          "value": "var(--color-foreground)",
+          "label": "t:options.text"
+        },
+        {
+          "value": "var(--color-foreground-heading)",
+          "label": "t:options.heading"
+        },
+        {
+          "value": "var(--color-primary)",
+          "label": "t:options.link"
+        }
+      ],
+      "default": "var(--color-foreground-heading)"
+    },
+    {
+      "type": "header",
+      "content": "Text"
+    },
+    {
+      "type": "select",
+      "id": "text_type_preset",
+      "label": "t:settings.preset",
+      "options": [
+        { "value": "h1", "label": "t:options.h1" },
+        { "value": "h2", "label": "t:options.h2" },
+        { "value": "h3", "label": "t:options.h3" },
+        { "value": "h4", "label": "t:options.h4" },
+        { "value": "h5", "label": "t:options.h5" },
+        { "value": "h6", "label": "t:options.h6" },
+        { "value": "display", "label": "t:options.display" },
+        { "value": "body-regular", "label": "t:options.body_regular" },
+        { "value": "body-small", "label": "t:options.body_small" },
+        { "value": "label", "label": "t:options.label" },
+        { "value": "tag", "label": "t:options.tag" }
+      ],
+      "default": "label"
+    },
+    {
+      "type": "select",
+      "id": "text_weight",
+      "label": "t:settings.weight",
+      "options": [
+        { "value": "", "label": "t:options.default" },
+        { "value": "400", "label": "Normal" },
+        { "value": "500", "label": "Medium" },
+        { "value": "600", "label": "Semibold" },
+        { "value": "700", "label": "Bold" }
+      ],
+      "default": "400"
+    },
+    {
+      "type": "select",
+      "id": "text_color",
+      "label": "t:settings.color",
+      "options": [
+        {
+          "value": "var(--color-foreground)",
+          "label": "t:options.text"
+        },
+        {
+          "value": "var(--color-foreground-heading)",
+          "label": "t:options.heading"
+        },
+        {
+          "value": "var(--color-primary)",
+          "label": "t:options.link"
+        }
+      ],
+      "default": "var(--color-foreground)"
+    },
+    {
+      "type": "header",
+      "content": "Divider"
+    },
+    {
+      "type": "select",
+      "id": "divider_position",
+      "label": "t:settings.position",
+      "options": [
+        { "value": "none", "label": "t:options.none" },
+        { "value": "top", "label": "t:options.top" },
+        { "value": "bottom", "label": "t:options.bottom" },
+        { "value": "both", "label": "t:options.both" }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "range",
+      "id": "thickness",
+      "label": "t:settings.thickness",
+      "min": 0.5,
+      "max": 5,
+      "step": 0.5,
+      "unit": "px",
+      "default": 1,
+      "visible_if": "{{ block.settings.divider_position != 'none' }}"
+    },
+    {
+      "type": "select",
+      "id": "corner_radius",
+      "label": "t:settings.border_radius",
+      "options": [
+        { "value": "square", "label": "t:options.square" },
+        { "value": "rounded", "label": "t:options.rounded" }
+      ],
+      "default": "square",
+      "visible_if": "{{ block.settings.divider_position != 'none' and block.settings.thickness > 1 }}"
+    },
+    {
+      "type": "range",
+      "id": "width_percent",
+      "label": "t:settings.length",
+      "min": 5,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "default": 100,
+      "visible_if": "{{ block.settings.divider_position != 'none' }}"
+    },
+    {
+      "type": "select",
+      "id": "visibility",
+      "label": "t:settings.visibility",
+      "options": [
+        { "value": "all", "label": "t:options.all" },
+        { "value": "desktop", "label": "t:options.desktop_only" },
+        { "value": "mobile", "label": "t:options.mobile_only" }
+      ],
+      "default": "all",
+      "visible_if": "{{ block.settings.divider_position != 'none' }}"
+    },
+    {
+      "type": "header",
+      "content": "t:content.padding"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "t:settings.top",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "t:settings.bottom",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-start",
+      "label": "t:settings.left",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-end",
+      "label": "t:settings.right",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    }
+  ],
+  "presets": [
+    {
+      "name": "Gift wrap",
+      "category": "t:categories.product"
+    }
+  ]
+}
+{% endschema %}

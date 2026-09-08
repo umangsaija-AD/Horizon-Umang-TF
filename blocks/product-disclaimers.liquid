@@ -1,0 +1,64 @@
+{% liquid
+  assign product_resource = closest.product
+  if request.visual_preview_mode and product_resource == blank
+    assign product_resource = collections.all.products.first
+  endif
+
+  assign disclaimers_metafield = product_resource.metafields.ediblearrangement.disclaimers
+  assign disclaimers = disclaimers_metafield.value
+%}
+
+{% if disclaimers != blank %}
+  <div
+    class="product-highlight-points"
+    style="--highlight-point-background: {{ block.settings.background_color }};"
+    {{ block.shopify_attributes }}
+  >
+    {% if disclaimers_metafield.type contains 'list.' %}
+      {% for disclaimer in disclaimers %}
+        {% if disclaimer != blank %}
+          <div class="product-highlight-point">
+            <span class="product-highlight-point__icon">
+              {{- 'icon-info-circle.svg' | inline_asset_content -}}
+            </span>
+            <span class="product-highlight-point__text">
+              <span class="product-highlight-point__label">{{ 'blocks.product_disclaimers.label' | t }}:</span>
+              {{ disclaimer | strip | escape }}
+            </span>
+          </div>
+        {% endif %}
+      {% endfor %}
+    {% else %}
+      <div class="product-highlight-point">
+        <span class="product-highlight-point__icon">
+          {{- 'icon-info-circle.svg' | inline_asset_content -}}
+        </span>
+        <span class="product-highlight-point__text">
+          <span class="product-highlight-point__label">{{ 'blocks.product_disclaimers.label' | t }}:</span>
+          {{ disclaimers | strip | escape }}
+        </span>
+      </div>
+    {% endif %}
+  </div>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Product disclaimers",
+  "tag": null,
+  "settings": [
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background color",
+      "default": "#FBF7F5"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Product disclaimers",
+      "category": "t:categories.product"
+    }
+  ]
+}
+{% endschema %}

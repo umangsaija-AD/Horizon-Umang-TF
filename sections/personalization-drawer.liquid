@@ -1,0 +1,2922 @@
+{% comment %}
+  Personalization Drawer Section
+  Intercepts ATC clicks site-wide and opens a multi-step personalization flow.
+  Added to header-group so it renders on every page.
+{% endcomment %}
+
+{% liquid
+  assign heading = section.settings.heading | default: 'Personalize your gift'
+%}
+
+<personalization-drawer
+  id="personalization-drawer-{{ section.id }}"
+  class="pd-section"
+  data-money-format="{{ shop.money_format | strip_html | escape }}"
+  data-currency="{{ localization.country.currency.iso_code | default: cart.currency.iso_code | escape }}"
+  data-storefront-token="{{ settings.addons_storefront_token | escape }}"
+>
+  {%- comment -%} Translations consumed by personalization-drawer.js for JS-rendered UI {%- endcomment -%}
+  <script type="application/json" data-pd-i18n>
+    {
+      "addonsUpgrades": "Upgrades",
+      "addonsSelectOne": "Select one",
+      "addonsAdded": "Added ✓",
+      "addonsOther": {{ 'personalization.addons_other' | t | json }},
+      "addPrice": {{ 'personalization.add_price' | t: price: '%%PRICE%%' | json }},
+      "addToCartPrice": {{ 'personalization.add_to_cart_price' | t: price: '%%PRICE%%' | json }}
+    }
+  </script>
+
+  {%- comment -%} Shared message config — consumed by the Cart Drawer personal-message flow {%- endcomment -%}
+  {% render 'personalization-message-config', section: section %}
+
+  {%- comment -%} Drawer container — native <dialog> (modal, top-layer, ::backdrop dim) {%- endcomment -%}
+  <dialog ref="drawer" class="pd-drawer">
+
+    {%- comment -%} Header {%- endcomment -%}
+    <div class="pd-header">
+      <span class="pd-header__title">{{ heading | escape }}</span>
+      <button ref="closeButton" type="button" class="pd-header__close" aria-label="{{ 'accessibility.close_dialog' | t }}">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M18 6L6 18" stroke="#1D1D1D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M6 6L18 18" stroke="#1D1D1D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+
+    {%- comment -%} Main scrollable content {%- endcomment -%}
+    <div ref="mainContent" class="pd-main">
+      <div class="pd-content">
+
+        {%- comment -%} Render blocks by type in step order {%- endcomment -%}
+        {% liquid
+          assign step_number = 0
+          assign variant_blocks = section.blocks | where: 'type', 'variant-selector'
+          assign addon_blocks = section.blocks | where: 'type', 'gift-addon-tab'
+          assign message_blocks = section.blocks | where: 'type', 'message-option'
+          assign gift_wrap_blocks = section.blocks | where: 'type', 'gift-wrap'
+          assign gift_wrap_block = gift_wrap_blocks | first
+          assign digital_card_blocks = section.blocks | where: 'type', 'digital-card'
+          assign gift_wrap = shop.metaobjects.gift_wrap.global
+        %}
+
+        {%- comment -%} Gift Wrap subtitle + Learn More (above all steps) {%- endcomment -%}
+        {%- if gift_wrap_block != blank -%}
+          {%- if gift_wrap_block.settings.description != blank or gift_wrap_block.settings.learn_more_text != blank -%}
+            <div class="pd-step__subtitle-row" {{ gift_wrap_block.shopify_attributes }}>
+              {%- if gift_wrap_block.settings.description != blank -%}
+                <span class="pd-step__subtitle">{{ gift_wrap_block.settings.description | escape }}</span>
+              {%- endif -%}
+              {%- if gift_wrap_block.settings.learn_more_text != blank and gift_wrap != blank -%}
+                <button
+                  type="button"
+                  class="pd-step__link"
+                  data-learn-more-toggle="open"
+                >{{ gift_wrap_block.settings.learn_more_text | escape }}</button>
+              {%- endif -%}
+            </div>
+          {%- endif -%}
+        {%- endif -%}
+
+        {%- comment -%} Step 1: Variant Selector {%- endcomment -%}
+        {% for block in variant_blocks %}
+          {% assign step_number = step_number | plus: 1 %}
+          <div
+            ref="variantStep"
+            class="pd-step"
+            {{ block.shopify_attributes }}
+          >
+            <button type="button" class="pd-step__header" data-step-toggle="variant" aria-expanded="true">
+              <div class="pd-step__header-left">
+                <div class="pd-step__number">{{ step_number }}</div>
+                {%- assign variant_heading_default = 'Select {product-option}' -%}
+                <span class="pd-step__title" data-variant-step-title data-variant-step-template="{{ block.settings.heading | default: variant_heading_default | escape }}">{{ block.settings.heading | default: variant_heading_default | escape }}</span>
+              </div>
+              <img
+                src="{{ 'ingredients-chevron.svg' | asset_url }}"
+                alt=""
+                width="24"
+                height="24"
+                class="pd-step__chevron"
+                aria-hidden="true"
+              >
+            </button>
+            <div data-step-content="variant">
+              <div ref="variantContainer" class="pd-variant-carousel">
+                {%- comment -%} Populated by JS {%- endcomment -%}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+
+        {%- comment -%} Step 2: Gift Add-ons (tabs + products populated by JS from product metafield) {%- endcomment -%}
+        {% if addon_blocks.size > 0 %}
+          {% assign addon_config = addon_blocks | first %}
+          {% assign step_number = step_number | plus: 1 %}
+          <div class="pd-step" data-pd-step="addons" {{ addon_config.shopify_attributes }}>
+            <button type="button" class="pd-step__header" data-step-toggle="addons" aria-expanded="true">
+              <div class="pd-step__header-left">
+                <div class="pd-step__number">{{ step_number }}</div>
+                <div class="pd-step__title-group">
+                  <span class="pd-step__title">{{ addon_config.settings.heading | default: 'Add to your gift' | escape }}</span>
+                  {% if addon_config.settings.subtitle != blank %}
+                    <span class="pd-step__subtitle">{{ addon_config.settings.subtitle | escape }}</span>
+                  {% endif %}
+                </div>
+              </div>
+              <img
+                src="{{ 'ingredients-chevron.svg' | asset_url }}"
+                alt=""
+                width="24"
+                height="24"
+                class="pd-step__chevron"
+                aria-hidden="true"
+              >
+            </button>
+            <div data-step-content="addons">
+              <div class="pd-tabs" data-addon-tabs></div>
+              <div data-addon-panels></div>
+            </div>
+          </div>
+        {% endif %}
+
+        {%- comment -%} Step 3: Message Options {%- endcomment -%}
+        {% if message_blocks.size > 0 %}
+          {% assign step_number = step_number | plus: 1 %}
+          <div class="pd-step" data-pd-step="message">
+            <button type="button" class="pd-step__header" data-step-toggle="message" aria-expanded="true">
+              <div class="pd-step__header-left">
+                <div class="pd-step__number">{{ step_number }}</div>
+                <div class="pd-step__title-group">
+                  <span class="pd-step__title">{{ 'personalization.add_message' | t }}</span>
+                  <span class="pd-step__subtitle">{{ 'personalization.add_message_subtitle' | t }}</span>
+                </div>
+              </div>
+              <img
+                src="{{ 'ingredients-chevron.svg' | asset_url }}"
+                alt=""
+                width="24"
+                height="24"
+                class="pd-step__chevron"
+                aria-hidden="true"
+              >
+            </button>
+            <div data-step-content="message">
+              {%- comment -%} Shimmer — visible until cart sync determines Add/Added state {%- endcomment -%}
+              <div class="pd-msg-shimmer pd-skeleton-shimmer" data-pd-msg-shimmer>
+                <div class="pd-msg-shimmer__card">
+                  <div class="pd-skeleton-line" style="width:32px;height:32px;border-radius:50%;align-self:center"></div>
+                  <div class="pd-skeleton-line pd-skeleton-line--title" style="align-self:center"></div>
+                  <div class="pd-skeleton-line" style="width:80px;height:24px;border-radius:24px;align-self:center"></div>
+                </div>
+                <div class="pd-msg-shimmer__card">
+                  <div class="pd-skeleton-line" style="width:32px;height:32px;border-radius:50%;align-self:center"></div>
+                  <div class="pd-skeleton-line pd-skeleton-line--title" style="align-self:center"></div>
+                  <div class="pd-skeleton-line" style="width:100px;height:24px;border-radius:24px;align-self:center"></div>
+                </div>
+              </div>
+              <div class="pd-message-carousel" data-pd-msg-content style="display:none">
+                {% for block in message_blocks %}
+                  {%- liquid
+                    assign msg_product = block.settings.product
+                    # Fallback: when settings_data stores the product as a handle
+                    # string (manual JSON edits, older schema), `block.settings.product`
+                    # comes back as a String, not a Product drop. Resolve via all_products.
+                    if msg_product != blank and msg_product.id == blank
+                      assign msg_product = all_products[msg_product]
+                    endif
+                    assign msg_variant = msg_product.selected_or_first_available_variant
+                    assign msg_price = 0
+                    if msg_variant and block.settings.is_complementary == false
+                      assign msg_price = msg_variant.price
+                    endif
+                  -%}
+
+                  <div class="pd-message-card"{% unless block.settings.is_complementary %} data-greeting-card-url="{{ block.settings.iframe_url | escape }}"{% endunless %} {{ block.shopify_attributes }}>
+                    <div class="pd-message-card__icon">
+                      {% if block.settings.icon %}
+                        <img
+                          src="{{ block.settings.icon | image_url: width: 64 }}"
+                          alt=""
+                          width="32"
+                          height="32"
+                          loading="lazy"
+                        >
+                      {% elsif block.settings.is_complementary %}
+                        <img
+                          src="{{ 'gift-note.svg' | asset_url }}"
+                          alt=""
+                          width="32"
+                          height="32"
+                          loading="lazy"
+                        >
+                      {% else %}
+                        <img
+                          src="{{ 'greeting-card.svg' | asset_url }}"
+                          alt=""
+                          width="32"
+                          height="32"
+                          loading="lazy"
+                        >
+                      {% endif %}
+                    </div>
+                    <div class="pd-message-card__info">
+                      <span class="pd-message-card__title">{{ block.settings.title | escape }}</span>
+                      {% if block.settings.is_complementary %}
+                        <div class="pd-message-card__action" data-message-state="add">
+                          <button
+                            type="button"
+                            class="pd-message-btn pd-message-btn--free"
+                            data-message-variant-id="{{ msg_variant.id | default: 0 }}"
+                            data-message-price="0"
+                          >
+                            {{ block.settings.button_label | default: 'Add - FREE' | escape }}
+                          </button>
+                        </div>
+                        <div class="pd-message-card__action pd-message-card__action--added" data-message-state="added" style="display: none;">
+                          <button
+                            type="button"
+                            class="pd-message-btn pd-message-btn--remove"
+                            data-gift-message-action="remove"
+                          >Remove</button>
+                          <button
+                            type="button"
+                            class="pd-message-edit"
+                            data-gift-message-action="edit"
+                          >Edit</button>
+                        </div>
+                      {% else %}
+                        {%- liquid
+                          assign paid_btn_label = block.settings.button_label | default: 'Add' | escape
+                          if msg_price > 0
+                            assign formatted_price = msg_price | money
+                            assign paid_btn_label_with_price = paid_btn_label | append: ' - ' | append: formatted_price
+                          else
+                            assign paid_btn_label_with_price = paid_btn_label
+                          endif
+                        -%}
+                        <div class="pd-message-card__action" data-message-state="add">
+                          <button
+                            type="button"
+                            class="pd-message-btn pd-message-btn--paid"
+                            data-message-variant-id="{{ msg_variant.id | default: 0 }}"
+                            data-message-price="{{ msg_price }}"
+                            data-greeting-card-trigger
+                          >
+                            {{ paid_btn_label_with_price }}
+                          </button>
+                        </div>
+                        <div class="pd-message-card__action pd-message-card__action--added" data-message-state="added" style="display: none;">
+                          <button
+                            type="button"
+                            class="pd-message-btn pd-message-btn--remove"
+                            data-greeting-card-action="remove"
+                          >Remove</button>
+                          <button
+                            type="button"
+                            class="pd-message-edit"
+                            data-greeting-card-action="change"
+                          >Change</button>
+                        </div>
+                      {% endif %}
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
+        {%- comment -%} Step: Digital Card {%- endcomment -%}
+        {% for block in digital_card_blocks %}
+          {%- liquid
+            assign dc_product = block.settings.product
+            if dc_product != blank and dc_product.id == blank
+              assign dc_product = all_products[dc_product]
+            endif
+            assign dc_variant = dc_product.selected_or_first_available_variant
+          -%}
+          {% assign step_number = step_number | plus: 1 %}
+          <div class="pd-step" data-pd-step="digital-card" data-dc-variant-id="{{ dc_variant.id | default: 0 }}" {{ block.shopify_attributes }}>
+            <button type="button" class="pd-step__header" data-step-toggle="digital-card" aria-expanded="true">
+              <div class="pd-step__header-left">
+                <div class="pd-step__number">{{ step_number }}</div>
+                <div class="pd-step__title-group">
+                  <span class="pd-step__title">{{ block.settings.heading | default: 'Add a free digital card' | escape }}</span>
+                  {% if block.settings.subtitle != blank %}
+                    <span class="pd-step__subtitle">{{ block.settings.subtitle | escape }}</span>
+                  {% endif %}
+                </div>
+              </div>
+              <img
+                src="{{ 'ingredients-chevron.svg' | asset_url }}"
+                alt=""
+                width="24"
+                height="24"
+                class="pd-step__chevron"
+                aria-hidden="true"
+              >
+            </button>
+            <div data-step-content="digital-card">
+              {%- comment -%} Shimmer — visible until cart sync determines Add/Added state {%- endcomment -%}
+              <div class="pd-dc-shimmer pd-skeleton-shimmer" data-pd-dc-shimmer>
+                <div class="pd-dc-shimmer__row">
+                  <div class="pd-dc-shimmer__left">
+                    <div class="pd-skeleton-line" style="width:24px;height:24px;border-radius:4px;flex-shrink:0"></div>
+                    <div class="pd-skeleton-line" style="width:100px;height:14px"></div>
+                  </div>
+                  <div class="pd-skeleton-line" style="width:90px;height:28px;border-radius:24px;flex-shrink:0"></div>
+                </div>
+              </div>
+              <div class="pd-dc-content" data-pd-dc-content style="display:none">
+                <div class="pd-dc-row" data-dc-card>
+                  <div class="pd-dc-row__main">
+                    <img
+                      src="{{ 'digital-card-icon.svg' | asset_url }}"
+                      alt=""
+                      width="24"
+                      height="24"
+                      class="pd-dc-row__icon"
+                      aria-hidden="true"
+                    >
+                    <span class="pd-dc-row__label" data-dc-card-label>{{ block.settings.card_label | default: 'Add your card' | escape }}</span>
+                  </div>
+                  <div class="pd-dc-row__actions" data-dc-state="add">
+                    <button
+                      type="button"
+                      class="pd-message-btn pd-message-btn--paid"
+                      data-dc-add
+                    >
+                      {{ block.settings.button_label | default: 'Add - FREE' | escape }}
+                    </button>
+                  </div>
+                  <div class="pd-dc-row__actions" data-dc-state="added" style="display: none;">
+                    <button
+                      type="button"
+                      class="pd-message-btn pd-message-btn--remove"
+                      data-dc-remove
+                    >Remove</button>
+                    <button
+                      type="button"
+                      class="pd-message-edit"
+                      data-dc-edit
+                    >Edit</button>
+                  </div>
+                </div>
+
+                <div class="pd-dc-expanded" data-dc-expanded style="display: none;"
+                  data-dc-card-label-default="{{ block.settings.card_label | default: 'Add your card' | escape }}"
+                  data-dc-card-label-active="{{ block.settings.card_label_active | default: 'Edit your card' | escape }}">
+                  <div class="pd-dc-expanded__heading-group">
+                    <span class="pd-dc-expanded__title">{{ block.settings.active_heading | default: 'How would you like to send your FREE digital card?' | escape }}</span>
+                    {% if block.settings.active_description != blank %}
+                      <p class="pd-dc-expanded__description">{{ block.settings.active_description | escape }}</p>
+                    {% endif %}
+                  </div>
+
+                  <div class="pd-dc-tabs" role="tablist">
+                    <button
+                      type="button"
+                      class="pd-dc-tab pd-dc-tab--active"
+                      data-dc-tab="text"
+                      role="tab"
+                      aria-selected="true"
+                    >{{ block.settings.tab_text | default: 'Text' | escape }}</button>
+                    <button
+                      type="button"
+                      class="pd-dc-tab"
+                      data-dc-tab="email"
+                      role="tab"
+                      aria-selected="false"
+                    >{{ block.settings.tab_email | default: 'Email' | escape }}</button>
+                  </div>
+
+                  <div class="pd-dc-panel" data-dc-panel="text">
+                    <input
+                      type="tel"
+                      class="pd-dc-input"
+                      data-dc-input="text"
+                      placeholder="{{ block.settings.phone_placeholder | default: "Enter your recipient's phone number*" | escape }}"
+                      autocomplete="tel"
+                      maxlength="15"
+                      aria-describedby="pd-dc-error-text"
+                    >
+                    <span class="pd-dc-error" id="pd-dc-error-text" data-dc-error="text" role="alert" hidden>Please enter a valid phone number</span>
+                  </div>
+
+                  <div class="pd-dc-panel" data-dc-panel="email" style="display: none;">
+                    <input
+                      type="email"
+                      class="pd-dc-input"
+                      data-dc-input="email"
+                      placeholder="{{ block.settings.email_placeholder | default: "Enter your recipient's email*" | escape }}"
+                      autocomplete="email"
+                      maxlength="60"
+                      aria-describedby="pd-dc-error-email"
+                    >
+                    <span class="pd-dc-error" id="pd-dc-error-email" data-dc-error="email" role="alert" hidden>Please enter a valid email address</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+
+
+      </div>
+    </div>
+
+    {%- comment -%} Info banner — sits between scrollable content and sticky footer, not part of footer {%- endcomment -%}
+    {%- if digital_card_blocks.size > 0 -%}
+      {%- assign dc_first = digital_card_blocks | first -%}
+      <div class="pd-info-banner" data-dc-info-banner>
+        <img
+          src="{{ 'info-circle.svg' | asset_url }}"
+          alt=""
+          width="24"
+          height="24"
+          class="pd-info-banner__icon"
+          aria-hidden="true"
+        >
+        <span class="pd-info-banner__text">{{ dc_first.settings.info_banner_text | default: 'Please add a Digital Card to continue to checkout' | escape }}</span>
+      </div>
+    {%- endif -%}
+
+    {%- comment -%} Sticky Footer {%- endcomment -%}
+    <div class="pd-footer">
+      <div class="pd-footer__inputs">
+        <div class="pd-footer__input-group">
+          <img src="{{ 'location-icon.svg' | asset_url }}" alt="" width="14" height="14" class="pd-footer__input-icon" aria-hidden="true">
+          <input
+            ref="zipcodeInput"
+            type="text"
+            class="pd-footer__zipcode"
+            placeholder="{{ 'personalization.zipcode_placeholder' | t }}"
+            maxlength="10"
+          >
+          <button type="button" class="pd-footer__input-clear" aria-label="{{ 'personalization.clear_zipcode' | t }}">
+            <img src="{{ 'location-close-button.svg' | asset_url }}" alt="" width="28" height="28" aria-hidden="true">
+          </button>
+        </div>
+        <div class="pd-footer__input-group">
+          <svg class="pd-footer__input-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            {%- render 'icon', icon: 'calendar' -%}
+          </svg>
+          <span class="pd-footer__delivery-text">{{ 'personalization.delivery_default' | t }}</span>
+          <img src="{{ 'chevron-icon.svg' | asset_url }}" alt="" width="28" height="28" class="pd-footer__chevron" aria-hidden="true">
+        </div>
+      </div>
+      <button ref="atcButton" type="button" class="pd-footer__atc-btn">
+        <span ref="atcButtonText" class="pd-footer__atc-text">{{ 'personalization.add_to_cart' | t }}</span>
+        <span class="pd-footer__atc-spinner" aria-hidden="true"></span>
+      </button>
+    </div>
+
+    {%- comment -%} Learn More sub-view (overlays main + footer when active) {%- endcomment -%}
+    {%- if gift_wrap != blank -%}
+      <div class="pd-subview" data-learn-more-view aria-hidden="true">
+        <div class="pd-subview__header">
+          <button type="button" class="pd-subview__back" data-learn-more-toggle="close" aria-label="{{ 'personalization.back' | t }}">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M15 6L9 12L15 18" stroke="#1D1D1D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          {%- if gift_wrap.drawer_title.value != blank -%}
+            <span class="pd-subview__title-bar">{{ gift_wrap.drawer_title.value | escape }}</span>
+          {%- endif -%}
+        </div>
+        <div class="pd-subview__scroll">
+          {% render 'gift-wrap-drawer-content', gift_wrap: gift_wrap %}
+        </div>
+      </div>
+    {%- endif -%}
+
+    {%- comment -%} Gift Message sub-view (overlays main + footer when active) {%- endcomment -%}
+    {%- liquid
+      assign gm_block = nil
+      for block in section.blocks
+        if block.type == 'message-option' and block.settings.is_complementary
+          assign gm_block = block
+          break
+        endif
+      endfor
+    -%}
+    {%- if gm_block != blank -%}
+      {%- liquid
+        assign gm_description = gm_block.settings.description_text | default: 'Tell your loved one how much they mean to you.'
+        assign gm_max_chars = gm_block.settings.max_characters | default: 300
+        assign gm_tab_write = gm_block.settings.tab_write_own | default: 'Write my own'
+        assign gm_tab_generate = gm_block.settings.tab_generate | default: 'Write one for me'
+      -%}
+      <div class="pd-subview" data-gift-message-view aria-hidden="true">
+        <div class="pd-subview__header">
+          <button type="button" class="pd-subview__back" data-gift-message-toggle="close" aria-label="{{ 'personalization.back' | t }}">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M15 6L9 12L15 18" stroke="#1D1D1D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <span class="pd-subview__title-bar">{{ gm_block.settings.title | escape }}</span>
+        </div>
+        <div class="pd-subview__scroll">
+          <div class="pd-gm-content" data-gm-max-chars="{{ gm_max_chars }}">
+
+            {%- comment -%} Description text {%- endcomment -%}
+            <p class="pd-gm-description">{{ gm_description | escape }}</p>
+
+            {%- comment -%} Tabs {%- endcomment -%}
+            <div class="pd-gm-tabs">
+              <button type="button" class="pd-gm-tab pd-gm-tab--active" data-gm-tab="write-own">
+                {{ gm_tab_write | escape }}
+              </button>
+              <button type="button" class="pd-gm-tab" data-gm-tab="generate">
+                {{ gm_tab_generate | escape }}
+              </button>
+            </div>
+
+            {%- comment -%} Write my own panel {%- endcomment -%}
+            <div class="pd-gm-panel" data-gm-panel="write-own">
+              <div class="pd-gm-textarea-wrap">
+                <textarea
+                  class="pd-gm-textarea"
+                  data-gm-textarea
+                  placeholder="{{ 'personalization.write_message_placeholder' | t }}"
+                  maxlength="{{ gm_max_chars }}"
+                ></textarea>
+                <span class="pd-gm-counter" data-gm-counter>0/{{ gm_max_chars }}</span>
+              </div>
+              <span class="pd-gm-error" data-gm-error style="display: none;">{{ 'personalization.max_char_error' | t }}</span>
+              <button type="button" class="pd-gm-btn pd-gm-btn--disabled" data-gm-submit disabled>
+                {{ 'personalization.add_gift_message' | t }}
+              </button>
+            </div>
+
+            {%- comment -%} Write one for me panel {%- endcomment -%}
+            <div class="pd-gm-panel" data-gm-panel="generate" style="display: none;">
+              {%- comment -%} Occasion dropdown {%- endcomment -%}
+              <div class="pd-gm-field" data-gm-dropdown>
+                <div class="pd-gm-field__select" data-gm-dropdown-trigger tabindex="0" role="combobox" aria-expanded="false" aria-haspopup="listbox">
+                  <div class="pd-gm-field__label-wrap">
+                    <span class="pd-gm-field__label" data-gm-dropdown-label>{{ 'personalization.select_occasion' | t }}</span>
+                    <span class="pd-gm-field__value" data-gm-dropdown-value style="display: none;"></span>
+                  </div>
+                  <img src="{{ 'chevron-down-13.svg' | asset_url }}" alt="" width="20" height="20" class="pd-gm-field__chevron" aria-hidden="true">
+                </div>
+                <ul class="pd-gm-dropdown-list" data-gm-dropdown-list role="listbox" style="display: none;"></ul>
+              </div>
+
+              {%- comment -%} Name input {%- endcomment -%}
+              <div class="pd-gm-field">
+                <div class="pd-gm-field__input-wrap">
+                  <label class="pd-gm-field__floating-label" data-gm-name-label for="pd-gm-name-{{ section.id }}">{{ 'personalization.your_name' | t }}</label>
+                  <input
+                    type="text"
+                    id="pd-gm-name-{{ section.id }}"
+                    class="pd-gm-field__input"
+                    data-gm-name-input
+                    autocomplete="given-name"
+                  >
+                </div>
+              </div>
+
+              {%- comment -%} Generated message textarea (hidden until generated) {%- endcomment -%}
+              <div class="pd-gm-generated-wrap" data-gm-generated-wrap style="display: none;">
+                <div class="pd-gm-textarea-wrap">
+                  <textarea
+                    class="pd-gm-textarea"
+                    data-gm-generated-textarea
+                    maxlength="{{ gm_max_chars }}"
+                  ></textarea>
+                  <span class="pd-gm-counter" data-gm-generated-counter>0/{{ gm_max_chars }}</span>
+                </div>
+                <span class="pd-gm-error" data-gm-generated-error style="display: none;">{{ 'personalization.max_char_error' | t }}</span>
+              </div>
+
+              {%- comment -%} Generate / Add buttons {%- endcomment -%}
+              <button type="button" class="pd-gm-btn pd-gm-btn--disabled" data-gm-generate-btn disabled>
+                {{ 'personalization.generate_gift_message' | t }}
+              </button>
+              <div class="pd-gm-actions" data-gm-post-generate style="display: none;">
+                <button type="button" class="pd-gm-btn" data-gm-submit-generated>
+                  {{ 'personalization.add_gift_message' | t }}
+                </button>
+                <button type="button" class="pd-gm-regenerate" data-gm-regenerate-btn>
+                  {{ 'personalization.regenerate_message' | t }}
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    {%- endif -%}
+
+    {%- comment -%} Greeting Card iframe sub-view (overlays main + footer when active) {%- endcomment -%}
+    <div class="pd-subview pd-subview--greeting-card" data-greeting-card-view aria-hidden="true">
+      <div class="pd-subview__header">
+        <button type="button" class="pd-subview__back" data-greeting-card-toggle="close" aria-label="Go back">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M15 6L9 12L15 18" stroke="#1D1D1D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <span class="pd-subview__title-bar">Customize Greeting Card</span>
+      </div>
+      <div class="pd-subview__scroll">
+        {%- comment -%} Shimmer — shown while the Printible embed loads {%- endcomment -%}
+        <div class="pd-gc-loading" data-gc-loading style="display: none;" aria-hidden="true">
+          <div class="pd-gc-loading__preview pd-skeleton-line pd-skeleton-shimmer"></div>
+          <div class="pd-skeleton-line pd-skeleton-shimmer" style="width:55%;height:16px"></div>
+          <div class="pd-skeleton-line pd-skeleton-shimmer" style="width:100%;height:44px"></div>
+          <div class="pd-skeleton-line pd-skeleton-shimmer" style="width:100%;height:44px"></div>
+        </div>
+        <iframe
+          class="pd-gc-iframe"
+          data-gc-iframe
+          allow="camera"
+          title="Greeting card customization"
+          style="display: none;"
+        ></iframe>
+      </div>
+    </div>
+
+    {%- comment -%} Digital Card selection & compose sub-view (overlays main + footer when active) {%- endcomment -%}
+    <div class="pd-subview pd-subview--digital-card" data-digital-card-view aria-hidden="true">
+      {%- comment -%} ── View A: Card Selection (Step 2) ── {%- endcomment -%}
+      <div class="pd-dcv-select" data-dcv-select>
+        <div class="pd-subview__header">
+          <button type="button" class="pd-subview__back" data-dcv-back="select" aria-label="Go back">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M15 6L9 12L15 18" stroke="#1D1D1D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <span class="pd-subview__title-bar">Select a Card</span>
+        </div>
+        <div class="pd-subview__scroll">
+          <div class="pd-dcv-content">
+            <div class="pd-gm-field" data-dc-occasion>
+              <div class="pd-gm-field__select" data-dc-occasion-trigger tabindex="0" role="combobox" aria-expanded="false" aria-haspopup="listbox">
+                <div class="pd-gm-field__label-wrap">
+                  <span class="pd-gm-field__label" data-dc-occasion-label>Select an occasion</span>
+                  <span class="pd-gm-field__value" data-dc-occasion-value style="display: none;"></span>
+                </div>
+                <img src="{{ 'chevron-down-13.svg' | asset_url }}" alt="" width="20" height="20" class="pd-gm-field__chevron" aria-hidden="true">
+              </div>
+              <ul class="pd-gm-dropdown-list" data-dc-occasion-list role="listbox" style="display: none;"></ul>
+            </div>
+            <div class="pd-dcv-grid" data-dcv-grid>
+              <div class="pd-dcv-grid__loading" data-dcv-grid-loading style="display: none;">
+                <div class="pd-dcv-skeleton-tile"></div>
+                <div class="pd-dcv-skeleton-tile"></div>
+                <div class="pd-dcv-skeleton-tile"></div>
+                <div class="pd-dcv-skeleton-tile"></div>
+                <div class="pd-dcv-skeleton-tile"></div>
+                <div class="pd-dcv-skeleton-tile"></div>
+              </div>
+              <div class="pd-dcv-grid__tiles" data-dcv-grid-tiles></div>
+              <template data-dcv-card-tile-template>
+                <button type="button" class="pd-dc-card-tile">
+                  <img class="pd-dc-card-tile__image" alt="" loading="lazy">
+                  <span class="pd-dc-card-tile__label"></span>
+                </button>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {%- comment -%} ── View B: Compose Form (Steps 3 & 4) ── {%- endcomment -%}
+      <div class="pd-dcv-compose" data-dcv-compose style="display: none;">
+        <div class="pd-subview__header">
+          <button type="button" class="pd-subview__back" data-dcv-back="compose" aria-label="Go back to card selection">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M15 6L9 12L15 18" stroke="#1D1D1D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <span class="pd-subview__title-bar">Digital Card</span>
+        </div>
+        <div class="pd-subview__scroll">
+          <div class="pd-dcv-compose-content">
+            <div class="pd-dcv-card-preview">
+              <img class="pd-dcv-card-preview__image" data-dcv-preview-image src="" alt="Selected digital card" width="198" height="311">
+              <button type="button" class="pd-dcv-card-preview__change" data-dcv-change-card>Select a New Card</button>
+            </div>
+            <div class="pd-dcv-form">
+              <div class="pd-dcv-form__field">
+                <label class="pd-dcv-form__label" for="DcvFromInput-{{ section.id }}">From*</label>
+                <input
+                  type="text"
+                  id="DcvFromInput-{{ section.id }}"
+                  class="pd-dc-input"
+                  data-dcv-from-input
+                  placeholder="From*"
+                  autocomplete="name"
+                  maxlength="20"
+                >
+              </div>
+              <div class="pd-dcv-form__field">
+                <label class="pd-dcv-form__label" for="DcvMessageInput-{{ section.id }}">Add your message</label>
+                <div class="pd-gm-textarea-wrap">
+                  <textarea
+                    id="DcvMessageInput-{{ section.id }}"
+                    class="pd-gm-textarea pd-dcv-textarea"
+                    data-dcv-message-input
+                    placeholder="Write your message here*"
+                    maxlength="1000"
+                  ></textarea>
+                  <span class="pd-gm-counter" data-dcv-counter>0/1000</span>
+                </div>
+              </div>
+              <button type="button" class="pd-gm-btn pd-gm-btn--disabled" data-dcv-submit disabled>Add Gift Message</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </dialog>
+
+  {%- comment -%} Pre-render variant data for the current product page {%- endcomment -%}
+  {% if product %}
+    {% render 'personalization-variant-data', product: product %}
+  {% elsif template.name == 'product' %}
+    {% if collection.products.size > 0 %}
+      {% for p in collection.products limit: 1 %}
+        {% render 'personalization-variant-data', product: p %}
+      {% endfor %}
+    {% endif %}
+  {% endif %}
+</personalization-drawer>
+
+<script
+  src="{{ 'personalization-drawer.js' | asset_url }}"
+  type="module"
+></script>
+
+{% stylesheet %}
+  /* =====================================================
+     Personalization Drawer - Section Styles
+     ===================================================== */
+
+  /* Drawer — native <dialog>, floating with margin on top/right/bottom */
+  .pd-drawer {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    bottom: 16px;
+    left: auto;
+    width: calc(100% - 32px);
+    max-width: 587px;
+    height: auto;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: none;
+    flex-direction: column;
+    background: #FFFFFF;
+    color: inherit;
+    border-radius: 12px;
+    transform: translateX(calc(100% + 16px));
+    transition: transform 0.3s ease;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  }
+
+  /* The dialog only takes flex layout while open; hidden otherwise */
+  .pd-drawer[open] {
+    display: flex;
+  }
+
+  .pd-drawer:not([open]) {
+    display: none;
+  }
+
+  /* Native modal backdrop replaces the old overlay div */
+  .pd-drawer::backdrop {
+    background: rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .pd-drawer--open {
+    transform: translateX(0);
+  }
+
+  .pd-drawer--open::backdrop {
+    opacity: 1;
+  }
+
+  /* Header */
+  .pd-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    background: #FFFFFF;
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.05);
+    flex-shrink: 0;
+    z-index: 2;
+  }
+
+  .pd-header__title {
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 600;
+    font-size: 20px;
+    line-height: 24px;
+    color: #464646;
+  }
+
+  .pd-header__close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  /* While the ATC requests are in flight the drawer must stay open */
+  .pd-drawer--busy .pd-header__close {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  /* Main content area */
+  .pd-main {
+    flex: 1;
+    overflow-y: auto;
+    background: #FFFFFF;
+    box-shadow: inset 0 5px 10px rgba(0, 0, 0, 0.05);
+  }
+
+  .pd-content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 24px 16px;
+  }
+
+  /* Step cards */
+  .pd-step {
+    background: #FBF7F5;
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+  }
+
+  .pd-step__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: inherit;
+    text-align: start;
+    width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .pd-step__header-left {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    flex: 1;
+  }
+
+  .pd-step__number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    border-radius: 48px;
+    background: #F2E7DF;
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 20px;
+    color: #1D1D1D;
+  }
+
+  .pd-step__title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    justify-content: center;
+  }
+
+  .pd-step__title {
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 22px;
+    color: #464646;
+  }
+
+  .pd-step__subtitle {
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 17px;
+    color: #1D1D1D;
+  }
+
+  .pd-step__link {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 600;
+    font-size: var(--font-size--2xs);
+    line-height: 17px;
+    text-decoration: underline;
+    color: #1D1D1D;
+  }
+
+  .pd-step__learn-more {
+    padding-inline-start: 32px;
+    margin-block-start: 4px;
+  }
+
+  .pd-step__subtitle-row {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    padding-inline-start: 32px;
+    margin-block-start: 6px;
+  }
+
+  .pd-step__chevron {
+    width: 24px;
+    height: 24px;
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  .pd-step__header[aria-expanded='false'] .pd-step__chevron {
+    transform: rotate(180deg);
+  }
+
+  /* ---- Variant Selector ---- */
+  .pd-variant-carousel {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    padding-block-start: 16px;
+    scrollbar-width: none;
+  }
+
+  .pd-variant-carousel::-webkit-scrollbar {
+    display: none;
+  }
+
+  .pd-variant-card {
+    display: flex;
+    gap: 8px;
+    min-width: 240px;
+    padding: 12px;
+    border-radius: 8px;
+    background: #FFFFFF;
+    border: 1px solid #EDEDED;
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+    flex-shrink: 0;
+  }
+
+  .pd-variant-card--selected {
+    border-color: #1D1D1D;
+  }
+
+  .pd-variant-card--unavailable {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .pd-variant-card__image-wrap {
+    width: 64px;
+    height: 64px;
+    min-width: 64px;
+    border-radius: 4px;
+    background: linear-gradient(180deg, rgba(242, 231, 223, 1) 0%, rgba(245, 241, 241, 1) 100%);
+    overflow: hidden;
+  }
+
+  .pd-variant-card__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 4px;
+  }
+
+  .pd-variant-card__content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .pd-variant-card__title {
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 20px;
+    color: #1D1D1D;
+  }
+
+  .pd-variant-card__price {
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    color: #1D1D1D;
+  }
+
+  /* ---- Skeleton loading state ---- */
+  .pd-variant-card--skeleton {
+    cursor: default;
+    pointer-events: none;
+    border-color: #EDEDED;
+  }
+
+  .pd-variant-card--skeleton .pd-variant-card__image-wrap {
+    background: #F2E7DF;
+  }
+
+  .pd-variant-card--skeleton .pd-variant-card__content {
+    flex: 1;
+    gap: 8px;
+  }
+
+  .pd-skeleton-line {
+    display: block;
+    height: 12px;
+    border-radius: 4px;
+    background: #EDEDED;
+  }
+
+  .pd-skeleton-line--title {
+    width: 70%;
+    height: 14px;
+  }
+
+  .pd-skeleton-line--price {
+    width: 40%;
+  }
+
+  .pd-skeleton-line--badge {
+    width: 55%;
+    height: 10px;
+    margin-block-start: 4px;
+  }
+
+  .pd-skeleton-shimmer {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .pd-skeleton-shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.6) 50%,
+      transparent 100%
+    );
+    animation: pd-skeleton-shimmer 1.2s ease-in-out infinite;
+  }
+
+  @keyframes pd-skeleton-shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pd-skeleton-shimmer::after {
+      animation: none;
+    }
+  }
+
+  /* ---- Message & Digital-Card loading shimmers ---- */
+  .pd-msg-shimmer {
+    display: flex;
+    gap: 16px;
+    padding-block-start: 16px;
+  }
+
+  .pd-msg-shimmer__card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+    padding: 12px 8px;
+    border-radius: 8px;
+    background: #FFFFFF;
+    border: 1px solid #EDEDED;
+  }
+
+  .pd-dc-shimmer {
+    padding-block-start: 16px;
+  }
+
+  .pd-dc-shimmer__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px;
+    border-radius: 8px;
+    background: #FFFFFF;
+    border: 1px solid #EDEDED;
+  }
+
+  .pd-dc-shimmer__left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Delivery badge */
+  .pd-badge {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 0;
+  }
+
+  .pd-badge__icon {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    background-color: #526F1B;
+    mask-size: contain;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+  }
+
+  .pd-badge__icon[style*="--mask-image-url"] {
+    mask-image: var(--mask-image-url);
+    -webkit-mask-image: var(--mask-image-url);
+  }
+
+  .pd-badge__text {
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 17px;
+    color: #526F1B;
+  }
+
+  /* ---- Tabs (Add-on) ---- */
+  .pd-tabs {
+    display: flex;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-block-start: 16px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .pd-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .pd-tab {
+    display: flex;
+    justify-content: center;
+    padding: 0 16px 8px;
+    border: none;
+    background: none;
+    border-bottom: 1px solid #C6C6C6;
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 17px;
+    text-align: center;
+    color: #1D1D1D;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: border-color 0.15s ease, font-weight 0.15s ease;
+  }
+
+  .pd-tab--active {
+    border-bottom-color: #1D1D1D;
+    font-weight: 600;
+  }
+
+  /* Add-on carousel */
+  .pd-addon-panel {
+    padding-block-start: 16px;
+  }
+
+  .pd-addon-carousel {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .pd-addon-carousel::-webkit-scrollbar {
+    display: none;
+  }
+
+  .pd-addon-card {
+    display: flex;
+    gap: 12px;
+    width: 240px;
+    padding: 12px;
+    border-radius: 8px;
+    background: #FFFFFF;
+    border: 1px solid #EDEDED;
+    flex-shrink: 0;
+  }
+
+  .pd-addon-card__image-wrap {
+    width: 64px;
+    height: 64px;
+    min-width: 64px;
+    border-radius: 4px;
+    background: linear-gradient(180deg, rgba(242, 231, 223, 1) 0%, rgba(245, 241, 241, 1) 100%);
+    overflow: hidden;
+  }
+
+  .pd-addon-card__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 4px;
+  }
+
+  .pd-addon-card__info {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    flex: 1;
+  }
+
+  .pd-addon-card__details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .pd-addon-card__title {
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 16.8px;
+    color: #1D1D1D;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .pd-addon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 8px;
+    border-radius: 24px;
+    border: none;
+    background: #E10600;
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 17px;
+    text-align: center;
+    color: #FFFFFF;
+    cursor: pointer;
+    white-space: nowrap;
+    align-self: flex-start;
+    margin-top: auto;
+    transition: background-color 0.15s ease;
+  }
+
+  .pd-addon-btn--added {
+    background: #1D1D1D;
+  }
+
+  .pd-empty-state {
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-size: 12px;
+    color: #464646;
+    padding: 8px 0;
+  }
+
+  /* ---- Message Options ---- */
+  .pd-message-carousel {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    padding-block-start: 16px;
+    scrollbar-width: none;
+  }
+
+  .pd-message-carousel::-webkit-scrollbar {
+    display: none;
+  }
+
+  .pd-message-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    min-width: 240px;
+    flex: 1;
+    padding: 12px 8px;
+    border-radius: 8px;
+    background: #FFFFFF;
+    border: 1px solid #EDEDED;
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+  }
+
+  .pd-message-card--selected {
+    border-color: #1D1D1D;
+  }
+
+  .pd-message-card--added {
+    border-color: #EDEDED;
+  }
+
+  .pd-message-card__icon {
+    width: 32px;
+    height: 32px;
+    overflow: hidden;
+  }
+
+  .pd-message-card__icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .pd-message-card__info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .pd-message-card__title {
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 17px;
+    color: #1D1D1D;
+    text-align: center;
+  }
+
+  .pd-message-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 8px;
+    border-radius: 24px;
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 17px;
+    text-align: center;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+
+  .pd-message-btn--paid {
+    background: #E10600;
+    color: #FFFFFF;
+    border: none;
+  }
+
+  .pd-message-btn--free {
+    background: #FFFFFF;
+    color: #1D1D1D;
+    border: 1px solid #EDEDED;
+  }
+
+  .pd-message-card__action {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .pd-message-card__action--added {
+    gap: 16px;
+  }
+
+  .pd-message-btn--remove {
+    background: #FFFFFF;
+    color: #1D1D1D;
+    border: 1px solid #EDEDED;
+    padding: 6px 16px;
+  }
+
+  .pd-message-edit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    background: none;
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 20px;
+    color: #E10600;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  /* ---- Digital Card ---- */
+  .pd-dc-content {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding-block-start: 16px;
+  }
+
+  .pd-dc-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px;
+    border-radius: 8px;
+    background: #FFFFFF;
+    border: 1px solid #EDEDED;
+  }
+
+  .pd-dc-row__main {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .pd-dc-row__icon {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+  }
+
+  .pd-dc-row__label {
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 17px;
+    color: #1D1D1D;
+  }
+
+  .pd-dc-row__actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+
+  .pd-dc-expanded {
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .pd-dc-expanded--visible {
+    display: flex;
+  }
+
+  .pd-dc-expanded__heading-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .pd-dc-expanded__title {
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 20px;
+    color: #464646;
+  }
+
+  .pd-dc-expanded__description {
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 17px;
+    color: #1D1D1D;
+    margin: 0;
+  }
+
+  .pd-dc-tabs {
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+
+  .pd-dc-tab {
+    display: flex;
+    justify-content: center;
+    padding: 0 16px 8px;
+    border: none;
+    background: none;
+    border-bottom: 1px solid #C6C6C6;
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 17px;
+    text-align: center;
+    color: #1D1D1D;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: border-color 0.15s ease, font-weight 0.15s ease;
+  }
+
+  .pd-dc-tab--active {
+    border-bottom-color: #1D1D1D;
+    font-weight: 600;
+  }
+
+  .pd-dc-input {
+    width: 100%;
+    padding: 13.5px 16px;
+    border-radius: 8px;
+    border: 1px solid #C6C6C6;
+    background: #FFFFFF;
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 22px;
+    color: #1D1D1D;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.15s ease;
+  }
+
+  .pd-dc-input::placeholder {
+    color: #6B6B6B;
+    font-size: 12px;
+  }
+
+  .pd-dc-input:focus,
+  .pd-dc-input--filled {
+    border-color: #464646;
+  }
+
+  .pd-dc-input--error {
+    border-color: #E10600;
+  }
+
+  .pd-dc-error {
+    display: block;
+    margin-block-start: 6px;
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 16px;
+    color: #E10600;
+  }
+
+  .pd-dc-error[hidden] {
+    display: none;
+  }
+
+  /* ---- Sticky Footer ---- */
+  .pd-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+    background: #FFFFFF;
+    box-shadow: 0 -5px 10px rgba(0, 0, 0, 0.05);
+    flex-shrink: 0;
+    z-index: 2;
+  }
+
+  .pd-info-banner {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0 16px 12px;
+    padding: 12px;
+    border-radius: 8px;
+    background: #FBF7F5;
+    flex-shrink: 0;
+  }
+
+  .pd-info-banner__icon {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+  }
+
+  .pd-info-banner__text {
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    color: #464646;
+  }
+
+  .pd-info-banner--hidden {
+    display: none;
+  }
+
+  .pd-footer__inputs {
+    display: flex;
+    gap: 8px;
+  }
+
+  .pd-footer__input-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid #DBDBDB;
+    justify-content: space-between;
+  }
+
+  .pd-footer__input-icon {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+
+  .pd-footer__zipcode {
+    border: none;
+    outline: none;
+    background: none;
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    color: #1D1D1D;
+    width: 100%;
+    padding: 0;
+  }
+
+  .pd-footer__input-clear {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+  }
+
+  .pd-footer__delivery-text {
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    color: #1D1D1D;
+    flex: 1;
+  }
+
+  .pd-footer__chevron {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+
+  .pd-footer__input-clear img {
+    width: 28px;
+    height: 28px;
+  }
+
+  .pd-footer__atc-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 4px 24px;
+    min-height: 40px;
+    border-radius: 24px;
+    border: none;
+    background: #E10600;
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 20px;
+    text-align: center;
+    color: #FFFFFF;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+  }
+
+  .pd-footer__atc-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .pd-footer__atc-btn:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+
+  .pd-footer__atc-spinner {
+    display: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-top-color: #FFFFFF;
+    border-radius: 50%;
+    animation: pd-atc-spin 0.7s linear infinite;
+  }
+
+  .pd-footer__atc-btn--loading .pd-footer__atc-text {
+    visibility: hidden;
+  }
+
+  .pd-footer__atc-btn--loading .pd-footer__atc-spinner {
+    display: block;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-top: -9px;
+    margin-left: -9px;
+  }
+
+  @keyframes pd-atc-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* ---- Learn More sub-view ---- */
+  .pd-subview {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: #FFFFFF;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    visibility: hidden;
+    transition: transform 0.3s ease;
+    z-index: 3;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .pd-subview[aria-hidden='false'] {
+    transform: translateX(0);
+    visibility: visible;
+  }
+
+  .pd-subview__header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    flex-shrink: 0;
+    background: #FFFFFF;
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.05);
+    z-index: 2;
+  }
+
+  .pd-subview__back {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+  }
+
+  .pd-subview__title-bar {
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 600;
+    font-size: 20px;
+    line-height: 24px;
+    color: #464646;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .pd-subview__scroll {
+    flex: 1;
+    overflow-y: auto;
+    box-shadow: inset 0 5px 10px rgba(0, 0, 0, 0.05);
+  }
+
+  .pd-subview__content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 16px;
+  }
+
+  .pd-subview__hero {
+    width: 100%;
+    aspect-ratio: 555 / 370;
+    object-fit: cover;
+    border-radius: 8px;
+    display: block;
+  }
+
+  .pd-subview__info {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .pd-subview__heading {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .pd-subview__title {
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 22px;
+    color: #1D1D1D;
+    margin: 0;
+  }
+
+  .pd-subview__description {
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    color: #464646;
+    margin: 0;
+  }
+
+  .pd-subview__features {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .pd-subview__feature {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .pd-subview__feature-icon {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    display: block;
+  }
+
+  .pd-subview__feature-text {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .pd-subview__feature-title {
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 20px;
+    color: #464646;
+  }
+
+  .pd-subview__feature-desc {
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 17px;
+    color: #464646;
+  }
+
+  /* ---- Gift Message sub-view ---- */
+  .pd-gm-content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 24px 16px;
+  }
+
+  .pd-gm-description {
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    color: #464646;
+    margin: 0;
+  }
+
+  /* Tabs */
+  .pd-gm-tabs {
+    display: flex;
+    overflow: hidden;
+    align-items: center;
+    gap: 0;
+  }
+
+  .pd-gm-tab {
+    display: flex;
+    justify-content: center;
+    padding: 0 16px 8px;
+    border: none;
+    background: none;
+    border-bottom: 1px solid #C6C6C6;
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 17px;
+    text-align: center;
+    color: #1D1D1D;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: border-color 0.15s ease, font-weight 0.15s ease;
+  }
+
+  .pd-gm-tab--active {
+    border-bottom-color: #1D1D1D;
+    font-weight: 600;
+  }
+
+  /* Panels */
+  .pd-gm-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* Textarea */
+  .pd-gm-textarea-wrap {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: 15.5px 16px 28px;
+    border-radius: 8px;
+    border: 1px solid #C6C6C6;
+    background: #FFFFFF;
+    transition: border-color 0.15s ease;
+    box-sizing: border-box;
+  }
+
+  .pd-gm-textarea-wrap:focus-within {
+    border-color: #464646;
+  }
+
+  .pd-gm-textarea-wrap:has(.pd-gm-textarea--filled) {
+    border-color: #464646;
+  }
+
+  .pd-gm-textarea-wrap:has(.pd-gm-textarea--error) {
+    border-color: #E10600;
+  }
+
+  .pd-gm-textarea {
+    width: 100%;
+    min-height: 169px;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 22px;
+    color: #1D1D1D;
+    resize: none;
+    outline: none;
+    box-shadow: none;
+    box-sizing: border-box;
+  }
+
+  .pd-gm-textarea:focus,
+  .pd-gm-textarea:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
+
+  .pd-gm-textarea::placeholder {
+    color: #6B6B6B;
+    font-size: 12px;
+  }
+
+  .pd-gm-counter {
+    position: absolute;
+    bottom: 10px;
+    right: 16px;
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 17px;
+    color: #6B6B6B;
+    pointer-events: none;
+  }
+
+  .pd-gm-counter--error {
+    color: #E10600;
+  }
+
+  .pd-gm-error {
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 17px;
+    color: #E10600;
+  }
+
+  /* Submit button */
+  .pd-gm-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 4px 24px;
+    min-height: 40px;
+    border-radius: 24px;
+    border: none;
+    background: #E10600;
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 20px;
+    text-align: center;
+    color: #FFFFFF;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+
+  .pd-gm-btn--disabled {
+    background: #AAAAAA;
+    cursor: not-allowed;
+  }
+
+  /* Regenerate link */
+  .pd-gm-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .pd-gm-regenerate {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    background: none;
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 17px;
+    text-align: center;
+    color: #E10600;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  /* Field (dropdown / input) */
+  .pd-gm-field {
+    position: relative;
+  }
+
+  .pd-gm-field__select {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    min-height: 48px;
+    border-radius: 8px;
+    border: 1px solid #C6C6C6;
+    background: #FFFFFF;
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+    box-sizing: border-box;
+  }
+
+  .pd-gm-field__select--filled {
+    border-color: #464646;
+  }
+
+  .pd-gm-field__select--open {
+    border-color: #464646;
+  }
+
+  .pd-gm-field__label-wrap {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    gap: 0;
+  }
+
+  .pd-gm-field__label {
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 17px;
+    color: #6B6B6B;
+    transition: font-size 0.15s ease;
+  }
+
+  .pd-gm-field__value {
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 17px;
+    color: #1D1D1D;
+  }
+
+  .pd-gm-field__chevron {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+  }
+
+  .pd-gm-field__select--open .pd-gm-field__chevron {
+    transform: rotate(180deg);
+  }
+
+  .pd-gm-dropdown-list {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 5;
+    list-style: none;
+    margin: 0;
+    padding: 4px 0;
+    border-radius: 8px;
+    border: 1px solid #C6C6C6;
+    background: #FFFFFF;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .pd-gm-dropdown-item {
+    padding: 10px 16px;
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 17px;
+    color: #1D1D1D;
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+  }
+
+  .pd-gm-dropdown-item:hover {
+    background: #F5F1F1;
+  }
+
+  .pd-gm-dropdown-item--selected {
+    font-weight: 600;
+    background: #F5F1F1;
+  }
+
+  /* Name input */
+  .pd-gm-field__input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+    border-radius: 8px;
+    border: 1px solid #C6C6C6;
+    background: #FFFFFF;
+    padding: 10px 16px;
+    box-sizing: border-box;
+    transition: border-color 0.15s ease;
+  }
+
+  .pd-gm-field__input-wrap--filled {
+    border-color: #464646;
+  }
+
+  .pd-gm-field__input-wrap--focused {
+    border-color: #464646;
+  }
+
+  .pd-gm-field__floating-label {
+    position: absolute;
+    top: 50%;
+    left: 16px;
+    transform: translateY(-50%);
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 17px;
+    color: #6B6B6B;
+    pointer-events: none;
+    transition: transform 0.15s ease, font-size 0.15s ease, top 0.15s ease;
+  }
+
+  .pd-gm-field__input-wrap--active .pd-gm-field__floating-label {
+    top: 10px;
+    transform: translateY(0);
+    font-size: 12px;
+    line-height: 17px;
+  }
+
+  .pd-gm-field__input {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: none;
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 22px;
+    color: #1D1D1D;
+    padding: 0;
+    margin: 0;
+  }
+
+  .pd-gm-field__input-wrap--active .pd-gm-field__input {
+    padding-top: 14px;
+  }
+
+  /* Generated wrap */
+  .pd-gm-generated-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* ---- Greeting Card iframe sub-view ---- */
+  .pd-subview--greeting-card .pd-subview__scroll {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .pd-gc-occasion {
+    padding: 20px;
+    flex-shrink: 0;
+  }
+
+  .pd-gc-iframe {
+    width: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
+    border: none;
+    display: block;
+  }
+
+  /* Greeting card embed loading shimmer */
+  .pd-gc-loading {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .pd-gc-loading__preview {
+    flex: 1 1 auto;
+    min-height: 160px;
+    height: auto;
+    border-radius: 8px;
+  }
+
+  /* ---- Digital Card Selection & Compose sub-view ---- */
+  .pd-subview--digital-card {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .pd-dcv-select,
+  .pd-dcv-compose {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .pd-dcv-select .pd-subview__scroll,
+  .pd-dcv-compose .pd-subview__scroll {
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  .pd-dcv-content {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px 16px;
+  }
+
+  /* Card tile grid */
+  .pd-dcv-grid__tiles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .pd-dc-card-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 126px;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid #C6C6C6;
+    background: #FFFFFF;
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+    box-sizing: border-box;
+  }
+
+  .pd-dc-card-tile:hover {
+    border-color: #999999;
+  }
+
+  .pd-dc-card-tile--selected {
+    border-color: #E10600;
+  }
+
+  .pd-dc-card-tile__image {
+    width: 108px;
+    height: 169px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #FCE6E6;
+    display: block;
+  }
+
+  .pd-dc-card-tile__label {
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 17px;
+    text-align: center;
+    color: #1D1D1D;
+  }
+
+  /* Loading skeleton tiles */
+  .pd-dcv-grid__loading {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .pd-dcv-skeleton-tile {
+    width: 126px;
+    height: 210px;
+    border-radius: 8px;
+    background: linear-gradient(90deg, #F0F0F0 25%, #E0E0E0 50%, #F0F0F0 75%);
+    background-size: 200% 100%;
+    animation: pd-dcv-shimmer 1.4s ease-in-out infinite;
+  }
+
+  @keyframes pd-dcv-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* Compose form */
+  .pd-dcv-compose-content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 20px 16px;
+  }
+
+  .pd-dcv-card-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .pd-dcv-card-preview__image {
+    width: 198px;
+    height: 311px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #FCE6E6;
+    display: block;
+    background: #F5F5F5;
+  }
+
+  .pd-dcv-card-preview__change {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid #E10600;
+    border-width: 0 0 1px 0;
+    background: none;
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 17px;
+    color: #E10600;
+    cursor: pointer;
+  }
+
+  .pd-dcv-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .pd-dcv-form__field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .pd-dcv-form__label {
+    font-family: var(--font-family, 'Poppins', sans-serif);
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 20px;
+    color: #464646;
+  }
+
+  .pd-dcv-textarea {
+    min-height: 140px;
+  }
+
+  /* ---- Mobile adjustments (<= 768px) ----
+     Matches Figma "Personalization Drawer - Mobile" frame (3453:2360):
+     drawer keeps a 16px gutter on every side (358px wide on a 390px
+     viewport), NOT full-screen. Internal element sizes are tuned for
+     the narrower content area. */
+  @media screen and (max-width: 768px) {
+    /* Tighter content padding and section gap */
+    .pd-content {
+      gap: 16px;
+      padding: 16px;
+    }
+
+    /* Smaller heading on mobile */
+    .pd-header {
+      padding: 12px 16px;
+    }
+
+    .pd-header__title {
+      font-size: 16px;
+      line-height: 22px;
+    }
+
+    /* Variant cards — Figma shows 240px wide; keep min-width but allow
+       cards to shrink to fit narrower viewports without overflow */
+    .pd-variant-carousel,
+    .pd-addon-carousel,
+    .pd-message-carousel {
+      gap: 8px;
+    }
+
+    .pd-variant-card {
+      min-width: 220px;
+    }
+
+    .pd-addon-card {
+      width: 220px;
+    }
+
+    .pd-message-card {
+      min-width: 168px;
+    }
+
+    /* Footer: stack input row above ATC, but keep zipcode + delivery
+       side-by-side per Figma */
+    .pd-footer {
+      padding: 12px 16px;
+      gap: 12px;
+    }
+
+    .pd-footer__input-group {
+      padding: 6px 8px;
+    }
+
+    /* Sub-view (Learn More / Gift Message) — tighter padding */
+    .pd-subview__content,
+    .pd-gm-content {
+      padding: 16px;
+      gap: 16px;
+    }
+
+    .pd-subview__header {
+      padding: 12px 16px;
+    }
+
+    .pd-subview__title-bar {
+      font-size: 16px;
+      line-height: 22px;
+    }
+
+    /* Info banner — smaller text */
+    .pd-info-banner__text {
+      font-size: 12px;
+      line-height: 17px;
+    }
+
+    /* Step title — 14px on mobile per Figma */
+    .pd-step__title {
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .pd-step__title-group {
+      gap: 4px;
+    }
+
+    /* Digital card product-card row — compact on mobile */
+    .pd-dc-row {
+      padding: 8px;
+      gap: 12px;
+    }
+
+    /* Digital card subview — card selection grid */
+    .pd-dcv-content {
+      gap: 24px;
+      padding: 16px;
+      overflow: hidden;
+    }
+
+    .pd-dcv-grid__tiles {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .pd-dc-card-tile {
+      width: auto;
+      min-width: 0;
+    }
+
+    .pd-dc-card-tile__image {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 82 / 129;
+    }
+
+    .pd-dcv-grid__loading {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .pd-dcv-skeleton-tile {
+      width: auto;
+      height: 170px;
+    }
+
+    /* Digital card subview — compose form */
+    .pd-dcv-compose-content {
+      padding: 24px 16px;
+    }
+
+    .pd-dcv-card-preview {
+      gap: 16px;
+    }
+
+    .pd-dcv-card-preview__image {
+      width: 156px;
+      height: 246px;
+    }
+
+    .pd-dcv-form__label {
+      display: none;
+    }
+
+    .pd-dcv-form__field {
+      gap: 0;
+    }
+  }
+
+  /* ---- Narrow phones (<= 420px) ----
+     The drawer is 16px-inset from both sides, so on a 360px viewport
+     content area is only 328px. Variant cards need to squeeze further. */
+  @media screen and (max-width: 420px) {
+    .pd-variant-card {
+      min-width: 200px;
+    }
+
+    .pd-addon-card {
+      width: 200px;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:names.personalization_drawer",
+  "enabled_on": {
+    "groups": ["header"]
+  },
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "t:settings.heading",
+      "default": "Personalize your gift"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "variant-selector",
+      "name": "t:names.variant_selector",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "t:settings.heading",
+          "default": "Select {product-option}",
+          "info": "Use {product-option} as a placeholder — it will be replaced with the product's option name (e.g. Size, Color)."
+        }
+      ]
+    },
+    {
+      "type": "gift-addon-tab",
+      "name": "t:names.gift_addon_tab",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Heading",
+          "default": "Add to your gift"
+        },
+        {
+          "type": "text",
+          "id": "subtitle",
+          "label": "Subtitle",
+          "default": "Make them feel extra special."
+        },
+        {
+          "type": "paragraph",
+          "content": "Add-on products and tabs are now driven by the product's `ediblearrangement.add_ons` metafield and grouped by each add-on product's `ediblearrangement.category` metafield."
+        }
+      ]
+    },
+    {
+      "type": "message-option",
+      "name": "t:names.message_option",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "icon",
+          "label": "t:settings.icon"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "t:settings.title",
+          "default": "Message option"
+        },
+        {
+          "type": "product",
+          "id": "product",
+          "label": "t:settings.product"
+        },
+        {
+          "type": "text",
+          "id": "button_label",
+          "label": "t:settings.label",
+          "default": "Add"
+        },
+        {
+          "type": "checkbox",
+          "id": "is_complementary",
+          "label": "Complementary gift message",
+          "info": "When enabled, this option opens the in-drawer gift message editor (complementary). When disabled, it opens the Printible custom greeting card iframe.",
+          "default": false
+        },
+        {
+          "type": "header",
+          "content": "Greeting card settings",
+          "visible_if": "{{ block.settings.is_complementary == false }}"
+        },
+        {
+          "type": "text",
+          "id": "iframe_url",
+          "label": "Iframe URL",
+          "default": "https://printible.ediblearrangements.com/?token=MTc4MDM4OTYwNDU0OQ==&locale=en-US",
+          "visible_if": "{{ block.settings.is_complementary == false }}"
+        },
+        {
+          "type": "header",
+          "content": "Gift message settings",
+          "visible_if": "{{ block.settings.is_complementary == true }}"
+        },
+        {
+          "type": "text",
+          "id": "description_text",
+          "label": "t:settings.description_text",
+          "default": "Tell your loved one how much they mean to you.",
+          "visible_if": "{{ block.settings.is_complementary == true }}"
+        },
+        {
+          "type": "number",
+          "id": "max_characters",
+          "label": "t:settings.max_characters",
+          "default": 300,
+          "visible_if": "{{ block.settings.is_complementary == true }}"
+        },
+        {
+          "type": "text",
+          "id": "tab_write_own",
+          "label": "t:settings.tab_write_own",
+          "default": "Write my own",
+          "visible_if": "{{ block.settings.is_complementary == true }}"
+        },
+        {
+          "type": "text",
+          "id": "tab_generate",
+          "label": "t:settings.tab_generate",
+          "default": "Write one for me",
+          "visible_if": "{{ block.settings.is_complementary == true }}"
+        }
+      ]
+    },
+    {
+      "type": "digital-card",
+      "name": "Digital card",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Product"
+        },
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Heading",
+          "default": "Add a free digital card"
+        },
+        {
+          "type": "text",
+          "id": "subtitle",
+          "label": "Subtitle",
+          "default": "Your digital card will include your selections below, a tracking number, and a summary of the products being sent."
+        },
+        {
+          "type": "text",
+          "id": "card_label",
+          "label": "Card label (default)",
+          "default": "Add your card"
+        },
+        {
+          "type": "text",
+          "id": "card_label_active",
+          "label": "Card label (active)",
+          "default": "Edit your card"
+        },
+        {
+          "type": "text",
+          "id": "button_label",
+          "label": "Add button label",
+          "default": "Add - FREE"
+        },
+        {
+          "type": "text",
+          "id": "active_heading",
+          "label": "Active section heading",
+          "default": "How would you like to send your FREE digital card?"
+        },
+        {
+          "type": "text",
+          "id": "active_description",
+          "label": "Active section description",
+          "default": "On completing your purchase, your digital card will be delivered to the recipient via either text or email as chosen below."
+        },
+        {
+          "type": "text",
+          "id": "tab_text",
+          "label": "Tab 1 label",
+          "default": "Text"
+        },
+        {
+          "type": "text",
+          "id": "tab_email",
+          "label": "Tab 2 label",
+          "default": "Email"
+        },
+        {
+          "type": "text",
+          "id": "phone_placeholder",
+          "label": "Phone placeholder",
+          "default": "Enter your recipient's phone number*"
+        },
+        {
+          "type": "text",
+          "id": "email_placeholder",
+          "label": "Email placeholder",
+          "default": "Enter your recipient's email*"
+        },
+        {
+          "type": "text",
+          "id": "info_banner_text",
+          "label": "Info banner text",
+          "default": "Please add a Digital Card to continue to checkout"
+        }
+      ]
+    },
+    {
+      "type": "gift-wrap",
+      "name": "t:names.gift_wrap",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "description",
+          "label": "t:settings.description",
+          "default": "Choose your premium gift wrapping!"
+        },
+        {
+          "type": "text",
+          "id": "learn_more_text",
+          "label": "t:settings.learn_more_text",
+          "default": "Learn More"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:names.personalization_drawer",
+      "blocks": [
+        {
+          "type": "variant-selector",
+          "settings": {
+            "heading": "Select {product-option}"
+          }
+        },
+        {
+          "type": "gift-addon-tab",
+          "settings": {
+            "heading": "Add to your gift",
+            "subtitle": "Make them feel extra special."
+          }
+        },
+        {
+          "type": "message-option",
+          "settings": {
+            "title": "Add a real custom greeting card",
+            "button_label": "Add",
+            "is_complementary": false
+          }
+        },
+        {
+          "type": "message-option",
+          "settings": {
+            "title": "Send a complimentary gift message",
+            "button_label": "Add - FREE",
+            "is_complementary": true
+          }
+        },
+        {
+          "type": "digital-card",
+          "settings": {
+            "heading": "Add a free digital card"
+          }
+        },
+        {
+          "type": "gift-wrap",
+          "settings": {
+            "description": "Choose your premium gift wrapping!",
+            "learn_more_text": "Learn More"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

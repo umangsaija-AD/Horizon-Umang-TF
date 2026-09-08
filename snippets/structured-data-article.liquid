@@ -1,0 +1,29 @@
+{% comment %}
+  Article JSON-LD — rendered from structured-data.liquid on article pages.
+{% endcomment %}
+{%- assign article_url = request.origin | append: article.url -%}
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "articleBody": {{ article.content | strip_html | strip_newlines | json }},
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": {{ article_url | json }}
+    },
+    "headline": {{ article.title | json }},
+    {%- if article.image %}
+    "image": [{{ article.image | image_url: width: 2500 | prepend: 'https:' | json }}],
+    {%- endif %}
+    "datePublished": {{ article.published_at | date: '%Y-%m-%dT%H:%M:%S%z' | json }},
+    "dateCreated": {{ article.created_at | date: '%Y-%m-%dT%H:%M:%S%z' | json }},
+    "author": {
+      "@type": "Person",
+      "name": {{ article.author | json }}
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Edible Arrangements"
+    }
+  }
+</script>

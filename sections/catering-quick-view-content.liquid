@@ -1,0 +1,335 @@
+{% liquid
+  if product == blank
+    assign product_handle = request.path | split: '/products/' | last | split: '?' | first
+    assign product = all_products[product_handle]
+  endif
+
+  assign current_variant = product.selected_or_first_available_variant
+
+  comment
+    Images attached to a variant (same test the PDP gallery uses with
+    hide_variants). The gallery tags these so catering-quick-view.js can show
+    only the selected variant's image + shared/unattached media — matching the
+    PDP, instead of showing every variant's image.
+  endcomment
+  assign variant_images = product.images | where: 'attached_to_variant?', true | map: 'src'
+
+  comment
+    Bazaarvoice product id for the rating summary (same resolution as the PDP's
+    _bv-rating-summary block): prefer the custom.ea_product_id metafield.
+  endcomment
+  assign bv_product_id = product.metafields.custom.ea_product_id
+  if bv_product_id == blank
+    assign bv_product_id = product.id
+  endif
+
+  assign badge_text = product.metafields.ediblearrangement.badge.value
+  assign promo_message = product.metafields.ediblearrangement.promotional_message.value
+  assign non_promo_message = product.metafields.ediblearrangement.non_promotional_message.value
+  assign allergy_info = product.metafields.ediblearrangement.allergy_information
+  assign disclaimers_metafield = product.metafields.ediblearrangement.disclaimers
+  assign disclaimers = disclaimers_metafield.value
+%}
+
+<div data-catering-quick-view class="catering-quick-view">
+  {%- comment -%}
+    Product data for JS interaction is fetched client-side from
+    `/products/{handle}.js` (see catering-quick-view.js), not embedded here —
+    this section render does not reliably receive `product` context.
+  {%- endcomment -%}
+
+  <div class="catering-quick-view__body">
+    {%- comment -%} ── Image Gallery ── {%- endcomment -%}
+    <div class="catering-quick-view__gallery">
+      <div class="catering-quick-view__main-images" data-cqv-main-images>
+        {%- comment -%}
+          Iterate product.media so videos (hosted + external) appear alongside
+          images, mirroring the PDP gallery. data-cqv-image-position tracks each
+          image's 1-based position among images only, so variant selection can
+          map variant.featured_image.position to the right slide.
+        {%- endcomment -%}
+        {%- assign cqv_img_pos = 0 -%}
+        {%- for media in product.media -%}
+          {%- assign is_image = false -%}
+          {%- if media.media_type == 'image' -%}
+            {%- assign is_image = true -%}
+            {%- assign cqv_img_pos = cqv_img_pos | plus: 1 -%}
+          {%- endif -%}
+          <div
+            class="catering-quick-view__slide{% unless is_image %} catering-quick-view__slide--video{% endunless %}"
+            data-cqv-slide="{{ forloop.index0 }}"
+            {% if is_image %}data-cqv-image-position="{{ cqv_img_pos }}"{% endif %}
+            {% if variant_images contains media.src %}data-cqv-attached="true"{% endif %}
+          >
+            {%- if forloop.first and badge_text != blank -%}
+              <span class="catering-quick-view__badge">{{ badge_text }}</span>
+            {%- endif -%}
+            {%- case media.media_type -%}
+              {%- when 'external_video' -%}
+                {{ media | external_video_tag: loading: 'lazy' }}
+              {%- when 'video' -%}
+                {{ media | video_tag: image_size: '640x', controls: true, loop: false, muted: false, preload: 'none' }}
+              {%- else -%}
+                <img
+                  src="{{ media.preview_image | image_url: width: 640 }}"
+                  alt="{{ media.preview_image.alt | default: product.title | escape }}"
+                  width="320"
+                  height="320"
+                  loading="{% if forloop.first %}eager{% else %}lazy{% endif %}"
+                >
+            {%- endcase -%}
+          </div>
+        {%- endfor -%}
+      </div>
+
+      {%- if product.media.size > 1 -%}
+        <div class="catering-quick-view__thumbnails" data-cqv-thumbnails>
+          {%- assign cqv_thumb_img_pos = 0 -%}
+          {%- for media in product.media -%}
+            {%- if media.media_type == 'image' -%}
+              {%- assign cqv_thumb_img_pos = cqv_thumb_img_pos | plus: 1 -%}
+            {%- endif -%}
+            <button
+              type="button"
+              class="catering-quick-view__thumbnail{% if forloop.first %} is-active{% endif %}{% if media.media_type != 'image' %} catering-quick-view__thumbnail--video{% endif %}"
+              data-cqv-thumb="{{ forloop.index0 }}"
+              {% if media.media_type == 'image' %}data-cqv-image-position="{{ cqv_thumb_img_pos }}"{% endif %}
+              {% if variant_images contains media.src %}data-cqv-attached="true"{% endif %}
+              aria-label="View {% if media.media_type == 'image' %}image{% else %}video{% endif %} {{ forloop.index }}"
+            >
+              <img
+                src="{{ media.preview_image | image_url: width: 96 }}"
+                alt="{{ media.preview_image.alt | default: product.title | escape }}"
+                width="48"
+                height="48"
+                loading="lazy"
+              >
+            </button>
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+    </div>
+
+    {%- comment -%} ── Product Details ── {%- endcomment -%}
+    <div class="catering-quick-view__details">
+      <div class="catering-quick-view__content">
+        {%- comment -%} Heading block: reviews + title + price + serving + delivery {%- endcomment -%}
+        <div class="catering-quick-view__heading-block">
+          {%- if bv_product_id != blank -%}
+            <div
+              class="catering-quick-view__reviews"
+              data-bv-show="rating_summary"
+              data-bv-product-id="{{ bv_product_id }}"
+            ></div>
+          {%- endif -%}
+          <h2 class="catering-quick-view__title">{{ product.title }}</h2>
+
+          <div class="catering-quick-view__price-block" data-cqv-price-block>
+            {%- if current_variant.compare_at_price > current_variant.price -%}
+              <span class="catering-quick-view__price">{{ current_variant.price | money }}</span>
+              <span class="catering-quick-view__compare-price">{{ current_variant.compare_at_price | money }}</span>
+            {%- else -%}
+              <span class="catering-quick-view__price">{{ current_variant.price | money }}</span>
+            {%- endif -%}
+            {%- if promo_message != blank -%}
+              <span class="catering-quick-view__promo">{{ promo_message }}</span>
+            {%- endif -%}
+          </div>
+          {%- if non_promo_message != blank -%}
+            <div class="catering-quick-view__non-promo">{{ non_promo_message }}</div>
+          {%- endif -%}
+
+          {%- comment -%} Serving size from variant title or product tags {%- endcomment -%}
+          {%- for tag in product.tags -%}
+            {%- if tag contains 'Serving size:' -%}
+              {%- assign serving_text = tag | remove: 'Serving size:' | strip -%}
+              <span class="catering-quick-view__serving">Serving size: {{ serving_text }}</span>
+              {%- break -%}
+            {%- endif -%}
+          {%- endfor -%}
+
+          {%- comment -%} Delivery availability for first available variant {%- endcomment -%}
+          {% comment %} {%- if current_variant -%}
+            {%- assign da = current_variant.metafields.ediblearrangement.delivery_availability.value -%}
+            {%- if da != blank and da.name.value != blank -%}
+              <div class="catering-quick-view__delivery" data-cqv-delivery>
+                {%- if da.icon.value != blank -%}
+                  <img
+                    src="{{ da.icon.value | image_url: width: 64 }}"
+                    alt=""
+                    width="16"
+                    height="16"
+                    style="width:16px;height:16px"
+                    loading="lazy"
+                  >
+                {%- endif -%}
+                <span>{{ da.name.value }}</span>
+              </div>
+            {%- endif -%}
+          {%- endif -%} {% endcomment %}
+        </div>
+
+        {%- comment -%} ── Variant Selector ── {%- endcomment -%}
+        {%- if product.variants.size > 1 -%}
+          <div class="catering-quick-view__variant-section">
+            {%- assign first_option_name = product.options | first -%}
+            <span class="catering-quick-view__variant-label">
+              <span class="catering-quick-view__variant-option-name">{{ first_option_name }}</span>
+              <span data-cqv-variant-value>{{ current_variant.title }}</span>
+            </span>
+            <div class="catering-quick-view__variant-list" data-cqv-variant-list>
+              {%- for variant in product.variants -%}
+                {%- assign da_v = variant.metafields.ediblearrangement.delivery_availability.value -%}
+                {%- assign v_img_src = '' -%}
+                {%- if variant.featured_image -%}
+                  {%- assign v_img_src = variant.featured_image.src | image_url: width: 128 -%}
+                {%- elsif product.featured_image -%}
+                  {%- assign v_img_src = product.featured_image.src | image_url: width: 128 -%}
+                {%- endif -%}
+                <div
+                  class="catering-variant-card{% if variant == current_variant %} is-selected{% endif %}{% unless variant.available %} is-unavailable{% endunless %}"
+                  data-cqv-variant="{{ variant.id }}"
+                  role="button"
+                  tabindex="{% if variant.available %}0{% else %}-1{% endif %}"
+                  aria-selected="{% if variant == current_variant %}true{% else %}false{% endif %}"
+                  aria-disabled="{% unless variant.available %}true{% else %}false{% endunless %}"
+                >
+                  {%- if v_img_src != blank -%}
+                    <img class="catering-variant-card__media" src="{{ v_img_src }}" alt="{{ variant.title | escape }}" width="55" height="55" loading="lazy">
+                  {%- else -%}
+                    <div class="catering-variant-card__media catering-variant-card__media--placeholder"></div>
+                  {%- endif -%}
+                  <div class="catering-variant-card__body">
+                    <span class="catering-variant-card__name">{{ variant.title }}</span>
+                    <span class="catering-variant-card__price">{{ variant.price | money }}</span>
+                    {%- if da_v != blank and da_v.name.value != blank -%}
+                      <span class="catering-variant-card__note catering-variant-card__note--delivery">
+                        {%- if da_v.icon.value != blank -%}
+                          <span class="catering-variant-card__note-icon" style="--cqv-note-icon: url('{{ da_v.icon.value | image_url: width: 32 }}')"></span>
+                        {%- endif -%}
+                        {{ da_v.name.value }}
+                      </span>
+                    {%- elsif variant.available == false -%}
+                      <span class="catering-variant-card__note">Out of stock</span>
+                    {%- endif -%}
+                  </div>
+                </div>
+              {%- endfor -%}
+            </div>
+          </div>
+        {%- endif -%}
+
+        {%- comment -%} ── CTA ── {%- endcomment -%}
+        <div class="catering-quick-view__cta">
+          <button
+            type="button"
+            class="catering-quick-view__add-btn"
+            data-cqv-add
+            data-product-id="{{ product.id }}"
+            {% unless current_variant.available %}disabled{% endunless %}
+          >
+            {%- if current_variant.available -%}
+              Add - {{ current_variant.price | money }}
+            {%- else -%}
+              Sold out
+            {%- endif -%}
+          </button>
+          <div class="catering-quick-view__paypal">
+            <svg width="13" height="11" viewBox="0 0 13 11" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M0.5 3.16667V2.63346C0.5 1.88673 0.5 1.51308 0.645325 1.22786C0.773156 0.976982 0.976982 0.773156 1.22786 0.645325C1.51308 0.5 1.88673 0.5 2.63346 0.5H10.3668C11.1135 0.5 11.4864 0.5 11.7716 0.645325C12.0225 0.773156 12.227 0.976982 12.3548 1.22786C12.5 1.5128 12.5 1.886 12.5 2.63127V3.16667M0.5 3.16667H12.5M0.5 3.16667V7.70013C0.5 8.44687 0.5 8.82004 0.645325 9.10525C0.773156 9.35614 0.976982 9.56032 1.22786 9.68815C1.5128 9.83333 1.886 9.83333 2.63127 9.83333H10.3687C11.114 9.83333 11.4867 9.83333 11.7716 9.68815C12.0225 9.56032 12.227 9.35614 12.3548 9.10525C12.5 8.82032 12.5 8.44766 12.5 7.70239V3.16667" stroke="#1D1D1D" stroke-linejoin="round"/>
+            </svg>
+            <span>Pay in 4 interest-free payments with Paypal</span>
+          </div>
+        </div>
+
+        {%- comment -%} ── Accordion ── {%- endcomment -%}
+        <div class="catering-quick-view__accordion">
+          {%- comment -%} Overview {%- endcomment -%}
+          <details class="catering-quick-view__accordion-item" open>
+            <summary class="catering-quick-view__accordion-header">
+              <span>Overview</span>
+              <img class="catering-quick-view__accordion-chevron" src="{{ 'ingredients-chevron.svg' | asset_url }}" alt="" width="24" height="24" style="width:24px;height:24px">
+            </summary>
+            <div class="catering-quick-view__accordion-content">
+              {%- if product.description != blank -%}
+                <div class="catering-quick-view__description">{{ product.description }}</div>
+              {%- endif -%}
+
+              {%- if disclaimers != blank -%}
+                <div class="catering-quick-view__disclaimers">
+                  {%- if disclaimers_metafield.type contains 'list.' -%}
+                    {%- for disclaimer in disclaimers -%}
+                      {%- if disclaimer != blank -%}
+                        <div class="catering-quick-view__disclaimer">
+                          <img src="{{ 'info-circle.svg' | asset_url }}" alt="" width="20" height="20" style="width:20px;height:20px;flex-shrink:0">
+                          <span>{{ disclaimer | strip | escape }}</span>
+                        </div>
+                      {%- endif -%}
+                    {%- endfor -%}
+                  {%- else -%}
+                    <div class="catering-quick-view__disclaimer">
+                      <img src="{{ 'info-circle.svg' | asset_url }}" alt="" width="20" height="20" style="width:20px;height:20px;flex-shrink:0">
+                      <span>{{ disclaimers | strip | escape }}</span>
+                    </div>
+                  {%- endif -%}
+                </div>
+              {%- endif -%}
+            </div>
+          </details>
+
+          {%- comment -%} Ingredients & allergy info {%- endcomment -%}
+          <details class="catering-quick-view__accordion-item">
+            <summary class="catering-quick-view__accordion-header">
+              <span>Ingredients & allergy info</span>
+              <img class="catering-quick-view__accordion-chevron" src="{{ 'ingredients-chevron.svg' | asset_url }}" alt="" width="24" height="24" style="width:24px;height:24px">
+            </summary>
+            <div class="catering-quick-view__accordion-content">
+              {%- comment -%}
+                Variant-specific ingredients (matches the PDP's variant-ingredients
+                block). One block per variant; the selected one is shown and the
+                rest are hidden — catering-quick-view.js toggles them on variant
+                change. Product data from /products/{handle}.js has no metafields,
+                so this must be server-rendered here.
+              {%- endcomment -%}
+              {%- for variant in product.variants -%}
+                {%- assign v_ingredients = variant.metafields.ediblearrangement.ingredients -%}
+                {%- if v_ingredients.value != blank -%}
+                  <div
+                    class="catering-quick-view__ingredients"
+                    data-cqv-ingredients="{{ variant.id }}"
+                    {% unless variant.id == current_variant.id %}hidden{% endunless %}
+                  >
+                    {{ v_ingredients | metafield_tag }}
+                  </div>
+                {%- endif -%}
+              {%- endfor -%}
+
+              {%- comment -%}
+                Product-level allergy info — styled with the same cream warning box
+                + info icon used by the Overview disclaimers (and the PDP allergy
+                warning), reusing the .catering-quick-view__disclaimer styles.
+              {%- endcomment -%}
+              {%- if allergy_info.value != blank -%}
+                <div class="catering-quick-view__disclaimers">
+                  <div class="catering-quick-view__disclaimer">
+                    <img src="{{ 'info-circle.svg' | asset_url }}" alt="" width="20" height="20" style="width:20px;height:20px;flex-shrink:0">
+                    <span>{{ 'blocks.product_allergy_warning.label' | t }}: {{ allergy_info | metafield_tag | strip_html }}</span>
+                  </div>
+                </div>
+              {%- else -%}
+                <p>No allergy information available for this product.</p>
+              {%- endif -%}
+            </div>
+          </details>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Quick View content",
+  "settings": []
+}
+{% endschema %}

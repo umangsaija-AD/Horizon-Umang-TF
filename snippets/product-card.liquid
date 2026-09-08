@@ -1,0 +1,7 @@
+{% if children != blank %}
+  <div {{ block.shopify_attributes }} data-product-id="{{ product.id }}" class="product-card">
+    {{ children }}
+  </div>
+{% else %}
+  {% render 'static-product-card', product: product %}
+{% endif %}

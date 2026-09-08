@@ -1,0 +1,161 @@
+{
+  "template": {{ template_name | json }},
+  "terms": {{ terms | json }},
+  {% if collection_data %}
+    "id": {{ collection_data.id | json }},
+    "handle": {{ collection_data.handle | json }},
+    "title": {{ collection_data.title | json }},
+    "description": {{ collection_data.description | json }},
+    "url": {{ collection_data.url | json }},
+    "products_count": {{ collection_data.all_products_count | json }},
+    "image": {{ collection_data.image | json }},
+  {% endif %}
+  "sort_by": {{ sort_by | json }},
+  "default_sort_by": {{ default_sort_by | json }},
+  "sort_options": [
+    {%- for option in sort_options -%}
+      {
+        "name": {{ option.name | json }},
+        "value": {{ option.value | json }}
+      }{%- unless forloop.last %},{% endunless -%}
+    {%- endfor -%}
+  ],
+  "filters": [
+    {%- for filter in filters -%}
+      {
+        "label": {{ filter.label | json }},
+        "type": {{ filter.type | json }},
+        "param_name": {{ filter.param_name | json }},
+        "active_values": [
+          {%- for value in filter.active_values -%}
+            {
+              "label": {{ value.label | json }},
+              "value": {{ value.value | json }},
+              "url_to_remove": {{ value.url_to_remove | json }}
+            }{%- unless forloop.last %},{% endunless -%}
+          {%- endfor -%}
+        ],
+        "values": [
+          {%- for value in filter.values -%}
+            {
+              "label": {{ value.label | json }},
+              "value": {{ value.value | json }},
+              "count": {{ value.count | json }},
+              "active": {{ value.active | json }},
+              "url_to_add": {{ value.url_to_add | json }},
+              "url_to_remove": {{ value.url_to_remove | json }}
+            }{%- unless forloop.last %},{% endunless -%}
+          {%- endfor -%}
+        ],
+        "min_value": {{ filter.min_value.value | json }},
+        "max_value": {{ filter.max_value.value | json }},
+        "range_max": {{ filter.range_max | json }},
+        "min_value_param": {{ filter.min_value.param_name | json }},
+        "max_value_param": {{ filter.max_value.param_name | json }},
+        "url_to_remove": {{ filter.url_to_remove | json }}
+      }{%- unless forloop.last %},{% endunless -%}
+    {%- endfor -%}
+  ],
+  "applied_filters": [
+    {%- assign applied_filters_json = "" -%}
+    {%- assign first_applied = true -%}
+    {%- for filter in filters -%}
+      {%- if filter.type == "price_range" -%}
+        {%- if filter.min_value.value or filter.max_value.value -%}
+          {%- capture item -%}{"label":{{ filter.label | json }},"type":{{ filter.type | json }},"min_value":{{ filter.min_value.value | json }},"max_value":{{ filter.max_value.value | json }},"url_to_remove":{{ filter.url_to_remove | json }}}{%- endcapture -%}
+          {%- if first_applied -%}
+            {%- assign applied_filters_json = item -%}
+            {%- assign first_applied = false -%}
+          {%- else -%}
+            {%- assign applied_filters_json = applied_filters_json | append: "," | append: item -%}
+          {%- endif -%}
+        {%- endif -%}
+      {%- else -%}
+        {%- for value in filter.values -%}
+          {%- if value.active -%}
+            {%- capture item -%}{"label":{{ value.label | json }},"type":{{ filter.type | json }},"value":{{ value.value | json }},"param_name":{{ filter.param_name | json }},"url_to_remove":{{ value.url_to_remove | json }}}{%- endcapture -%}
+            {%- if first_applied -%}
+              {%- assign applied_filters_json = item -%}
+              {%- assign first_applied = false -%}
+            {%- else -%}
+              {%- assign applied_filters_json = applied_filters_json | append: "," | append: item -%}
+            {%- endif -%}
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endif -%}
+    {%- endfor -%}
+    {{- applied_filters_json -}}
+  ],
+  "pagination": {
+    "current_page": {{ paginate.current_page | json }},
+    "pages": {{ paginate.pages | json }},
+    "page_size": {{ paginate.page_size | json }},
+    "items": {{ paginate.items | json }},
+    "next_url": {{ paginate.next.url | json }},
+    "previous_url": {{ paginate.previous.url | json }}
+  },
+  "products": [
+    {%- assign rendered = false -%}
+    {%- for item in items -%}
+      {%- if item.object_type == blank or item.object_type == "product" -%}
+        {%- if rendered -%},{%- endif -%}
+        {
+          "id": {{ item.id | json }},
+          "handle": {{ item.handle | json }},
+          "title": {{ item.title | json }},
+          "url": {{ item.url | json }},
+          "options": {{ item.options | json }},
+          "sku": {{ item.variants.first.sku | json }},
+          "variant_id": {{ item.variants.first.id | json }},
+          "vendor": {{ item.vendor | json }},
+          "type": {{ item.type | json }},
+          "tags": {{ item.tags | json }},
+          "available": {{ item.available | json }},
+          "price": {{ item.price | json }},
+          "price_min": {{ item.price_min | json }},
+          "price_max": {{ item.price_max | json }},
+          "compare_at_price": {{ item.compare_at_price | json }},
+          "featured_image": {{ item.featured_image | json }},
+          "badge": {{ item.metafields.ediblearrangement.badge.value | json }},
+          "discount_info": {{ item.metafields.ediblearrangement.discount_info.value | json }},
+          "images": [
+            {%- for image in item.images -%}
+              {
+                "src": {{ image.src | image_url: width: 600 | json }},
+                "alt": {{ image.alt | json }},
+                "width": {{ image.width | json }},
+                "height": {{ image.height | json }}
+              }{%- unless forloop.last -%},{%- endunless -%}
+            {%- endfor -%}
+          ],
+          "variants": [
+            {%- for variant in item.variants -%}
+              {
+                "id": {{ variant.id | json }},
+                "title": {{ variant.title | json }},
+                "price": {{ variant.price | json }},
+                "compare_at_price": {{ variant.compare_at_price | json }},
+                "available": {{ variant.available | json }},
+                "image": {{ variant.image | json }},
+                "sku": {{ variant.sku | json }},
+                "option1": {{ variant.option1 | json }},
+                "option2": {{ variant.option2 | json }},
+                "option3": {{ variant.option3 | json }},
+                "delivery_availability": {%- assign da = variant.metafields.ediblearrangement.delivery_availability.value -%}
+                {%- if da -%}
+                  {
+                    "name": {{ da.name | json }},
+                    "icon": "{{ da.icon.value | image_url }}"
+                  }
+                {%- else -%}
+                  null
+                {%- endif -%}
+              }{%- unless forloop.last -%},{%- endunless -%}
+            {%- endfor -%}
+          ]
+        }
+        {%- assign rendered = true -%}
+      {%- endif -%}
+    {%- endfor -%}
+  ]
+}

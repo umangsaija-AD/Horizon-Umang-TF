@@ -1,0 +1,417 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "catering-hero": {
+      "type": "catering-hero",
+      "blocks": {
+        "hero-heading": {
+          "type": "text",
+          "static": true,
+          "settings": {
+            "text": "<h1>Catering</h1>",
+            "enable_read_more": false,
+            "read_more_label": "Read more",
+            "read_less_label": "Read less",
+            "characters_limit": 0,
+            "width": "fit-content",
+            "max_width": "none",
+            "alignment": "left",
+            "type_preset": "display",
+            "type_preset_desktop": "",
+            "weight": "600",
+            "color": "#FFFFFF",
+            "highlight_color": "var(--color-primary)",
+            "custom_highlight_color": "#1d1d1d",
+            "background": false,
+            "background_color": "#00000026",
+            "corner_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {}
+        },
+        "hero-subtitle": {
+          "type": "text",
+          "static": true,
+          "settings": {
+            "text": "<p>Edible's fruit arrangements and fruit baskets are perfect for any special occasion. From affordable fruit baskets to delivery and pick-up options, shop the entire collection here!</p>",
+            "enable_read_more": false,
+            "read_more_label": "Read more",
+            "read_less_label": "Read less",
+            "characters_limit": 0,
+            "width": "fit-content",
+            "max_width": "none",
+            "alignment": "left",
+            "type_preset": "body-regular",
+            "type_preset_desktop": "",
+            "weight": "",
+            "color": "#FFFFFF",
+            "highlight_color": "var(--color-primary)",
+            "custom_highlight_color": "#1d1d1d",
+            "background": false,
+            "background_color": "#00000026",
+            "corner_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {}
+        },
+        "badge-1": {
+          "type": "catering-badge",
+          "static": true,
+          "settings": {
+            "icon": "dipped-strawberry",
+            "label": "Plan.",
+            "color": "#ffffff"
+          },
+          "blocks": {}
+        },
+        "badge-2": {
+          "type": "catering-badge",
+          "static": true,
+          "settings": {
+            "icon": "truck",
+            "label": "Host.",
+            "color": "#ffffff"
+          },
+          "blocks": {}
+        },
+        "badge-3": {
+          "type": "catering-badge",
+          "static": true,
+          "settings": {
+            "icon": "gift",
+            "label": "Enjoy.",
+            "color": "#ffffff"
+          },
+          "blocks": {}
+        }
+      },
+      "settings": {
+        "desktop_image": "shopify://shop_images/488223314-4162144964070648-3784634604601335810-n-1-page-2-33196481.jpg",
+        "mobile_image": "shopify://shop_images/catering-banner-mob.jpg",
+        "color_scheme": "",
+        "header_overlap": true,
+        "padding-block-start": 0,
+        "padding-block-end": 0
+      }
+    },
+    "collection-viewer": {
+      "type": "collection-viewer",
+      "blocks": {
+        "promotional_card_catering": {
+          "type": "promotional-card",
+          "name": "Promotional Card",
+          "disabled": true,
+          "settings": {
+            "row_index": 2,
+            "column_index": 0,
+            "column_span": 1,
+            "row_index_mobile": 1,
+            "column_index_mobile": 1,
+            "vertical_alignment": "top",
+            "horizontal_alignment": "left",
+            "color_scheme": "scheme-5",
+            "background_color": "rgba(0,0,0,0)"
+          },
+          "blocks": {
+            "image_promo_cat": {
+              "type": "image",
+              "name": "t:names.image",
+              "settings": {
+                "image": "shopify://shop_images/Promo_Image.jpg",
+                "use_as_background": true,
+                "link": "",
+                "image_ratio": "adapt",
+                "custom_ratio_width": 1,
+                "custom_ratio_height": 1,
+                "image_ratio_mobile": "same",
+                "custom_ratio_width_mobile": 1,
+                "custom_ratio_height_mobile": 1,
+                "width": "fill",
+                "custom_width": 100,
+                "width_mobile": "fill",
+                "custom_width_mobile": 100,
+                "height": "fit",
+                "border": "none",
+                "border_width": 1,
+                "border_opacity": 100,
+                "border_radius": 8,
+                "enable_parallax": false,
+                "parallax_overflow": "bottom",
+                "parallax_image_style": "cover",
+                "padding-block-start": 0,
+                "padding-block-end": 12,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "text_promo_cat_heading": {
+              "type": "text",
+              "name": "t:names.heading",
+              "settings": {
+                "text": "<p>Celebrate with 15% off fruit gifts</p>",
+                "enable_read_more": false,
+                "read_more_label": "Read more",
+                "read_less_label": "Read less",
+                "characters_limit": 0,
+                "width": "fit-content",
+                "max_width": "normal",
+                "alignment": "left",
+                "type_preset": "h3",
+                "type_preset_desktop": "",
+                "weight": "600",
+                "color": "var(--color-foreground)",
+                "highlight_color": "var(--color-primary)",
+                "custom_highlight_color": "#1d1d1d",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 0,
+                "padding-block-end": 8,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "text_promo_cat_body": {
+              "type": "text",
+              "name": "t:names.text",
+              "settings": {
+                "text": "<p>Delicious fruit gifts at special<br/>limited-time prices</p>",
+                "enable_read_more": false,
+                "read_more_label": "Read more",
+                "read_less_label": "Read less",
+                "characters_limit": 0,
+                "width": "fit-content",
+                "max_width": "normal",
+                "alignment": "left",
+                "type_preset": "body-regular",
+                "type_preset_desktop": "",
+                "weight": "",
+                "color": "var(--color-foreground)",
+                "highlight_color": "var(--color-primary)",
+                "custom_highlight_color": "#1d1d1d",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 0,
+                "padding-block-end": 8,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "button_promo_cat": {
+              "type": "button",
+              "name": "t:names.button",
+              "settings": {
+                "element_type": "link",
+                "label": "Explore Deals",
+                "link": "shopify://collections/all",
+                "open_in_new_tab": false,
+                "style_class": "link",
+                "weight": "",
+                "button_size": "small",
+                "button_size_mobile": "theme",
+                "width": "fit-content",
+                "custom_width": 100,
+                "width_mobile": "fit-content",
+                "custom_width_mobile": 100
+              },
+              "blocks": {}
+            }
+          },
+          "block_order": [
+            "image_promo_cat",
+            "text_promo_cat_heading",
+            "text_promo_cat_body",
+            "button_promo_cat"
+          ]
+        },
+        "filters": {
+          "type": "filters",
+          "static": true,
+          "settings": {},
+          "blocks": {}
+        },
+        "product-card": {
+          "type": "_product-card",
+          "static": true,
+          "settings": {},
+          "blocks": {
+            "delivery_availability_a9RTTz": {
+              "type": "_delivery-availability",
+              "name": "Delivery Availability",
+              "settings": {
+                "typography_mobile": "label",
+                "typography_desktop": "label",
+                "font_weight_mobile": "500",
+                "font_weight_desktop": "500",
+                "color": "#1b873d",
+                "non_promotional_color": "#e10600",
+                "margin_bottom_mobile": 4,
+                "margin_bottom_desktop": 4
+              },
+              "blocks": {}
+            },
+            "product_title_JCGNca": {
+              "type": "product-title",
+              "name": "t:names.title",
+              "settings": {
+                "width": "fit-content",
+                "max_width": "normal",
+                "alignment": "left",
+                "type_preset": "body-small",
+                "type_preset_desktop": "body-regular",
+                "weight": "600",
+                "weight_desktop": "",
+                "color": "var(--color-foreground)",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0,
+                "margin_bottom_mobile": 8,
+                "margin_bottom_desktop": 12
+              },
+              "blocks": {}
+            },
+            "product_options_count_3HRWfW": {
+              "type": "_product-options-count",
+              "name": "Product Options Count",
+              "settings": {
+                "typography_mobile": "label",
+                "typography_desktop": "body-small",
+                "font_weight_mobile": "400",
+                "font_weight_desktop": "400",
+                "margin_bottom_mobile": 10,
+                "margin_bottom_desktop": 6
+              },
+              "blocks": {}
+            },
+            "product_price_info_w4R4wP": {
+              "type": "_product-price-info",
+              "name": "Product Price Info",
+              "settings": {
+                "typography_mobile": "label",
+                "typography_desktop": "body-small",
+                "font_weight_mobile": "500",
+                "font_weight_desktop": "500",
+                "margin_bottom_mobile": 4,
+                "margin_bottom_desktop": 6
+              },
+              "blocks": {}
+            },
+            "product_discount_info_zUmJCK": {
+              "type": "_product-discount-info",
+              "name": "Product Discount Info",
+              "settings": {
+                "typography_mobile": "label",
+                "typography_desktop": "body-small",
+                "font_weight_mobile": "500",
+                "font_weight_desktop": "500",
+                "color": "#a00400",
+                "margin_bottom_mobile": 0,
+                "margin_bottom_desktop": 0
+              },
+              "blocks": {}
+            },
+            "product-badge": {
+              "type": "_product-badge",
+              "static": true,
+              "settings": {},
+              "blocks": {}
+            },
+            "product-image-gallery": {
+              "type": "_product-image-gallery",
+              "static": true,
+              "settings": {
+                "gradient_style": "none"
+              },
+              "blocks": {}
+            },
+            "bundle-builder-cta": {
+              "type": "_bundle-builder-button",
+              "static": true,
+              "settings": {
+                "label": "Add",
+                "style_class": "button",
+                "weight": "",
+                "button_size": "theme",
+                "button_size_mobile": "theme",
+                "width": "fit-content",
+                "custom_width": 100,
+                "width_mobile": "fit-content",
+                "custom_width_mobile": 100
+              },
+              "blocks": {}
+            },
+            "product-card-atc": {
+              "type": "product-card-atc",
+              "static": true,
+              "settings": {
+                "color_scheme": ""
+              },
+              "blocks": {
+                "button": {
+                  "type": "button",
+                  "static": true,
+                  "settings": {
+                    "element_type": "button",
+                    "label": "Add",
+                    "link": "",
+                    "open_in_new_tab": false,
+                    "style_class": "button",
+                    "weight": "",
+                    "button_size": "medium",
+                    "button_size_mobile": "small",
+                    "width": "custom",
+                    "custom_width": 100,
+                    "width_mobile": "fit-content",
+                    "custom_width_mobile": 100
+                  },
+                  "blocks": {}
+                }
+              },
+              "block_order": []
+            }
+          },
+          "block_order": [
+            "delivery_availability_a9RTTz",
+            "product_title_JCGNca",
+            "product_options_count_3HRWfW",
+            "product_price_info_w4R4wP",
+            "product_discount_info_zUmJCK"
+          ]
+        }
+      },
+      "block_order": [
+        "promotional_card_catering"
+      ],
+      "settings": {
+        "fallback_collection": "",
+        "fallback_collection_heading": "Our Bestsellers"
+      }
+    }
+  },
+  "order": [
+    "catering-hero",
+    "collection-viewer"
+  ]
+}

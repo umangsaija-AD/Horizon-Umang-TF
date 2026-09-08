@@ -1,0 +1,73 @@
+{% comment %}
+  Product (PDP) JSON-LD — ProductGroup > hasVariant.
+  Rendered from structured-data.liquid on product pages.
+
+  Notes:
+    - Legacy site models every product as a size-varying ProductGroup, even
+      single-item products (which use the literal value "One Size").
+    - productGroupID / sku use the legacy EA product number
+      (metafields.custom.ea_product_id), falling back to the Shopify product id
+      when that metafield is absent (e.g. Goody-sourced products).
+    - Google only supports six variesBy attributes; the option name is matched
+      against the ones identical when lower-cased (color/size/material/pattern),
+      falling back to 'size' otherwise.
+{% endcomment %}
+{%- liquid
+  assign ea_pid = product.metafields.custom.ea_product_id | default: product.metafields.ediblearrangement.ea_product_id | default: product.id
+  assign supported_variant_attrs = 'color,size,material,pattern' | split: ','
+  assign varies_key = 'size'
+  unless product.has_only_default_variant
+    assign opt_name = product.options_with_values.first.name | downcase
+    if opt_name == 'colour'
+      assign opt_name = 'color'
+    endif
+    if supported_variant_attrs contains opt_name
+      assign varies_key = opt_name
+    endif
+  endunless
+  assign product_url = request.origin | append: product.url
+-%}
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org/",
+    "@type": "ProductGroup",
+    "@id": {{ product_url | json }},
+    "name": {{ product.title | json }},
+    "image": {% if product.featured_image %}{{ product.featured_image | image_url: width: 1200 | prepend: 'https:' | json }}{% else %}""{% endif %},
+    "url": {{ product_url | json }},
+    "description": {{ product.description | strip_html | strip_newlines | json }},
+    "brand": {
+      "@type": "Brand",
+      "name": "Edible Arrangements"
+    },
+    "productGroupID": {{ ea_pid | json }},
+    "variesBy": {{ varies_key | prepend: 'https://schema.org/' | json }},
+    "hasVariant": [
+      {%- for variant in product.variants -%}
+        {%- if product.has_only_default_variant -%}
+          {%- assign size_value = 'One Size' -%}
+          {%- assign option_value = 'One Size' -%}
+        {%- else -%}
+          {%- assign size_value = variant.title -%}
+          {%- comment -%} varies_key maps to the first option, so use its value (not the joined title). {%- endcomment -%}
+          {%- assign option_value = variant.option1 -%}
+        {%- endif -%}
+        {
+          "@type": "Product",
+          "sku": {{ ea_pid | append: '-' | append: size_value | json }},
+          "image": {% if variant.image %}{{ variant.image | image_url: width: 1200 | prepend: 'https:' | json }}{% elsif product.featured_image %}{{ product.featured_image | image_url: width: 1200 | prepend: 'https:' | json }}{% else %}""{% endif %},
+          "name": {{ product.title | append: '-' | append: size_value | json }},
+          {{ varies_key | json }}: {{ option_value | json }},
+          "offers": {
+            "@type": "Offer",
+            "url": {{ request.origin | append: variant.url | json }},
+            "priceCurrency": {{ cart.currency.iso_code | json }},
+            "price": "{{ variant.price | divided_by: 100.0 }}",
+            "itemCondition": "http://schema.org/NewCondition",
+            "availability": "{% if variant.available %}http://schema.org/InStock{% else %}http://schema.org/OutOfStock{% endif %}"
+          }
+        }{%- unless forloop.last -%},{%- endunless -%}
+      {%- endfor -%}
+    ]
+  }
+</script>

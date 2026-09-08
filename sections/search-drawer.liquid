@@ -1,0 +1,230 @@
+{%- if predictive_search.performed -%}
+  {%- liquid
+    assign products = predictive_search.resources.products
+    assign pages = predictive_search.resources.pages
+    assign articles = predictive_search.resources.articles
+    assign total_count = products.size | plus: pages.size | plus: articles.size
+    assign search_terms = predictive_search.terms
+  -%}
+
+  <div class="search-drawer-results" data-search-results-section>
+    {%- if total_count > 0 -%}
+      <div class="search-drawer-results__layout">
+        {%- comment -%} Sidebar: Pages + Blogs (desktop left, mobile below products) {%- endcomment -%}
+        {%- if pages.size > 0 or articles.size > 0 -%}
+          <div class="search-drawer-results__sidebar">
+            {%- if pages.size > 0 -%}
+              <div class="search-drawer-results__section">
+                <h3 class="search-drawer-results__heading">{{ 'search.pages' | t }}</h3>
+                <ul class="search-drawer-results__links">
+                  {%- for page in pages -%}
+                    <li>
+                      <a href="{{ page.url }}" class="search-drawer-results__link">
+                        {{- page.title -}}
+                      </a>
+                    </li>
+                  {%- endfor -%}
+                </ul>
+              </div>
+            {%- endif -%}
+
+            {%- if articles.size > 0 -%}
+              <div class="search-drawer-results__section">
+                <h3 class="search-drawer-results__heading">{{ 'search.blogs' | t }}</h3>
+                <ul class="search-drawer-results__links">
+                  {%- for article in articles -%}
+                    <li>
+                      <a href="{{ article.url }}" class="search-drawer-results__link">
+                        {{- article.title -}}
+                      </a>
+                    </li>
+                  {%- endfor -%}
+                </ul>
+              </div>
+            {%- endif -%}
+          </div>
+        {%- endif -%}
+
+        {%- comment -%} Products grid {%- endcomment -%}
+        {%- if products.size > 0 -%}
+          <div class="search-drawer-results__products-area">
+            <h3 class="search-drawer-results__heading">{{ 'search.products' | t }}</h3>
+            <div class="search-drawer-results__products-grid">
+              {%- for product in products limit: 3 -%}
+                {% render 'product-card', product: product %}
+              {%- endfor -%}
+            </div>
+          </div>
+        {%- endif -%}
+      </div>
+    {%- else -%}
+      <p class="search-drawer-results__no-results">
+        {{ 'search.no_results' | t: terms: search_terms }}
+      </p>
+    {%- endif -%}
+  </div>
+{%- endif -%}
+
+{% stylesheet %}
+  .search-drawer-results {
+    width: 100%;
+  }
+
+  .search-drawer-results__layout {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+  }
+
+  /* Desktop: 2-column grid with fixed sidebar track, so products stays in the
+     right column even when Pages/Blogs are empty (no layout shift). */
+  @media screen and (min-width: 1025px) {
+    .search-drawer-results__layout {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      column-gap: 112px;
+      align-items: start;
+    }
+  }
+
+  .search-drawer-results__sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    order: 2;
+  }
+
+  @media screen and (min-width: 1025px) {
+    .search-drawer-results__sidebar {
+      grid-column: 1;
+      order: 0;
+      gap: 32px;
+    }
+  }
+
+  .search-drawer-results__products-area {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    order: 1;
+  }
+
+  /* Mobile: border below products when more sections follow (Pages/Blogs) */
+  .search-drawer-results__layout:has(.search-drawer-results__sidebar) .search-drawer-results__products-area {
+    padding-bottom: 20px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  @media screen and (min-width: 1025px) {
+    .search-drawer-results__products-area {
+      grid-column: 2;
+      order: 0;
+    }
+
+    .search-drawer-results__layout:has(.search-drawer-results__sidebar) .search-drawer-results__products-area {
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+  }
+
+  .search-drawer-results__heading {
+    font-family: var(--font-body--family);
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 17px;
+    letter-spacing: 0.12px;
+    text-transform: uppercase;
+    color: var(--color-black-light);
+    margin: 0;
+  }
+
+  .search-drawer-results__section {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .search-drawer-results__links {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .search-drawer-results__link {
+    font-family: var(--font-body--family);
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--color-black-secondary);
+    text-decoration: none;
+  }
+
+  .search-drawer-results__link:hover {
+    text-decoration: underline;
+  }
+
+  .search-drawer-results__link mark {
+    background: none;
+    color: inherit;
+    font-weight: 600;
+  }
+
+  .search-drawer-results__products-grid {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 53%;
+    gap: 16px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-left: 0;
+    padding-bottom: 4px;
+    margin-right: -16px;
+    padding-right: 16px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .search-drawer-results__products-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .search-drawer-results__products-grid > * {
+    scroll-snap-align: start;
+    min-width: 0;
+  }
+
+  @media screen and (min-width: 1025px) {
+    .search-drawer-results__products-grid {
+      grid-auto-flow: row;
+      grid-auto-columns: auto;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      overflow-x: visible;
+      scroll-snap-type: none;
+      padding-bottom: 0;
+      margin-right: 0;
+      padding-right: 0;
+    }
+  }
+
+  .search-drawer-results__no-results {
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--color-black-light);
+    margin: 0;
+    padding: 24px 0;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Search drawer results",
+  "settings": [],
+  "blocks": []
+}
+{% endschema %}

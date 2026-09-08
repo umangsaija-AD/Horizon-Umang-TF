@@ -1,0 +1,46 @@
+{% doc %}
+  Personalization Variants JSON
+
+  Outputs a compact JSON array of the product's variants with delivery
+  availability data. Used by the personalization drawer JS to render
+  delivery badges on variant cards (which `/products/{handle}.js` does
+  not provide — that endpoint omits variant metafields).
+
+  Designed to be inlined into an HTML attribute (e.g. data-variants-json),
+  so the output is single-line and the surrounding tags trim whitespace.
+
+  @param {object} product - Shopify product object (required)
+
+  @example
+    <div data-variants-json="{% render 'personalization-variants-json', product: product %}"></div>
+{% enddoc %}
+
+{%- liquid
+  assign product = product | default: empty
+-%}
+{%- capture variants_json -%}
+[
+{%- for variant in product.variants -%}
+  {%- assign da = variant.metafields.ediblearrangement.delivery_availability.value -%}
+  {
+    "id": {{ variant.id }},
+    "marketplaceVariantId": {{ variant.metafields.custom.external_variant_id | json }},
+    "deliveryAvailability":
+    {%- if da != blank -%}
+      {
+        "name": {{ da.name.value | json }},
+        "icon":
+        {%- if da.icon.value != blank -%}
+          {{ da.icon.value | image_url: width: 64 | json }}
+        {%- else -%}
+          null
+        {%- endif -%}
+      }
+    {%- else -%}
+      null
+    {%- endif -%}
+  }{%- unless forloop.last -%},{%- endunless -%}
+{%- endfor -%}
+]
+{%- endcapture -%}
+{{- variants_json | strip_newlines | replace: '  ', '' | escape -}}

@@ -1,0 +1,58 @@
+{% liquid
+  assign carousel_item_width = block.settings.carousel_item_width | default: 100
+  assign carousel_gap = block.settings.carousel_gap | default: 12
+%}
+<div
+  class="carousel-wrapper tw-flex tw-gap-[var(--carousel-gap)] lg:tw-hidden"
+  style="--carousel-item-width: {{ carousel_item_width }}px; --carousel-gap: {{ carousel_gap }}px;"
+  {{ block.shopify_attributes }}
+>
+  {% content_for 'blocks' %}
+</div>
+
+{% stylesheet %}
+.carousel-wrapper::after {
+  content: '';
+  flex: 0 0 var(--carousel-gap);
+}
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Mobile Menu carousel",
+  "tag": null,
+  "settings": [
+    {
+      "type": "range",
+      "id": "carousel_item_width",
+      "label": "Carousel item width",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 100
+    },
+    {
+      "type": "range",
+      "id": "carousel_gap",
+      "label": "Carousel gap",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 12
+    }
+  ],
+  "blocks": [
+    {
+      "type": "_mobile-menu-carousel-item"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Mobile Menu Carousel",
+      "category": "t:categories.header"
+    }
+  ]
+}
+{% endschema %}

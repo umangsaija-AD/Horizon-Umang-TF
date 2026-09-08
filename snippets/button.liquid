@@ -1,0 +1,213 @@
+{%- doc -%}
+Renders a styled button/link element.
+
+Can be used standalone (with params) or with a block (falls back to block.settings).
+
+@param {string} link - URL to link to
+@param {string} [label] - Button text
+@param {string} [element_type] - 'link' | 'button' (default: 'link'). 'button' renders a <button> that is never disabled.
+@param {string} [style_class] - 'button' | 'button-secondary' | 'link' (default: 'button')
+@param {string} [button_size] - 'theme' | 'small' | 'medium' | 'large' (default: 'theme')
+@param {string} [button_size_mobile] - 'theme' | 'small' | 'medium' | 'large' (default: 'theme')
+@param {string} [weight] - font-weight value e.g. '400', '500', '600', '700'
+@param {boolean} [open_in_new_tab] - open link in new tab
+@param {string} [width] - 'fit-content' | 'custom' | 'fill'
+@param {string} [custom_width] - percentage value when width is 'custom'
+@param {string} [width_mobile] - 'fit-content' | 'custom' | 'fill'
+@param {string} [custom_width_mobile] - percentage value when width_mobile is 'custom'
+@param {boolean} [aria_disabled] - if true, renders the button as disabled with aria-disabled="true"
+@param {object} [block] - optional block; settings used as fallback for any param not provided
+
+@example
+  Standalone link: {% render 'button', link: '/collections/all', label: 'Shop All', style_class: 'button', button_size: 'medium' %}
+  Standalone button: {% render 'button', element_type: 'button', label: 'Add to Cart', style_class: 'button' %}
+  With block: {% render 'button', link: block.settings.link, element_type: block.settings.element_type, block: block %}
+{%- enddoc -%}
+
+{% liquid
+  if block
+    assign bs = block.settings
+  endif
+
+  assign _label = label | default: bs.label
+  assign _element_type = element_type | default: bs.element_type | default: 'link'
+  assign _color_scheme = color_scheme | default: bs.color_scheme
+  assign _style_class = style_class | default: bs.style_class | default: 'button'
+  assign _button_size = button_size | default: bs.button_size | default: 'theme'
+  assign _button_size_mobile = button_size_mobile | default: bs.button_size_mobile | default: _button_size
+  assign _weight = weight | default: bs.weight
+  assign _open_in_new_tab = open_in_new_tab | default: bs.open_in_new_tab | default: false
+  assign _width = width | default: bs.width | default: 'fit-content'
+  assign _custom_width = custom_width | default: bs.custom_width | default: 100
+  assign _width_mobile = width_mobile | default: bs.width_mobile | default: 'fit-content'
+  assign _custom_width_mobile = custom_width_mobile | default: bs.custom_width_mobile | default: 100
+  assign _disabled = aria_disabled | default: false
+%}
+
+{% liquid
+  assign button_size_padding = ''
+  assign button_font_size_css = ''
+  case _button_size
+    when 'small'
+      assign button_size_padding = '--button-padding-inline: var(--button-padding-inline-sm); --button-padding-block: var(--button-padding-block-sm);'
+      assign button_font_size_css = 'font-size: var(--button-font-size-sm);'
+    when 'medium'
+      assign button_size_padding = '--button-padding-inline: var(--button-padding-inline-md); --button-padding-block: var(--button-padding-block-md);'
+      assign button_font_size_css = 'font-size: var(--button-font-size-md);'
+    when 'large'
+      assign button_size_padding = '--button-padding-inline: var(--button-padding-inline-lg); --button-padding-block: var(--button-padding-block-lg);'
+      assign button_font_size_css = 'font-size: var(--button-font-size-lg);'
+  endcase
+
+  assign mobile_size_padding = ''
+  assign mobile_font_size_css = ''
+  case _button_size_mobile
+    when 'small'
+      assign mobile_size_padding = '--button-padding-inline: var(--button-padding-inline-sm); --button-padding-block: var(--button-padding-block-sm);'
+      assign mobile_font_size_css = 'font-size: var(--button-font-size-sm);'
+    when 'medium'
+      assign mobile_size_padding = '--button-padding-inline: var(--button-padding-inline-md); --button-padding-block: var(--button-padding-block-md);'
+      assign mobile_font_size_css = 'font-size: var(--button-font-size-md);'
+    when 'large'
+      assign mobile_size_padding = '--button-padding-inline: var(--button-padding-inline-lg); --button-padding-block: var(--button-padding-block-lg);'
+      assign mobile_font_size_css = 'font-size: var(--button-font-size-lg);'
+  endcase
+%}
+
+{%- capture size_style_inline -%}
+  {%- if _width == 'custom' -%}
+    --size-style-width: {{ _custom_width }}%;
+  {%- elsif _width == 'fill' -%}
+    --size-style-width: 100%;
+  {%- else -%}
+    --size-style-width: {{ _width }};
+  {%- endif -%}
+  {%- if _width_mobile == 'custom' -%}
+    --size-style-width-mobile: {{ _custom_width_mobile }}%; --size-style-width-mobile-min: {{ _custom_width_mobile }}%;
+  {%- elsif _width_mobile == 'fill' -%}
+    --size-style-width-mobile: 100%; --size-style-width-mobile-min: 5rem;
+  {%- elsif _width_mobile == 'fit-content' -%}
+    --size-style-width-mobile: fit-content; --size-style-width-mobile-min: fit-content;
+  {%- endif -%}
+{%- endcapture -%}
+
+{%- capture computed_style -%}
+  {%- if block -%}
+    {% render 'size-style', settings: bs %}
+  {%- else -%}
+    {{ size_style_inline }}
+  {%- endif -%}
+  {%- if _button_size_mobile == _button_size -%}
+    {%- if button_size_padding != blank %} {{ button_size_padding }}{%- endif -%}
+    {%- if button_font_size_css != blank %} {{ button_font_size_css }}{%- endif -%}
+  {%- endif -%}
+  {%- if _weight != blank %} font-weight: {{ _weight }};{%- endif -%}
+{%- endcapture -%}
+
+{%- capture color_class -%}
+  {%- if _color_scheme != blank %} color-{{ _color_scheme }}{%- endif -%}
+{%- endcapture -%}
+
+{%- assign _btn_uid = block.id | default: _label | handleize | append: '-' | append: _style_class -%}
+
+{% if _button_size_mobile != _button_size %}
+  <style>
+    @media screen and (max-width: 749px) {
+      .{{ _style_class }}--{{ _btn_uid }} {
+        {{ mobile_size_padding }}
+        {{ mobile_font_size_css }}
+      }
+    }
+    @media screen and (min-width: 750px) {
+      .{{ _style_class }}--{{ _btn_uid }} {
+        {{ button_size_padding }}
+        {{ button_font_size_css }}
+      }
+    }
+  </style>
+{% endif %}
+
+{% if _element_type == 'button' %}
+  <button
+    data-width-mobile="{{ _width_mobile }}"
+    type="button"
+    class="size-style {{ _style_class }}{% if _button_size_mobile != _button_size %} {{ _style_class }}--{{ _btn_uid }}{% endif %}{{ color_class }}"
+    style="{{ computed_style }}"
+    {% if _disabled %}aria-disabled="true" disabled{% endif %}
+    {% if block %}{{ block.shopify_attributes }}{% endif %}
+  >
+    {{ _label }}
+  </button>
+{% else %}
+  <a
+    {% if link == blank %}
+      role="link"
+      aria-disabled="true"
+    {% else %}
+      href="{{ link }}"
+    {% endif %}
+    class="size-style {{ _style_class }}{% if _button_size_mobile != _button_size %} {{ _style_class }}--{{ _btn_uid }}{% endif %}{{ color_class }}"
+    style="{{ computed_style }}"
+    {%- if _open_in_new_tab -%}
+      target="_blank"
+      rel="noopener noreferrer"
+    {%- endif -%}
+    {% if block %}{{ block.shopify_attributes }}{% endif %}
+  >
+    {{ _label }}
+  </a>
+{% endif %}
+
+{% stylesheet %}
+  .button,
+  .button-secondary,
+  button.shopify-payment-button__button--unbranded,
+  .link {
+    font-weight: 600;
+  }
+
+  .button[aria-disabled='true'],
+  .button:disabled,
+  button.shopify-payment-button__button--unbranded[aria-disabled='true'],
+  button.shopify-payment-button__button--unbranded:disabled {
+    background-color: #aaaaaa !important;
+    border-color: #aaaaaa !important;
+    color: #ffffff !important;
+    opacity: 1 !important;
+  }
+  .button-secondary[aria-disabled='true'],
+  .button-secondary:disabled {
+    background-color: #ffffff !important;
+    border-color: #ededed !important;
+    color: #aaaaaa !important;
+    opacity: 1 !important;
+  }
+  .link[aria-disabled='true'],
+  .link:disabled {
+    color: #aaaaaa !important;
+    opacity: 1 !important;
+  }
+
+  .button:disabled,
+  .button[aria-disabled='true'],
+  .button-secondary:disabled,
+  .button-secondary[aria-disabled='true'],
+  button.shopify-payment-button__button--unbranded:disabled,
+  button.shopify-payment-button__button--unbranded[aria-disabled='true'],
+  .link:disabled,
+  .link[aria-disabled='true'] {
+    cursor: not-allowed;
+  }
+
+  .link {
+    color: var(--color-primary);
+    text-decoration: underline;
+    text-decoration-color: currentcolor;
+    text-underline-offset: 3.5px;
+
+    &:hover {
+      color: var(--color-primary-hover);
+      text-decoration-color: transparent;
+    }
+  }
+{% endstylesheet %}

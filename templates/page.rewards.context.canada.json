@@ -1,0 +1,247 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "context": {
+    "market": "canada"
+  },
+  "parent": "page.rewards.json",
+  "sections": {
+    "collection_list_Xe6GDY": {
+      "type": "collection-list",
+      "disabled": false,
+      "settings": {
+        "collection_list": [
+          "birthday",
+          "same-day-delivery",
+          "catering",
+          "1-hour-delivery",
+          "create-your-own",
+          "shop-all-1"
+        ],
+        "header-3a1dd8a1188c29a2175b6d01da077a3c": null,
+        "layout_type": "grid",
+        "carousel_on_mobile": false,
+        "columns": 6,
+        "mobile_columns": "2",
+        "mobile_card_size": "60cqw",
+        "columns_gap": 32,
+        "bento_gap": 8,
+        "rows_gap": 32,
+        "max_collections": 4,
+        "header-ee45b10f0a7d0da04c48209758017346": null,
+        "icons_style": "arrow",
+        "icons_shape": "none",
+        "header-7ee1ad6c464f0e3ee4c6449610d21e2c": null,
+        "section_width": "page-width",
+        "gap": 32,
+        "color_scheme": "",
+        "header-355652328e83efc56e45c9ecca155ffd": null,
+        "padding-block-start": 48,
+        "padding-block-end": 48
+      },
+      "blocks": {
+        "group_7CFW8m": {
+          "type": "group",
+          "name": "t:names.header",
+          "disabled": false,
+          "blocks": {
+            "text_cznNEQ": {
+              "type": "text",
+              "name": "t:names.text",
+              "disabled": false,
+              "settings": {
+                "text": "<h2>Start shopping today</h2>",
+                "enable_read_more": false,
+                "read_more_label": "Read more",
+                "read_less_label": "Read less",
+                "characters_limit": 0,
+                "header-3df7cbbfe08614429db6e9f4f926484e": null,
+                "width": "100%",
+                "max_width": "normal",
+                "alignment": "center",
+                "header-e79d6a4f796c002023681a83084c1797": null,
+                "type_preset": "h1",
+                "type_preset_desktop": "",
+                "weight": "600",
+                "color": "var(--color-foreground-heading)",
+                "highlight_color": "var(--color-primary)",
+                "custom_highlight_color": "#1d1d1d",
+                "header-fc66130601f248e415a312525b47a0b2": null,
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "header-e84889494e5ae33bd47e3e1d4adfc2e2": null,
+                "padding-block-start": 0,
+                "padding-block-end": 16,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              }
+            }
+          },
+          "block_order": [
+            "text_cznNEQ"
+          ],
+          "settings": {
+            "header-49073bd1d84b981b15626f111c88ab9a": null,
+            "content_direction": "column",
+            "vertical_on_mobile": true,
+            "horizontal_alignment": "flex-start",
+            "vertical_alignment": "center",
+            "align_baseline": false,
+            "horizontal_alignment_flex_direction_column": "flex-start",
+            "vertical_alignment_flex_direction_column": "center",
+            "gap": 12,
+            "grid_columns_desktop": 4,
+            "grid_columns_mobile": 1,
+            "grid_row_gap": 16,
+            "css_class": "",
+            "header-44dffb1f01033a1e8b1210c7f6031cfc": null,
+            "width": "fill",
+            "custom_width": 100,
+            "width_mobile": "fill",
+            "custom_width_mobile": 100,
+            "height": "fit",
+            "custom_height": 100,
+            "header-53c99f11c87811d33e38ea28d60934f3": null,
+            "inherit_color_scheme": true,
+            "color_scheme": "",
+            "background_media": "none",
+            "video": null,
+            "video_position": "cover",
+            "background_image": null,
+            "image_mobile": null,
+            "background_image_position": "cover",
+            "border": "none",
+            "border_width": 1,
+            "border_opacity": 100,
+            "border_radius": 0,
+            "toggle_overlay": false,
+            "overlay_color": "#00000026",
+            "overlay_style": "solid",
+            "gradient_direction": "to top",
+            "overlay_end_color": "rgba(0,0,0,0)",
+            "gradient_position": 50,
+            "header-a0fb46f2500743f8f4f87c3a80cf93fd": null,
+            "link": "",
+            "open_in_new_tab": false,
+            "placeholder": "",
+            "header-5f1448fcf44546591335ceb83202e2fc": null,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          }
+        },
+        "static-collection-card": {
+          "type": "_collection-card",
+          "name": "t:names.collection_card",
+          "disabled": false,
+          "static": true,
+          "blocks": {
+            "collection_title_8FnrzM": {
+              "type": "collection-title",
+              "name": "t:names.collection_title",
+              "disabled": false,
+              "settings": {
+                "paragraph-1659cf280cc09d7a43fa15d3163c5621": null,
+                "header-9993f511e91582527b1c2b0e1d6e07bd": null,
+                "width": "fit-content",
+                "max_width": "normal",
+                "alignment": "left",
+                "header-507755ef1e08edc3a063329de124ed64": null,
+                "type_preset": "body-regular",
+                "weight": "600",
+                "font_size": "1rem",
+                "case": "none",
+                "wrap": "pretty",
+                "color": "var(--color-foreground-heading)",
+                "header-7086d165a58f8bc215237182da1b9fc2": null,
+                "background": true,
+                "background_color": "#ffffff",
+                "corner_radius": 0,
+                "header-63cbd622f085f4bd05ce98f1dd72377f": null,
+                "padding-block-start": 4,
+                "padding-block-end": 4,
+                "padding-inline-start": 8,
+                "padding-inline-end": 8
+              }
+            },
+            "collection-card-image": {
+              "type": "_collection-card-image",
+              "name": "t:names.collection_card_image",
+              "disabled": false,
+              "static": true,
+              "settings": {
+                "paragraph-2347a07d2e699d4596b6679de5c38712": null,
+                "image_ratio": "square",
+                "toggle_overlay": false,
+                "overlay_color": "#00000026",
+                "overlay_style": "solid",
+                "gradient_direction": "to top",
+                "overlay_end_color": "rgba(0,0,0,0)",
+                "gradient_position": 50,
+                "header-534e259a98e09e4262fdb8c9c19799cb": null,
+                "border": "none",
+                "border_width": 1,
+                "border_opacity": 100,
+                "border_radius": 8
+              }
+            }
+          },
+          "block_order": [
+            "collection_title_8FnrzM"
+          ],
+          "settings": {
+            "paragraph-ff94b3fc703d567a5b565eb76ee83e31": null,
+            "header-5c02e765c3162dd1a606512fa6e2231b": null,
+            "placement": "below_image",
+            "zoom_in_on_image_hover": true,
+            "horizontal_alignment": "center",
+            "vertical_alignment": "flex-start",
+            "collection_card_gap": 16,
+            "header-1436ba98002eebac2aee1046c27dd19f": null,
+            "inherit_color_scheme": true,
+            "color_scheme": "",
+            "border": "none",
+            "border_width": 1,
+            "border_opacity": 100,
+            "border_radius": 8
+          }
+        }
+      },
+      "block_order": [
+        "group_7CFW8m"
+      ],
+      "name": "t:names.collections_grid"
+    },
+    "app_download_desktop": {
+      "disabled": true,
+      "settings": {},
+      "blocks": {}
+    },
+    "app_download_mobile": {
+      "disabled": true,
+      "settings": {},
+      "blocks": {}
+    }
+  },
+  "order": [
+    "hero",
+    "hero_xcPXqx",
+    "section_KqVY63",
+    "section_VrwRmF",
+    "perks_chart",
+    "rewards_steps",
+    "collection_list_Xe6GDY",
+    "app_download_desktop",
+    "app_download_mobile",
+    "main"
+  ]
+}

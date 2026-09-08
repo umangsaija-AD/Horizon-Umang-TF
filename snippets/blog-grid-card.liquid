@@ -1,0 +1,84 @@
+{%- doc -%}
+  Blog Grid Card
+
+  Renders a single blog post card for the Blog Grid section.
+  Supports article data or placeholder state when no blog is selected.
+
+  @param {object} article - The article object (or blank for placeholder)
+  @param {boolean} show_excerpt - Whether to show the article excerpt
+  @param {boolean} show_read_more - Whether to show the read more link
+  @param {string} read_more_text - Text for the read more link
+  @param {string} image_ratio - Aspect ratio for the card image
+  @param {number} forloop_index - Index of the card in the list
+
+  @example
+  {% render 'blog-grid-card',
+    article: article,
+    show_excerpt: true,
+    show_read_more: true,
+    read_more_text: 'Read More',
+    image_ratio: '3/2',
+    forloop_index: forloop.index
+  %}
+{%- enddoc -%}
+
+{% liquid
+  assign onboarding = false
+  if article == blank
+    assign onboarding = true
+    assign display_title = 'placeholders.blog_post_title' | t
+    assign display_excerpt = 'placeholders.blog_post_description' | t
+  else
+    assign display_title = article.title
+    if article.excerpt_or_content != blank
+      assign display_excerpt = article.excerpt_or_content | strip_html | truncate: 120
+    else
+      assign display_excerpt = ''
+    endif
+  endif
+
+  assign widths = '334, 500, 668, 750, 1000'
+  assign sizes = '(min-width: 750px) calc((100vw - 128px) / 4), 75vw'
+%}
+
+<article class="blog-grid-card" data-testid="blog-grid-card">
+  {% unless onboarding %}
+    <a href="{{ article.url }}" class="blog-grid-card__link" aria-label="{{ display_title }}">
+      <span class="visually-hidden">{{ display_title }}</span>
+    </a>
+  {% endunless %}
+
+  <div class="blog-grid-card__image-wrapper">
+    {% if article != blank and article.image %}
+      {{
+        article.image
+        | image_url: width: 1000
+        | image_tag:
+          widths: widths,
+          sizes: sizes,
+          alt: article.image.alt | default: display_title,
+          class: 'blog-grid-card__image',
+          loading: 'lazy'
+      }}
+    {% else %}
+      {{ 'image' | placeholder_svg_tag: 'blog-grid-card__image blog-grid-card__placeholder' }}
+    {% endif %}
+  </div>
+
+  <div class="blog-grid-card__content">
+    <div class="blog-grid-card__text-content">
+      <h3 class="blog-grid-card__title h5">{{ display_title }}</h3>
+      {% if show_excerpt and display_excerpt != blank %}
+        <p class="blog-grid-card__excerpt body-small">{{ display_excerpt }}</p>
+      {% endif %}
+    </div>
+    {% if show_read_more %}
+      <a
+        {% unless onboarding %}href="{{ article.url }}"{% endunless %}
+        class="blog-grid-card__read-more body-regular"
+      >
+        <span>{{ read_more_text | default: 'Read More' }}</span>
+      </a>
+    {% endif %}
+  </div>
+</article>

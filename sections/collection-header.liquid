@@ -1,0 +1,85 @@
+<div class="section-background color-{{ section.settings.color_scheme }}"></div>
+<div
+  class="section collection-header color-{{ section.settings.color_scheme }} tw-pb-[var(--ch-mob-pb)] tw-pt-[var(--ch-mob-pt)] lg:tw-pb-[var(--ch-desk-pb)] lg:tw-pt-[var(--ch-desk-pt)]"
+  data-header-overlap="{{ section.settings.header_overlap }}"
+  style="--ch-mob-pt: {{ section.settings.mobile_padding_top }}px; --ch-mob-pb: {{ section.settings.mobile_padding_bottom }}px; --ch-desk-pt: {{ section.settings.desktop_padding_top }}px; --ch-desk-pb: {{ section.settings.desktop_padding_bottom }}px;"
+>
+  {% content_for 'block', id: 'breadcrumb', type: 'breadcrumb' %}
+  <div>
+    {% content_for 'block', id: 'title', type: 'text' %}
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Collection Header",
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:settings.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "checkbox",
+      "id": "header_overlap",
+      "label": "Overlap by header?",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Mobile Spacing"
+    },
+    {
+      "type": "range",
+      "id": "mobile_padding_top",
+      "label": "Mobile top padding",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "mobile_padding_bottom",
+      "label": "Mobile bottom padding",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "header",
+      "content": "Desktop Spacing"
+    },
+    {
+      "type": "range",
+      "id": "desktop_padding_top",
+      "label": "Desktop top padding",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "desktop_padding_bottom",
+      "label": "Desktop bottom padding",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 0
+    }
+  ],
+  "presets": [
+    {
+      "name": "Collection Header",
+      "category": "Collections"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,419 @@
+{% liquid
+  assign product_resource = closest.product
+  assign block_settings = block.settings
+  if request.visual_preview_mode and product_resource == blank
+    assign product_resource = collections.all.products.first
+  endif
+
+  assign is_on_goody = false
+  if product_resource.template_suffix == 'on-goody' or template.suffix == 'on-goody'
+    assign is_on_goody = true
+  endif
+
+  assign fruit_type = product_resource.metafields.ediblearrangement.fruit_type
+
+  assign primary_handle = 'edible-primary'
+  assign secondary_handle = blank
+
+  if fruit_type != blank
+    assign secondary_handle = 'edible-secondary'
+  endif
+
+  assign edible_threshold = settings.edible_free_delivery_threshold
+  if edible_threshold != blank and edible_threshold > 0
+    assign edible_threshold = edible_threshold | times: 100 | money_without_trailing_zeros
+  else
+    assign edible_threshold = blank
+  endif
+
+  assign raw_free_shipping_threshold = product_resource.metafields.ediblearrangement.free_shipping_threshold.value
+  assign free_shipping_threshold = blank
+  if raw_free_shipping_threshold != blank and raw_free_shipping_threshold > 0
+    assign free_shipping_threshold = raw_free_shipping_threshold | times: 100 | money_without_trailing_zeros
+  endif
+
+  assign raw_shipping_price = product_resource.metafields.ediblearrangement.shipping_price.value
+  assign shipping_price_formatted = blank
+  if raw_shipping_price != blank and raw_shipping_price > 0
+    assign shipping_price_formatted = raw_shipping_price | times: 100 | money_without_trailing_zeros
+  endif
+
+  if is_on_goody
+    if free_shipping_threshold != blank
+      assign primary_handle = 'on-goody-primary'
+    else
+      assign primary_handle = 'on-goody-secondary'
+    endif
+    assign secondary_handle = blank
+  endif
+
+  assign primary_highlight = shop.metaobjects.product_highlight_messages[primary_handle]
+  if is_on_goody and primary_handle == 'on-goody-secondary' and shipping_price_formatted == blank
+    assign primary_highlight = blank
+  endif
+
+  assign secondary_highlight = blank
+  if secondary_handle != blank
+    assign secondary_highlight = shop.metaobjects.product_highlight_messages[secondary_handle]
+  endif
+
+  assign product_vendor = product_resource.vendor | default: blank
+
+  capture text_classes
+    echo block_settings.type_preset
+    if block_settings.weight != blank
+      echo ' custom-font-weight'
+    endif
+  endcapture
+%}
+
+{% capture highlights_markup %}
+  {% if primary_highlight != blank %}
+    {% liquid
+      assign primary_message = primary_highlight.message
+      if is_on_goody
+        if free_shipping_threshold != blank
+          assign primary_message = primary_message | replace: '[free_shipping_threshold]', free_shipping_threshold
+        endif
+        if shipping_price_formatted != blank
+          assign primary_message = primary_message | replace: '[shipping_price]', shipping_price_formatted
+        endif
+        assign primary_message = primary_message | replace: '[vendor]', product_vendor
+      else
+        assign primary_message = primary_message | replace: '[edible_free_delivery_threshold]', edible_threshold
+      endif
+    %}
+
+    {% render 'product-message-highlight-item',
+      highlight: primary_highlight,
+      message: primary_message,
+      text_classes: text_classes
+    %}
+  {% endif %}
+
+  {% if secondary_highlight != blank %}
+    {% liquid
+      assign secondary_message = secondary_highlight.message
+    %}
+
+    {% render 'product-message-highlight-item',
+      highlight: secondary_highlight,
+      message: secondary_message,
+      text_classes: text_classes
+    %}
+  {% endif %}
+{% endcapture %}
+
+{% assign highlights_markup = highlights_markup | strip %}
+
+{% if highlights_markup != blank %}
+  <div
+    class="product-message-highlights-block spacing-style"
+    style="{% render 'spacing-style', settings: block_settings %}"
+    {{ block.shopify_attributes }}
+  >
+    {% if block_settings.divider_position == 'top' or block_settings.divider_position == 'both' %}
+      {% assign top_divider_id = block.id | append: '-top' %}
+      {% render 'divider', id: top_divider_id, settings: block_settings, spacing: false %}
+    {% endif %}
+
+    <div
+      class="product-message-highlights"
+      style="
+        --product-message-highlight-icon-background: {{ block_settings.icon_background_color }};
+        {% render 'typography-style', settings: block_settings, ignore_weight: true %}
+        {% if block_settings.weight != blank %}
+          --font-weight: {{ block_settings.weight }};
+        {% endif %}
+      "
+    >
+      {{ highlights_markup }}
+    </div>
+
+    {% if block_settings.divider_position == 'bottom' or block_settings.divider_position == 'both' %}
+      {% assign bottom_divider_id = block.id | append: '-bottom' %}
+      {% render 'divider', id: bottom_divider_id, settings: block_settings, spacing: false %}
+    {% endif %}
+  </div>
+{% endif %}
+
+{% stylesheet %}
+  .product-message-highlights-block {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+    width: 100%;
+  }
+
+  .product-message-highlights {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 1.5rem;
+    width: 100%;
+  }
+
+  .product-message-highlight {
+    display: flex;
+    flex: 1 1 calc(50% - 0.75rem);
+    align-items: center;
+    gap: 1rem;
+    min-width: 0;
+  }
+
+  .product-message-highlight__icon-wrapper {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 3rem;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 2.5rem;
+    background: var(--product-message-highlight-icon-background);
+  }
+
+  .product-message-highlight__icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    object-fit: contain;
+  }
+
+  .product-message-highlight__text {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Product highlights",
+  "tag": null,
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Source: Shopify Admin → Content → Metaobjects → Product Highlight Messages."
+    },  
+    {
+      "type": "header",
+      "content": "t:content.typography"
+    },
+    {
+      "type": "select",
+      "id": "type_preset",
+      "label": "t:settings.preset",
+      "options": [
+        {
+          "value": "h1",
+          "label": "t:options.h1"
+        },
+        {
+          "value": "h2",
+          "label": "t:options.h2"
+        },
+        {
+          "value": "h3",
+          "label": "t:options.h3"
+        },
+        {
+          "value": "h4",
+          "label": "t:options.h4"
+        },
+        {
+          "value": "h5",
+          "label": "t:options.h5"
+        },
+        {
+          "value": "h6",
+          "label": "t:options.h6"
+        },
+        {
+          "value": "display",
+          "label": "t:options.display"
+        },
+        {
+          "value": "body-regular",
+          "label": "t:options.body_regular"
+        },
+        {
+          "value": "body-small",
+          "label": "t:options.body_small"
+        },
+        {
+          "value": "label",
+          "label": "t:options.label"
+        },
+        {
+          "value": "tag",
+          "label": "t:options.tag"
+        }
+      ],
+      "default": "body-small"
+    },
+    {
+      "type": "select",
+      "id": "weight",
+      "label": "t:settings.weight",
+      "options": [
+        {
+          "value": "",
+          "label": "t:options.default"
+        },
+        {
+          "value": "400",
+          "label": "Normal"
+        },
+        {
+          "value": "500",
+          "label": "Medium"
+        },
+        {
+          "value": "600",
+          "label": "Semibold"
+        },
+        {
+          "value": "700",
+          "label": "Bold"
+        }
+      ],
+      "default": "600"
+    },
+    {
+      "type": "select",
+      "id": "color",
+      "label": "t:settings.color",
+      "options": [
+        {
+          "value": "var(--color-foreground)",
+          "label": "t:options.text"
+        },
+        {
+          "value": "var(--color-foreground-heading)",
+          "label": "t:options.heading"
+        },
+        {
+          "value": "var(--color-primary)",
+          "label": "t:options.link"
+        }
+      ],
+      "default": "var(--color-foreground-heading)"
+    },
+    {
+      "type": "color",
+      "id": "icon_background_color",
+      "label": "Icon background color",
+      "default": "#F2E7DF"
+    },
+    {
+      "type": "header",
+      "content": "Divider"
+    },
+    {
+      "type": "select",
+      "id": "divider_position",
+      "label": "t:settings.position",
+      "options": [
+        { "value": "none", "label": "t:options.none" },
+        { "value": "top", "label": "t:options.top" },
+        { "value": "bottom", "label": "t:options.bottom" },
+        { "value": "both", "label": "t:options.both" }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "range",
+      "id": "thickness",
+      "label": "t:settings.thickness",
+      "min": 0.5,
+      "max": 5,
+      "step": 0.5,
+      "unit": "px",
+      "default": 1,
+      "visible_if": "{{ block.settings.divider_position != 'none' }}"
+    },
+    {
+      "type": "select",
+      "id": "corner_radius",
+      "label": "t:settings.border_radius",
+      "options": [
+        { "value": "square", "label": "t:options.square" },
+        { "value": "rounded", "label": "t:options.rounded" }
+      ],
+      "default": "square",
+      "visible_if": "{{ block.settings.divider_position != 'none' and block.settings.thickness > 1 }}"
+    },
+    {
+      "type": "range",
+      "id": "width_percent",
+      "label": "t:settings.length",
+      "min": 5,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "default": 100,
+      "visible_if": "{{ block.settings.divider_position != 'none' }}"
+    },
+    {
+      "type": "select",
+      "id": "visibility",
+      "label": "t:settings.visibility",
+      "options": [
+        { "value": "all", "label": "t:options.all" },
+        { "value": "desktop", "label": "t:options.desktop_only" },
+        { "value": "mobile", "label": "t:options.mobile_only" }
+      ],
+      "default": "all",
+      "visible_if": "{{ block.settings.divider_position != 'none' }}"
+    },
+    {
+      "type": "header",
+      "content": "t:content.padding"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "t:settings.top",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 24
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "t:settings.bottom",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 24
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-start",
+      "label": "t:settings.left",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-end",
+      "label": "t:settings.right",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    }
+  ],
+  "presets": [
+    {
+      "name": "Product highlights",
+      "category": "t:categories.product"
+    }
+  ]
+}
+{% endschema %}

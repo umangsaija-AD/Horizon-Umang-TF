@@ -1,0 +1,64 @@
+{%- doc -%}
+  Emits a compact, single-line, HTML-attribute-safe JSON string mapping variant
+  IDs to their raw upgrade/addon metafield data. Designed to be rendered inside
+  a `data-addons-source` HTML attribute on ATC carrier elements.
+
+  Output shape (when data exists):
+    {"<variantId>":{"upgrades":[...],"addons":[...]}, ...}
+
+  Emits nothing (empty string) when no variants carry addon/upgrade metafields,
+  so the attribute is present but empty.
+
+  @param {object} product - The product object whose variants to inspect.
+
+  @example
+    <div data-addons-source="{% render 'addons-source-json', product: product %}">
+{%- enddoc -%}
+
+{%- liquid
+  assign _as_entries = ''
+  assign _as_sep = ''
+
+  for variant in product.variants
+    assign _as_upgrades = variant.metafields.ediblearrangement.upgrades.value
+    assign _as_addons = variant.metafields.ediblearrangement.addons.value
+
+    if _as_upgrades == blank and _as_addons == blank
+      continue
+    endif
+
+    assign _as_upgrades_json = _as_upgrades | default: '' | json
+    assign _as_addons_json = _as_addons | default: '' | json
+
+    capture _as_entry
+      echo _as_sep
+      echo '"'
+      echo variant.id
+      echo '":{"upgrades":'
+      if _as_upgrades != blank
+        echo _as_upgrades_json
+      else
+        echo '[]'
+      endif
+      echo ',"addons":'
+      if _as_addons != blank
+        echo _as_addons_json
+      else
+        echo '[]'
+      endif
+      echo '}'
+    endcapture
+
+    assign _as_entries = _as_entries | append: _as_entry
+    assign _as_sep = ','
+  endfor
+
+  if _as_entries != blank
+    capture _as_output
+      echo '{'
+      echo _as_entries
+      echo '}'
+    endcapture
+    echo _as_output | strip_newlines | strip
+  endif
+-%}

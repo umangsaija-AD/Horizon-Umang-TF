@@ -1,0 +1,182 @@
+{% doc %}
+Renders the CYO dessert board preview.
+
+Displays a photographic board background image with a fixed grid of transparent
+placement cells overlaid on top. Filled cells show the selected product image;
+empty cells are fully transparent (no placeholder icon).
+
+@param {object} product - The product object (for metafield access)
+@param {number} total_slots - The number of placement cells to render
+@param {string} board_image - The board background image (file_reference from cyo_config metaobject)
+@param {object} [block_settings] - Block settings for media_radius etc.
+
+@example
+{% render 'cyo-board-preview', product: product, total_slots: 12, board_image: board_img, block_settings: block.settings %}
+{% enddoc %}
+
+{%- liquid
+  assign total_slots = total_slots | default: 12
+  assign media_radius = block_settings.media_radius | default: 8
+
+  assign board_columns = 3
+  if total_slots > 9
+    assign board_columns = 4
+  endif
+
+  assign slots_remainder = total_slots | modulo: board_columns
+  assign board_rows = total_slots | divided_by: board_columns
+-%}
+
+<div
+  class="cyo-board-preview"
+  data-cyo-board-preview
+  data-cyo-preview
+  style="--cyo-media-radius: {{ media_radius }}px; --board-columns: {{ board_columns }};"
+>
+  <div class="cyo-board-preview__stage">
+    {{
+      board_image
+      | image_url: width: 1200
+      | image_tag:
+        class: 'cyo-board-preview__board-image',
+        widths: '300, 400, 600, 800, 1000, 1200',
+        sizes: '(max-width: 749px) 100vw, (max-width: 1400px) 50vw, 700px',
+        loading: 'eager',
+        fetchpriority: 'high',
+        alt: '',
+        width: 600,
+        height: 600
+    }}
+
+    <div class="cyo-board-preview__grid">
+      {%- if slots_remainder == 0 -%}
+        {%- comment -%} Column-major rendering: DOM index maps to column-first order so step N's slots occupy the leftmost N columns {%- endcomment -%}
+        {%- assign cell_index = 0 -%}
+        {%- for col in (1..board_columns) -%}
+          {%- for row in (1..board_rows) -%}
+            <div
+              class="cyo-board-preview__cell"
+              data-cyo-slot="{{ cell_index }}"
+              style="grid-row: {{ row }}; grid-column: {{ col }};"
+            >
+              <img
+                class="cyo-board-preview__cell-image"
+                data-cyo-slot-image
+                alt=""
+                width="120"
+                height="120"
+                loading="lazy"
+              >
+            </div>
+            {%- assign cell_index = cell_index | plus: 1 -%}
+          {%- endfor -%}
+        {%- endfor -%}
+      {%- else -%}
+        {%- comment -%} Fallback: row-major for slot counts not evenly divisible by board_columns. Explicit grid placement prevents CSS auto-placement misalignment. {%- endcomment -%}
+        {%- for i in (1..total_slots) -%}
+          {%- assign slot_index = forloop.index0 -%}
+          {%- assign fb_col = slot_index | modulo: board_columns | plus: 1 -%}
+          {%- assign fb_row = slot_index | divided_by: board_columns | plus: 1 -%}
+          <div
+            class="cyo-board-preview__cell"
+            data-cyo-slot="{{ slot_index }}"
+            style="grid-row: {{ fb_row }}; grid-column: {{ fb_col }};"
+          >
+            <img
+              class="cyo-board-preview__cell-image"
+              data-cyo-slot-image
+              alt=""
+              width="120"
+              height="120"
+              loading="lazy"
+            >
+          </div>
+        {%- endfor -%}
+      {%- endif -%}
+    </div>
+  </div>
+
+  {% render 'cyo-clear' %}
+</div>
+
+<script src="{{ 'cyo-board-preview.js' | asset_url }}" type="module"></script>
+
+{% stylesheet %}
+  .cyo-board-preview {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    background-color: #f5f1f1;
+    border-radius: var(--cyo-media-radius, 8px);
+    overflow: hidden;
+  }
+
+  .cyo-board-preview__stage {
+    position: relative;
+    width: 100%;
+    container-type: inline-size;
+  }
+
+  .cyo-board-preview__board-image {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: var(--cyo-media-radius, 8px);
+  }
+
+  .cyo-board-preview__grid {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: repeat(var(--board-columns, 3), 1fr);
+    gap: 1%;
+    gap: 1.5cqi;
+    padding: 8%;
+    padding: 8cqi;
+  }
+
+  .cyo-board-preview__cell {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .cyo-board-preview__cell-image {
+    display: none;
+    position: absolute;
+    inset: 50% auto auto 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    height: 80%;
+    object-fit: cover;
+    border-radius: 50%;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 0.5cqi 1cqi rgba(0, 0, 0, 0.2);
+    z-index: 1;
+  }
+
+  .cyo-board-preview__cell[data-filled="true"] .cyo-board-preview__cell-image {
+    display: block;
+  }
+
+  @media screen and (max-width: 749px) {
+    .cyo-board-preview {
+      position: sticky;
+      top: var(--header-height, 0px);
+      z-index: 1;
+    }
+
+    .cyo-board-preview__grid {
+      gap: 0.5%;
+      gap: 1cqi;
+      padding: 6%;
+      padding: 6cqi;
+    }
+  }
+{% endstylesheet %}

@@ -1,0 +1,341 @@
+{% doc %}
+  Unified bundle discount progress bar.
+  Renders identically in the Bundle Builder drawer (client mode, JS-driven)
+  and the Cart drawer (server mode, Liquid-computed).
+
+  @param {string} mode - 'server' for Liquid-computed state, 'client' for JS-driven shell
+  @param {number} [subtotal_cents] - Pre-discount subtotal (server mode only)
+  @param {string} [progress_color] - CSS color for the fill/dots (client mode only)
+
+  @example
+    {% render 'bundle-progress-bar', mode: 'server', subtotal_cents: bundle_subtotal_cents %}
+    {% render 'bundle-progress-bar', mode: 'client', progress_color: section.settings.progress_color %}
+{% enddoc %}
+
+{% liquid
+  assign mode = mode | default: 'server'
+%}
+
+{% if mode == 'client' %}
+  {%- comment -%}
+    Client mode: empty shell for the BB drawer JS to populate via
+    #renderProgressMarkers() and #updateProgress().
+  {%- endcomment -%}
+  <div class="bundle-progress">
+    <p class="bundle-progress__text"></p>
+    <div class="bundle-progress__bar">
+      <div class="bundle-progress__track"></div>
+      <div class="bundle-progress__fill" style="width: 0%;"></div>
+      <span class="bundle-progress__icon" style="inset-inline-start: 100%;">
+        <span
+          class="bundle-progress__icon-glyph"
+          style="--bundle-progress-icon: url('{{ 'dipped-strawberry.svg' | asset_url }}');"
+          aria-hidden="true"
+        ></span>
+      </span>
+    </div>
+    <div class="bundle-progress__labels"></div>
+  </div>
+{% else %}
+  {%- comment -%}
+    Server mode: resolves the bundle discount config metaobject and computes
+    fill, dots, and labels from the provided subtotal_cents.
+
+    Markers (discount tiers + free delivery) are combined into a SINGLE list
+    sorted ascending by threshold — mirroring the BB drawer's client JS
+    (#renderProgressMarkers) so both bars order their milestones identically.
+    The highest-threshold marker is the strawberry; earlier ones are dots.
+  {%- endcomment -%}
+  {% liquid
+    assign config_entry = settings.bundle_discount_config
+    unless config_entry
+      assign config_entry = shop.metaobjects['app--385259831297--bundle_discount_config'].config
+    endunless
+
+    assign discount_data = config_entry.data.value
+    assign current_country = localization.country.iso_code
+    assign selected_market = nil
+    assign default_market = nil
+    if discount_data.markets
+      for m in discount_data.markets
+        unless m.active == false
+          if m.country == current_country
+            assign selected_market = m
+          endif
+          if m.key == 'default' or m.country == blank
+            assign default_market = m
+          endif
+        endunless
+      endfor
+    endif
+    unless selected_market
+      assign selected_market = default_market
+    endunless
+
+    assign free_delivery = selected_market.freeDelivery.threshold | default: 0
+
+    # Build a combined, threshold-sorted marker list. Each row is
+    # "<zero-padded threshold>::<threshold>::<label>" so a lexical sort orders
+    # the rows by numeric threshold ascending (matches the client JS sort).
+    assign marker_rows = ''
+    for t in selected_market.tiers
+      assign tt = t.threshold | default: 0
+      if tt <= 0
+        continue
+      endif
+      assign pct = t.percentage | default: 0
+      assign padded = tt | prepend: '0000000000' | slice: -10, 10
+      assign row = padded | append: '::' | append: tt | append: '::' | append: pct | append: '% off'
+      if marker_rows == blank
+        assign marker_rows = row
+      else
+        assign marker_rows = marker_rows | append: '##' | append: row
+      endif
+    endfor
+    if free_delivery > 0
+      assign padded = free_delivery | prepend: '0000000000' | slice: -10, 10
+      assign row = padded | append: '::' | append: free_delivery | append: '::Free delivery'
+      if marker_rows == blank
+        assign marker_rows = row
+      else
+        assign marker_rows = marker_rows | append: '##' | append: row
+      endif
+    endif
+
+    assign markers = marker_rows | split: '##' | sort
+    assign marker_count = markers.size
+  %}
+
+  {% if marker_count > 0 %}
+    {% liquid
+      assign free_delivery_cents = free_delivery | times: 100
+      assign remaining_cents = free_delivery_cents | minus: subtotal_cents
+      if remaining_cents < 0
+        assign remaining_cents = 0
+      endif
+      assign remaining_formatted = remaining_cents | money
+
+      # subtotal in dollars, to compare against the (dollar) thresholds.
+      assign subtotal_dollars = subtotal_cents | divided_by: 100.0
+
+      # Fill: interpolate across the evenly-spaced sorted markers so the fill
+      # lands exactly on a marker when its threshold is reached.
+      assign prev_val = 0
+      assign prev_pos = 0
+      assign fill_pct = 100
+      assign fill_found = false
+      assign f_idx = 0
+      for row in markers
+        assign parts = row | split: '::'
+        assign val = parts[1] | plus: 0
+        assign f_idx = f_idx | plus: 1
+        assign pos = f_idx | times: 100.0 | divided_by: marker_count
+        unless fill_found
+          if subtotal_dollars <= val
+            assign seg = val | minus: prev_val
+            if seg <= 0
+              assign fill_pct = prev_pos
+            else
+              assign into = subtotal_dollars | minus: prev_val
+              assign frac = into | times: 1.0 | divided_by: seg
+              assign span = pos | minus: prev_pos
+              assign fill_pct = frac | times: span | plus: prev_pos
+            endif
+            assign fill_found = true
+          endif
+        endunless
+        assign prev_val = val
+        assign prev_pos = pos
+      endfor
+      if fill_pct > 100
+        assign fill_pct = 100
+      endif
+      if fill_pct < 0
+        assign fill_pct = 0
+      endif
+    %}
+
+    <div class="bundle-progress">
+      {% if free_delivery > 0 %}
+        <p class="bundle-progress__text">
+          {%- if remaining_cents > 0 -%}
+            Add <strong>{{ remaining_formatted }}</strong> more to get free delivery
+          {%- else -%}
+            You qualify for free delivery!
+          {%- endif -%}
+        </p>
+      {% endif %}
+
+      <div class="bundle-progress__bar">
+        <div class="bundle-progress__track"></div>
+        <div class="bundle-progress__fill" style="width: {{ fill_pct }}%;"></div>
+
+        {%- comment -%} Solid start dot at the origin {%- endcomment -%}
+        <span class="bundle-progress__dot bundle-progress__dot--start" style="left: 0%;"></span>
+
+        {%- comment -%} Milestone markers (sorted ascending; last = strawberry) {%- endcomment -%}
+        {%- assign m_idx = 0 -%}
+        {% for row in markers %}
+          {%- liquid
+            assign parts = row | split: '::'
+            assign val = parts[1] | plus: 0
+            assign m_idx = m_idx | plus: 1
+            assign dot_pct = m_idx | times: 100.0 | divided_by: marker_count
+            assign is_active = false
+            if subtotal_dollars >= val
+              assign is_active = true
+            endif
+            assign is_last = false
+            if m_idx == marker_count
+              assign is_last = true
+            endif
+          -%}
+          {% if is_last %}
+            <span class="bundle-progress__icon" style="inset-inline-start: {{ dot_pct }}%;">
+              <span
+                class="bundle-progress__icon-glyph"
+                style="--bundle-progress-icon: url('{{ 'dipped-strawberry.svg' | asset_url }}');"
+                aria-hidden="true"
+              ></span>
+            </span>
+          {% else %}
+            <span
+              class="bundle-progress__dot{% if is_active %} bundle-progress__dot--active{% endif %}"
+              style="left: {{ dot_pct }}%;"
+            ></span>
+          {% endif %}
+        {% endfor %}
+      </div>
+
+      <div class="bundle-progress__labels">
+        {%- assign l_idx = 0 -%}
+        {% for row in markers %}
+          {%- liquid
+            assign parts = row | split: '::'
+            assign lbl = parts[2]
+            assign l_idx = l_idx | plus: 1
+            assign label_pct = l_idx | times: 100.0 | divided_by: marker_count
+            assign label_transform = 'translateX(-50%)'
+            if label_pct < 12
+              assign label_transform = 'translateX(0)'
+            elsif label_pct > 88
+              assign label_transform = 'translateX(-100%)'
+            endif
+          -%}
+          <span class="bundle-progress__label" style="left: {{ label_pct }}%; transform: {{ label_transform }};">{{ lbl }}</span>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+{% endif %}
+
+{% stylesheet %}
+  /* ===== Unified bundle discount progress bar ===== */
+
+  .bundle-progress {
+    padding: 8px 24px 16px;
+    flex-shrink: 0;
+  }
+
+  .bundle-progress__text {
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--2xs);
+    font-weight: 400;
+    line-height: 1.42;
+    /* Fixed brand grey (not scheme-aware) so the bar renders identically in the
+       Bundle Builder drawer (no color scheme) and the Cart drawer (color-scheme-1). */
+    color: var(--color-black-light, #464646);
+    text-align: center;
+    margin: 0 0 16px;
+  }
+
+  .bundle-progress__text strong {
+    font-weight: 600;
+  }
+
+  .bundle-progress__bar {
+    position: relative;
+    height: 28px;
+    margin-block-end: 8px;
+  }
+
+  .bundle-progress__track {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 0;
+    inset-inline-end: 0;
+    height: 3px;
+    border-radius: 100px;
+    background: color-mix(in srgb, var(--bundle-progress-color, #e10600) 15%, #ffffff);
+    transform: translateY(-50%);
+  }
+
+  .bundle-progress__fill {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 0;
+    height: 3px;
+    background: var(--bundle-progress-color, #e10600);
+    border-radius: 100px;
+    transform: translateY(-50%);
+    transition: width 0.3s ease;
+  }
+
+  .bundle-progress__dot {
+    position: absolute;
+    inset-block-start: 50%;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 2px solid var(--bundle-progress-color, #e10600);
+    transform: translate(-50%, -50%);
+    z-index: 1;
+  }
+
+  .bundle-progress__dot--active,
+  .bundle-progress__dot--start {
+    background: var(--bundle-progress-color, #e10600);
+    border-color: var(--bundle-progress-color, #e10600);
+  }
+
+  .bundle-progress__icon {
+    position: absolute;
+    inset-block-start: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 2px 4px;
+    box-sizing: border-box;
+  }
+
+  .bundle-progress__icon-glyph {
+    display: block;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    background: var(--bundle-progress-color, #e10600);
+    -webkit-mask: var(--bundle-progress-icon) center / contain no-repeat;
+    mask: var(--bundle-progress-icon) center / contain no-repeat;
+  }
+
+  .bundle-progress__labels {
+    position: relative;
+    height: 17px;
+  }
+
+  .bundle-progress__label {
+    position: absolute;
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--2xs);
+    font-weight: 400;
+    line-height: 1.42;
+    color: var(--color-black-light, #464646);
+    transform: translateX(-50%);
+    white-space: nowrap;
+  }
+{% endstylesheet %}

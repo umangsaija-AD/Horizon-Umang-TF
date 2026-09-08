@@ -1,0 +1,43 @@
+{%- doc -%}
+  Renders a full-bleed overlay.
+
+  @param {object} settings - Block or section settings, expecting `overlay_color`, `overlay_style`, and `gradient_direction`.
+  @param {string} [layer] - The z-index layer for the overlay, defaults to `var(--layer-flat)`.
+
+  @example
+  {% render 'overlay', settings: section.settings, layer: 'var(--layer-raised)' %}
+{%- enddoc -%}
+
+<div
+  class="overlay overlay--{{ settings.overlay_style | default: 'gradient' }}"
+  style="
+    --overlay-layer: {{ layer | default: 'var(--layer-flat)' }};
+    --overlay-color: {{ settings.overlay_color | default: 'rgb(0 0 0 / var(--opacity-25))' }};
+    {%- if settings.overlay_end_color and settings.overlay_end_color != blank -%}
+      --overlay-color--end: {{ settings.overlay_end_color }};
+    {%- else -%}
+      --overlay-color--end: {{ settings.overlay_color | color_modify: 'alpha', 0 | default: 'rgb(0 0 0 / 0)' }};
+    {%- endif -%}
+    --overlay-direction: {{ settings.gradient_direction | default: 'to top' }};
+    --overlay-gradient-position: {{ settings.gradient_position | default: 100 }}%;
+    {%- if settings.border_radius %} --overlay-border-radius: {{ settings.border_radius | default: '0' }}px;{% endif -%}
+  "
+></div>
+
+{% stylesheet %}
+  .overlay {
+    position: absolute;
+    inset: 0;
+    z-index: var(--overlay-layer);
+    pointer-events: none;
+    border-radius: var(--overlay-border-radius, 0);
+  }
+
+  .overlay--solid {
+    background: var(--overlay-color);
+  }
+
+  .overlay--gradient {
+    background: linear-gradient(var(--overlay-direction), var(--overlay-color) 0%, var(--overlay-color--end) var(--overlay-gradient-position, 100%));
+  }
+{% endstylesheet %}

@@ -1,0 +1,24 @@
+<div class="carousel-item tw-w-[var(--carousel-item-width)] [&_.image-block]:tw-px-[3.5px] tw-shrink-0 tw-gap-2 tw-flex tw-flex-col">
+  {% content_for 'blocks' %}
+</div>
+
+{% schema %}
+{
+  "name": "Mobile Menu carousel item",
+  "tag": null,
+  "blocks": [
+    {
+      "type": "image"
+    },
+    {
+      "type": "text"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Mobile Menu Carousel Item",
+      "category": "t:categories.header"
+    }
+  ]
+}
+{% endschema %}

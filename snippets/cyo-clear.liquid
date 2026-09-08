@@ -1,0 +1,42 @@
+{% doc %}
+Renders the shared "Clear Selected" button used by all CYO preview types.
+
+The parent element must be `position: relative` for the absolute positioning to anchor correctly.
+The button is hidden by default (display: none) and shown by CYO JS when at least one slot is filled.
+
+@example
+{% render 'cyo-clear' %}
+{% enddoc %}
+
+<button
+  type="button"
+  class="cyo-clear button-unstyled"
+  data-cyo-clear
+  aria-label="Clear all selections"
+  style="display: none;"
+>
+  Clear Selected
+</button>
+
+{% stylesheet %}
+  .cyo-clear {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 3;
+    font-size: var(--font-size--sm);
+    font-weight: 600;
+    line-height: 1.43;
+    color: #e10600;
+    text-decoration: none;
+    border-bottom: 1px solid #e10600;
+    cursor: pointer;
+    background: none;
+    padding: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  .cyo-clear:hover {
+    opacity: 0.7;
+  }
+{% endstylesheet %}

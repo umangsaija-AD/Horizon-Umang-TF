@@ -1,0 +1,593 @@
+
+
+{% liquid
+  assign block_settings = block.settings
+  assign ratio = 1
+  assign ratio_mobile = nil
+
+  case block_settings.image_ratio
+    when 'landscape'
+      assign ratio = '3 / 2'
+    when 'portrait'
+      assign ratio = '4 / 5'
+    when 'adapt'
+      assign ratio = block_settings.image.aspect_ratio
+    when 'custom'
+      assign ratio = block_settings.custom_ratio_width | append: ' / ' | append: block_settings.custom_ratio_height
+  endcase
+
+  if ratio == 0 or ratio == null
+    assign ratio = 1
+  endif
+
+  if block_settings.image_ratio_mobile == 'same'
+    assign ratio_mobile = ratio
+  else
+    case block_settings.image_ratio_mobile
+      when 'landscape'
+        assign ratio_mobile = '16 / 9'
+      when 'portrait'
+        assign ratio_mobile = '4 / 5'
+      when 'square'
+        assign ratio_mobile = '1'
+      when 'adapt'
+        assign ratio_mobile = block_settings.image.aspect_ratio
+      when 'custom'
+        assign ratio_mobile = block_settings.custom_ratio_width_mobile | append: ' / ' | append: block_settings.custom_ratio_height_mobile
+    endcase
+
+    if ratio_mobile == 0 or ratio_mobile == null
+      assign ratio_mobile = ratio
+    endif
+  endif
+%}
+
+{% capture class %}
+  image-block image-block--{{ block.id }} image-block--height-{{ block_settings.height }} spacing-style size-style{% if block_settings.use_as_background %} image-block--background{% endif %}{% if block_settings.enable_parallax %} image-block--parallax image-block--parallax-{{ block_settings.parallax_overflow }} image-block--parallax-style-{{ block_settings.parallax_image_style | default: 'cover' }}{% endif %}
+{% endcapture %}
+
+{% capture style %}
+  --ratio: {{ ratio }};
+  --ratio-mobile: {{ ratio_mobile }};
+  {% render 'size-style', settings: block_settings %}
+  {% render 'spacing-style', settings: block_settings %}
+{% endcapture %}
+
+{% capture image_border_style %}
+  --ratio: {{ ratio }};
+  --ratio-mobile: {{ ratio_mobile }};
+  {% render 'border-override', settings: block_settings %}
+{% endcapture %}
+
+{% liquid
+  assign media_width_desktop = '100vw'
+  assign media_width_mobile = '100vw'
+  assign sizes = 'auto, (min-width: 750px) ' | append: media_width_desktop | append: ', ' | append: media_width_mobile
+  assign widths = '240, 352, 832, 1200, 1600, 1920, 2560, 3840'
+%}
+
+{% capture image %}
+  {%- if block_settings.image -%}
+    {{
+      block_settings.image
+      | image_url: width: 3840
+      | image_tag:
+        width: block_settings.image.width,
+        widths: widths,
+        height: block_settings.image.height,
+        class: 'image-block__image border-style',
+        style: image_border_style,
+        sizes: sizes
+    }}
+  {%- else -%}
+    <div class="placeholder-image border-style size-style" style="{{ image_border_style }}">
+      {{ 'detailed-apparel-1' | placeholder_svg_tag: 'image-block__placeholder' }}
+    </div>
+  {%- endif -%}
+{% endcapture %}
+
+{% capture image_content %}
+  {%- if block_settings.enable_parallax -%}
+    <image-parallax-component class="image-block__parallax" data-overflow="{{ block_settings.parallax_overflow }}">{{ image }}</image-parallax-component>
+  {%- else -%}
+    {{ image }}
+  {%- endif -%}
+{% endcapture %}
+
+{% if block_settings.link == blank %}
+  <div
+    class="{{ class }}"
+    style="{{ style }}"
+    {{ block.shopify_attributes }}
+  >
+    {{ image_content }}
+  </div>
+{% else %}
+  <a
+    href="{{ block_settings.link }}"
+    class="{{ class }}"
+    style="{{ style }}"
+    {{ block.shopify_attributes }}
+  >
+    {{ image_content }}
+  </a>
+{% endif %}
+
+{% stylesheet %}
+  .image-block__placeholder {
+    height: 100%;
+    width: 100%;
+    object-fit: cover;
+    object-position: center center;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .placeholder-image {
+    position: relative;
+    aspect-ratio: var(--ratio);
+    overflow: hidden;
+  }
+
+  @media screen and (max-width: 749px) {
+    .placeholder-image {
+      aspect-ratio: var(--ratio-mobile, var(--ratio));
+    }
+  }
+
+  .image-block {
+    display: flex;
+
+    /* When the image is nested in a group, section, etc, respect the parent's horizontal alignment */
+    justify-content: var(--horizontal-alignment, 'inline-start');
+  }
+
+  .image-block--height-fill .image-block__image {
+    height: 100%;
+  }
+
+  .image-block__image {
+    object-fit: cover;
+    aspect-ratio: var(--ratio);
+  }
+
+  @media screen and (max-width: 749px) {
+    .image-block__image {
+      aspect-ratio: var(--ratio-mobile, var(--ratio));
+    }
+  }
+
+  .image-block--background {
+    position: absolute;
+    inset: 0;
+    padding: 0;
+    pointer-events: none;
+  }
+
+  .image-block--background .image-block__image {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: unset;
+  }
+
+  /* Parallax: a transform drifts the image on scroll from its natural resting
+     position (resting offset is 0, set by assets/image-parallax.js). Two modes:
+
+     • Contain — the image stays fully in flow at its configured Size, so the
+       section grows to show the whole image (no crop). Nothing extra needed
+       beyond the base rules below.
+     • Cover — the image is taken out of the section's height flow (block-size:0)
+       so the section stays content-sized; the image overflows and is clipped at
+       the section border (crop from the bottom) via the clip-path rules below,
+       bleeding into the adjacent section, and scroll drift reveals the hidden
+       portion. The Size HEIGHT option does not apply in this mode (the crop
+       window is the section itself); width/aspect-ratio still apply.
+
+     The wrapper is display:contents so it adds no layout box. */
+  .image-block__parallax {
+    display: contents;
+  }
+
+  .image-block.image-block--parallax {
+    overflow: visible;
+  }
+
+  .image-block--parallax .image-block__image {
+    will-change: transform;
+    transform: translate3d(0, 0, 0);
+  }
+
+  .image-block--parallax-style-cover {
+    block-size: 0;
+    min-block-size: 0;
+    /* The slot is 0-height; without this the flex default (align-items:stretch)
+       squashes the image to 0 and nothing renders. flex-start keeps the image's
+       top at its natural slot position, extending downward. */
+    align-items: flex-start;
+  }
+
+  .image-block--parallax-style-cover.image-block--height-fill .image-block__image,
+  .image-block--parallax-style-cover .image-block__image {
+    height: auto;
+  }
+
+  /* Lift the section above its neighbours so the overflowing image paints over
+     the adjacent section instead of being covered/blended by it. The image is
+     made non-interactive so it doesn't intercept clicks on the section it now
+     floats over. */
+  .shopify-section:has(.image-block--parallax) {
+    position: relative;
+    z-index: 1;
+  }
+
+  .image-block--parallax .image-block__image {
+    pointer-events: none;
+  }
+
+  .shopify-section:has(.image-block--parallax-style-cover.image-block--parallax-top) {
+    clip-path: inset(-100vh 0 0 0);
+  }
+
+  .shopify-section:has(.image-block--parallax-style-cover.image-block--parallax-bottom) {
+    clip-path: inset(0 0 -100vh 0);
+  }
+
+  .shopify-section:has(.image-block--parallax-style-cover.image-block--parallax-both) {
+    clip-path: inset(-100vh 0 -100vh 0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .image-block--parallax .image-block__image {
+      transform: translate3d(0, 0, 0) !important;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:names.image",
+  "tag": null,
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "t:settings.image"
+    },
+    {
+      "type": "checkbox",
+      "id": "use_as_background",
+      "label": "Use as background",
+      "default": false,
+      "info": "Makes the image absolute-positioned, filling its immediate relative parent."
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "t:settings.link"
+    },
+    {
+      "type": "header",
+      "content": "t:content.size"
+    },
+    {
+      "type": "select",
+      "id": "image_ratio",
+      "label": "Aspect ratio (desktop)",
+      "options": [
+        {
+          "value": "adapt",
+          "label": "t:options.auto"
+        },
+        {
+          "value": "portrait",
+          "label": "t:options.portrait"
+        },
+        {
+          "value": "square",
+          "label": "t:options.square"
+        },
+        {
+          "value": "landscape",
+          "label": "t:options.landscape"
+        },
+        {
+          "value": "custom",
+          "label": "Custom"
+        }
+      ],
+      "default": "adapt"
+    },
+    {
+      "type": "number",
+      "id": "custom_ratio_width",
+      "label": "Ratio width (desktop)",
+      "default": 1,
+      "visible_if": "{{ block.settings.image_ratio == 'custom' }}"
+    },
+    {
+      "type": "number",
+      "id": "custom_ratio_height",
+      "label": "Ratio height (desktop)",
+      "default": 1,
+      "visible_if": "{{ block.settings.image_ratio == 'custom' }}"
+    },
+    {
+      "type": "select",
+      "id": "image_ratio_mobile",
+      "label": "Aspect ratio (mobile)",
+      "options": [
+        {
+          "value": "same",
+          "label": "Same as desktop"
+        },
+        {
+          "value": "adapt",
+          "label": "t:options.auto"
+        },
+        {
+          "value": "portrait",
+          "label": "t:options.portrait"
+        },
+        {
+          "value": "square",
+          "label": "t:options.square"
+        },
+        {
+          "value": "landscape",
+          "label": "t:options.landscape"
+        },
+        {
+          "value": "custom",
+          "label": "Custom"
+        }
+      ],
+      "default": "same"
+    },
+    {
+      "type": "number",
+      "id": "custom_ratio_width_mobile",
+      "label": "Ratio width (mobile)",
+      "default": 1,
+      "visible_if": "{{ block.settings.image_ratio_mobile == 'custom' }}"
+    },
+    {
+      "type": "number",
+      "id": "custom_ratio_height_mobile",
+      "label": "Ratio height (mobile)",
+      "default": 1,
+      "visible_if": "{{ block.settings.image_ratio_mobile == 'custom' }}"
+    },
+    {
+      "type": "select",
+      "id": "width",
+      "label": "t:settings.width_desktop",
+      "options": [
+        {
+          "value": "fit-content",
+          "label": "t:options.fit_content"
+        },
+        {
+          "value": "fill",
+          "label": "t:options.fill"
+        },
+        {
+          "value": "custom",
+          "label": "t:options.custom"
+        }
+      ],
+      "default": "fill"
+    },
+    {
+      "type": "range",
+      "id": "custom_width",
+      "label": "t:settings.custom_width",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "default": 100,
+      "visible_if": "{{ block.settings.width == 'custom' }}"
+    },
+    {
+      "type": "select",
+      "id": "width_mobile",
+      "label": "t:settings.width_mobile",
+      "options": [
+        {
+          "value": "fit-content",
+          "label": "t:options.fit_content"
+        },
+        {
+          "value": "fill",
+          "label": "t:options.fill"
+        },
+        {
+          "value": "custom",
+          "label": "t:options.custom"
+        }
+      ],
+      "default": "fill"
+    },
+    {
+      "type": "range",
+      "id": "custom_width_mobile",
+      "label": "t:settings.custom_width",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "default": 100,
+      "visible_if": "{{ block.settings.width_mobile == 'custom' }}"
+    },
+    {
+      "type": "select",
+      "id": "height",
+      "label": "t:settings.height",
+      "options": [
+        {
+          "value": "fit",
+          "label": "t:options.fit_content"
+        },
+        {
+          "value": "fill",
+          "label": "t:options.fill"
+        }
+      ],
+      "default": "fit",
+      "visible_if": "{{ block.settings.image_ratio == 'adapt' }}"
+    },
+    {
+      "type": "header",
+      "content": "t:content.borders"
+    },
+    {
+      "type": "select",
+      "id": "border",
+      "label": "t:settings.style",
+      "options": [
+        {
+          "value": "none",
+          "label": "t:options.none"
+        },
+        {
+          "value": "solid",
+          "label": "t:options.solid"
+        }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "range",
+      "id": "border_width",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "label": "t:settings.thickness",
+      "default": 1,
+      "visible_if": "{{ block.settings.border != 'none' }}"
+    },
+    {
+      "type": "range",
+      "id": "border_opacity",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "label": "t:settings.opacity",
+      "default": 100,
+      "visible_if": "{{ block.settings.border != 'none' }}"
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "label": "t:settings.border_radius",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "header",
+      "content": "Parallax"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_parallax",
+      "label": "Enable parallax",
+      "default": false,
+      "info": "Image drifts on scroll and can break out of its slot. Breakout is only visible where no parent group/section clips overflow — groups/sections with a background image or video clip their contents."
+    },
+    {
+      "type": "select",
+      "id": "parallax_overflow",
+      "label": "Overflow direction",
+      "options": [
+        {
+          "value": "top",
+          "label": "Top"
+        },
+        {
+          "value": "bottom",
+          "label": "Bottom"
+        },
+        {
+          "value": "both",
+          "label": "Both"
+        }
+      ],
+      "default": "bottom",
+      "visible_if": "{{ block.settings.enable_parallax }}"
+    },
+    {
+      "type": "select",
+      "id": "parallax_image_style",
+      "label": "Image style",
+      "options": [
+        {
+          "value": "cover",
+          "label": "Cover (crop, section stays compact)"
+        },
+        {
+          "value": "contain",
+          "label": "Contain (show full image, section grows)"
+        }
+      ],
+      "default": "cover",
+      "info": "Cover keeps the section content-sized and crops the image at the section edge (scroll reveals the rest). Contain grows the section to show the whole image.",
+      "visible_if": "{{ block.settings.enable_parallax }}"
+    },
+    {
+      "type": "header",
+      "content": "t:content.padding"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "t:settings.top",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "t:settings.bottom",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-start",
+      "label": "t:settings.left",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-end",
+      "label": "t:settings.right",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:names.image",
+      "category": "t:categories.basic"
+    }
+  ]
+}
+{% endschema %}

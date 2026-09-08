@@ -1,0 +1,9 @@
+{% comment %}
+  Cart bundle discount progress bar.
+  Delegates to the shared bundle-progress-bar snippet for unified markup and CSS.
+
+  Accepts:
+    subtotal_cents {number} - pre-discount subtotal of the cart's bundle line items
+{% endcomment %}
+
+{% render 'bundle-progress-bar', mode: 'server', subtotal_cents: subtotal_cents %}

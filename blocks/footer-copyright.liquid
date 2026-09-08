@@ -1,0 +1,109 @@
+{% assign block_settings = block.settings %}
+<div
+  class="
+    footer-utilities__group-copyright
+    custom-typography
+    {% if block_settings.font_size != "" %}custom-font-size{% endif %}
+  "
+  style="{% render 'typography-style', preset: 'custom', settings: block_settings %}"
+  {{ block.shopify_attributes }}
+>
+  {% if block_settings.use_custom_copyright and block_settings.custom_copyright != blank %}
+    {% assign current_year = 'now' | date: '%Y' %}
+    <div class="footer-utilities__text rte">
+      {{ block_settings.custom_copyright | replace: '[year]', current_year }}
+    </div>
+  {% else %}
+    <span class="footer-utilities__text">
+      &copy; {{ 'now' | date: '%Y' }}
+      {{ shop.name | link_to: routes.root_url -}}
+      {%- if block_settings.show_powered_by -%}
+        , {{ powered_by_link }}
+      {%- endif -%}
+    </span>
+  {% endif %}
+</div>
+
+{% schema %}
+{
+  "name": "t:names.copyright",
+  "tag": null,
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "use_custom_copyright",
+      "label": "t:settings.use_custom_copyright",
+      "default": false
+    },
+    {
+      "type": "richtext",
+      "id": "custom_copyright",
+      "label": "t:settings.custom_copyright",
+      "info": "t:info.custom_copyright",
+      "visible_if": "{{ block.settings.use_custom_copyright }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_powered_by",
+      "label": "t:settings.show_powered_by_shopify",
+      "default": true,
+      "visible_if": "{{ block.settings.use_custom_copyright == false }}"
+    },
+    {
+      "type": "paragraph",
+      "content": "t:content.manage_store_name",
+      "visible_if": "{{ block.settings.use_custom_copyright == false }}"
+    },
+    {
+      "type": "select",
+      "id": "font_size",
+      "label": "t:settings.size",
+      "options": [
+        {
+          "value": "0.625rem",
+          "label": "10px"
+        },
+        {
+          "value": "0.75rem",
+          "label": "12px"
+        },
+        {
+          "value": "0.875rem",
+          "label": "14px"
+        },
+        {
+          "value": "1rem",
+          "label": "16px"
+        },
+        {
+          "value": "1.125rem",
+          "label": "18px"
+        }
+      ],
+      "default": "0.75rem"
+    },
+    {
+      "type": "select",
+      "id": "case",
+      "label": "t:settings.case",
+      "options": [
+        {
+          "value": "none",
+          "label": "t:options.default"
+        },
+        {
+          "value": "uppercase",
+          "label": "t:options.uppercase"
+        }
+      ],
+      "default": "none"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:names.copyright",
+      "category": "t:categories.footer"
+    }
+  ]
+}
+{% endschema %}

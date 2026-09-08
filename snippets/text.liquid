@@ -1,0 +1,335 @@
+{%- doc -%}
+Intended for use in a block similar to the text block.
+
+@param {string} [class] - custom class to define in addition to text-block classes @param {string} [fallback_text] -
+fallback text if settings.text does not exist @param {object} [block] - The block object @param {string} [width] - width
+of the text block
+{%- enddoc -%}
+
+{% liquid
+  assign block_settings = block.settings
+  assign plain_text = block_settings.text | strip_newlines | strip
+  assign visible_text = plain_text | strip_html
+  assign text_width = width | default: block_settings.width
+  assign highlight_color = block_settings.highlight_color
+
+  if highlight_color == 'custom'
+    assign highlight_color = block_settings.custom_highlight_color
+  endif
+
+  assign type = 'body'
+
+  capture text_block_classes
+    if text_width == '100%'
+      echo 'text-block--align-' | append: block_settings.alignment
+      if block_settings.max_width == 'none'
+        echo ' text-block--full-width '
+      endif
+    endif
+    if block_settings.background
+      echo ' text-block--background '
+    endif
+    if block_settings.weight != blank
+      echo ' custom-font-weight '
+    endif
+    if block_settings.type_preset_desktop != blank
+      echo ' text-block--desktop-preset '
+    endif
+  endcapture
+%}
+
+{% capture attributes %}
+  class="{{ class }} spacing-style text-block rich-list text-block--{{ block.id }} {{ block_settings.type_preset }}
+    {{ text_block_classes }}
+  "
+
+  style="
+    {% render 'spacing-padding', settings: block_settings %}
+    {% render 'typography-style', settings: block_settings, ignore_weight: true %}
+    {% if block_settings.weight != blank %}
+      --font-weight: {{ block_settings.weight }};
+    {% endif %}
+    --width: {{ text_width }};
+    --max-width: var(--max-width--{{ type }}-{{ block_settings.max_width }});
+    {% if text_width == "100%" %}
+      --text-align: {{ block_settings.alignment }};
+    {% endif %}
+    {% if block_settings.background %}
+      --text-background-color: {{ block_settings.background_color | default: 'rgb(255 255 255 / 1.0)' }};
+      --text-corner-radius: {{ block_settings.corner_radius }}px;
+      --text-padding: max(var(--padding-2xs), calc((var(--text-corner-radius) + var(--padding-xs)) * (1 - cos(45deg))));
+    {% endif %}
+    {% if highlight_color != blank %}
+      --highlight-color: {{ highlight_color }};
+    {% endif %}
+  "
+
+  {{ block.shopify_attributes }}
+{% endcapture %}
+
+{% liquid
+  # {{ attributes }} must be on the immediate HTML parent of the text to preserve
+  # the click-to-edit connection in the theme editor. Any break between the text,
+  # including if-statements, will break the connection.
+
+  assign element = 'div'
+%}
+
+{%- capture processed_text -%}
+  {%- assign hl_parts = block.settings.text | split: '@@' -%}
+  {%- for part in hl_parts -%}
+    {%- assign mod = forloop.index0 | modulo: 2 -%}
+    {%- if mod == 1 -%}
+      <span class="text-highlight">{{ part }}</span>
+    {%- else -%}
+      {{ part }}
+    {%- endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+
+{% if block_settings.type_preset_desktop != blank %}
+  <style>
+    @media screen and (min-width: 750px) {
+      .text-block--{{ block.id }}.text-block--{{ block.id }},
+      .text-block.text-block--{{ block.id }} > *,
+      .text-block.text-block--{{ block.id }} :is(h1, h2, h3, h4, h5, h6) {
+        font-family: var(--font-{{ block_settings.type_preset_desktop }}--family);
+        font-style: var(--font-{{ block_settings.type_preset_desktop }}--style);
+        font-weight: var(--font-{{ block_settings.type_preset_desktop }}--weight);
+        font-size: var(--font-{{ block_settings.type_preset_desktop }}--size);
+        line-height: var(--font-{{ block_settings.type_preset_desktop }}--line-height);
+        letter-spacing: var(--font-{{ block_settings.type_preset_desktop }}--letter-spacing);
+        text-transform: var(--font-{{ block_settings.type_preset_desktop }}--case);
+      }
+    }
+  </style>
+{% endif %}
+
+{% if fallback_text != blank and visible_text == blank %}
+  <div data-type="text" {{ attributes | strip_newlines | strip }}>
+    {{ fallback_text }}
+  </div>
+{% elsif plain_text != blank %}
+  {% if block_settings.enable_read_more and block_settings.characters_limit > 0 %}
+    <{{ element }} {{ attributes | strip_newlines | strip }}>
+      <text-read-more
+        class="text-read-more"
+        data-enabled="true"
+        data-expanded="false"
+        data-collapsed-text-length="{{ block_settings.characters_limit }}"
+      >
+        <div
+          class="text-read-more__content"
+          ref="content"
+        >
+          {{ processed_text }}
+        </div>
+        {% if block_settings.enable_read_more %}
+          <button
+            type="button"
+            class="text-read-more__toggle"
+            ref="toggle"
+            on:click="/toggle"
+            aria-expanded="false"
+          >
+            <span class="text-read-more__more">{{ block_settings.read_more_label | escape }}</span>
+            <span class="text-read-more__less">{{ block_settings.read_less_label | escape }}</span>
+          </button>
+        {% endif %}
+      </text-read-more>
+    </{{ element }}>
+  {% elsif block_settings.characters_limit > 0 %}
+    <{{ element }} {{ attributes | strip_newlines | strip }}>
+      {{ visible_text | truncate: block_settings.characters_limit }}
+    </{{ element }}>
+  {% else %}
+    <{{ element }} {{ attributes | strip_newlines | strip }}>
+      {{ processed_text }}
+    </{{ element }}>
+  {% endif %}
+{% endif %}
+
+{% stylesheet %}
+  :root {
+    --text-align-default: left;
+  }
+
+  [style*='--horizontal-alignment: center'] .text-block {
+    --text-align-default: center;
+  }
+
+  [style*='--horizontal-alignment: flex-end'] .text-block {
+    --text-align-default: right;
+  }
+
+  [style*='--horizontal-alignment: flex-start'] > .text-block {
+    --text-align-default: left;
+  }
+
+  [style*='--horizontal-alignment: center'] > .text-block {
+    --text-align-default: center;
+  }
+
+  [style*='--horizontal-alignment: flex-end'] > .text-block {
+    --text-align-default: right;
+  }
+
+  .text-block {
+    width: var(--width);
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: var(--horizontal-alignment);
+  }
+
+  .text-block > * {
+    width: var(--width);
+    max-inline-size: min(100%, var(--max-width, 100%));
+    text-align: var(--text-align, var(--text-align-default));
+    text-wrap: var(--text-wrap);
+  }
+
+  .text-block:not(.text-block--full-width):is(.h1, .h2, .h3, .h4, .h5, .h6) {
+    text-wrap: balance;
+  }
+
+  .text-read-more {
+    display: flex;
+    flex-direction: column;
+    align-items: inherit;
+    width: inherit;
+    max-inline-size: inherit;
+    text-align: inherit;
+  }
+
+  .text-read-more__content {
+    width: 100%;
+  }
+
+  .text-read-more__content > *:first-child {
+    margin-block-start: 0;
+  }
+
+  .text-read-more__content > *:last-child {
+    margin-block-end: 0;
+  }
+
+  .text-read-more__toggle {
+    display: inline-flex;
+    align-self: flex-start;
+    align-items: center;
+    width: fit-content;
+    margin-block-start: var(--padding-xs);
+    padding-block: 3px;
+    padding-inline: 0;
+    border: 0;
+    border-block-end: 1px solid currentcolor;
+    border-radius: 0;
+    appearance: none;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font-family: inherit;
+    font-style: inherit;
+    font-weight: 600;
+    font-size: inherit;
+    line-height: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    text-decoration: none;
+  }
+
+  .text-block--align-center .text-read-more__toggle {
+    align-self: center;
+  }
+
+  .text-block--align-right .text-read-more__toggle {
+    align-self: flex-end;
+  }
+
+  .text-read-more__toggle[hidden] {
+    display: none;
+  }
+
+  .text-read-more[data-expanded='false'] .text-read-more__less,
+  .text-read-more[data-expanded='true'] .text-read-more__more {
+    display: none;
+  }
+
+  .text-block a:where(:not(.button, .button-secondary)) {
+    text-decoration: underline;
+    text-decoration-color: currentcolor;
+  }
+
+  .text-block a:where(:not(.button, .button-secondary)):hover {
+    text-decoration-color: currentcolor;
+  }
+
+  .text-block h1,
+  .text-block.h1 > * {
+    margin-block: var(--font-h1--spacing);
+  }
+
+  .text-block h2,
+  .text-block.h2 > * {
+    margin-block: var(--font-h2--spacing);
+  }
+
+  .text-block h3,
+  .text-block.h3 > * {
+    margin-block: var(--font-h3--spacing);
+  }
+
+  .text-block h4,
+  .text-block.h4 > * {
+    margin-block: var(--font-h4--spacing);
+  }
+
+  .text-block h5,
+  .text-block.h5 > * {
+    margin-block: var(--font-h5--spacing);
+  }
+
+  .text-block h6,
+  .text-block.h6 > * {
+    margin-block: var(--font-h6--spacing);
+  }
+
+  .text-block p,
+  .text-block.p > * {
+    margin-block: var(--font-paragraph--spacing);
+  }
+
+  .text-block > *:first-child {
+    margin-block-start: 0;
+  }
+
+  .text-block > *:last-child {
+    margin-block-end: 0;
+  }
+
+  .text-block--align-center,
+  .text-block--align-center > * {
+    margin-inline: auto;
+  }
+
+  .text-block--align-right,
+  .text-block--align-right > * {
+    margin-inline-start: auto;
+  }
+
+  .text-block--background {
+    background-color: var(--text-background-color);
+    border-radius: var(--text-corner-radius);
+
+    /* To avoid text being cropped when using a border radius we add a minimum padding. */
+    padding-block-start: max(var(--text-padding), var(--padding-block-start, 0));
+    padding-block-end: max(var(--text-padding), var(--padding-block-end, 0));
+    padding-inline-start: max(var(--text-padding), var(--padding-inline-start, 0));
+    padding-inline-end: max(var(--text-padding), var(--padding-inline-end, 0));
+  }
+
+  .text-highlight {
+    color: var(--highlight-color, inherit);
+  }
+{% endstylesheet %}

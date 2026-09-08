@@ -1,0 +1,251 @@
+{% doc %}
+  Global drawer usage example:
+
+  {% capture drawer_content %}
+    {% render 'example-drawer-content' %}
+  {% endcapture %}
+
+  <button
+    type="button"
+    data-global-drawer-trigger
+    data-drawer-title="Drawer title"
+    data-drawer-style='{"width":"358px","desktopWidth":"512px"}'
+    data-drawer-title-style='{"preset":"h3","color":"#5f0300"}'
+    data-drawer-close-style='{"size":"32px","desktopSize":"40px"}'
+    data-content="{{ drawer_content | escape }}"
+  >
+    Open drawer
+  </button>
+
+  Note:
+  - `data-content` is intended for trusted Shopify/Liquid-rendered content.
+  - Sanitize before injection if untrusted/user-generated content is introduced.
+
+  Optional style attributes can be omitted. Defaults:
+  - Title preset: h4
+  - Title color: #464646
+  - Title weight: 600
+  - Drawer width: 358px
+  - Drawer desktop width: 512px
+  - Close icon size: 24px
+{% enddoc %}
+
+<global-drawer
+  class="global-drawer"
+  data-global-drawer
+>
+  <dialog
+    ref="dialog"
+    class="global-drawer__dialog dialog-modal dialog-drawer"
+    data-global-drawer-dialog
+    scroll-lock
+    aria-labelledby="global-drawer-title"
+  >
+    <div class="global-drawer__header">
+      <div class="global-drawer__heading">
+        <button
+          ref="back"
+          type="button"
+          class="button button-unstyled global-drawer__back"
+          aria-label="{{ 'actions.back' | t }}"
+          on:click="/closeDrawer"
+          data-global-drawer-back
+          hidden
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="m12 19-7-7 7-7" />
+            <path d="M19 12H5" />
+          </svg>
+        </button>
+        <h2
+          ref="title"
+          id="global-drawer-title"
+          class="global-drawer__title h4 custom-font-weight"
+          style="--color: #464646; --font-weight: 600;"
+          data-global-drawer-title
+        ></h2>
+      </div>
+
+      <button
+        ref="close"
+        type="button"
+        class="button button-unstyled global-drawer__close"
+        aria-label="{{ 'accessibility.close_dialog' | t }}"
+        on:click="/closeDrawer"
+        data-global-drawer-close
+      >
+        {{- 'icon-close-thin.svg' | inline_asset_content -}}
+      </button>
+    </div>
+
+    <div
+      ref="content"
+      class="global-drawer__content"
+      data-global-drawer-content
+    ></div>
+  </dialog>
+</global-drawer>
+
+{% stylesheet %}
+  .global-drawer__dialog.global-drawer__dialog {
+    position: fixed;
+    inset-block: 16px;
+    inset-inline-start: auto;
+    inset-inline-end: 16px;
+    width: min(var(--drawer-width, 358px), calc(100vw - 32px));
+    max-width: min(var(--drawer-width, 358px), calc(100vw - 32px));
+    height: calc(100dvh - 32px);
+    max-height: calc(100dvh - 32px);
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 8px;
+    background: #ffffff;
+    color: var(--color-foreground);
+    box-shadow: var(--shadow-popover);
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .global-drawer__dialog.global-drawer__dialog[open] {
+    display: flex;
+    border-radius: 8px;
+  }
+
+  .global-drawer__dialog.global-drawer__dialog:modal {
+    max-height: calc(100dvh - 32px);
+  }
+
+  .global-drawer__dialog.global-drawer__dialog::backdrop {
+    background: rgb(var(--backdrop-color-rgb) / var(--backdrop-opacity));
+  }
+
+  .global-drawer__dialog.global-drawer__dialog[open] {
+    animation: global-drawer-slide-in var(--animation-speed) var(--animation-easing) forwards;
+  }
+
+  .global-drawer__dialog.global-drawer__dialog.dialog-closing {
+    animation: global-drawer-slide-out var(--animation-speed) var(--animation-easing) forwards;
+  }
+
+  .global-drawer__header {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 24px 24px 0;
+    margin-block-end: 24px;
+  }
+
+  /* Back arrow + title group (arrow is hidden unless the drawer is opened with showBack) */
+  .global-drawer__heading {
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .global-drawer__back {
+    display: inline-flex;
+    flex: 0 0 auto;
+    width: 24px;
+    height: 24px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    color: var(--color-foreground);
+    line-height: 0;
+    cursor: pointer;
+  }
+
+  .global-drawer__back[hidden] {
+    display: none;
+  }
+
+  .global-drawer__back svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .global-drawer__title.global-drawer__title {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    color: var(--color, #464646);
+    font-weight: var(--font-weight, 600);
+    word-break: break-word;
+  }
+
+  /* Variant-selector drawer (opened with showBack): header divider shadow + bolder close icon. */
+  .global-drawer__dialog--with-back .global-drawer__header {
+    padding-block-end: 16px;
+    margin-block-end: 16px;
+    box-shadow: 0 6px 12px -6px rgba(0, 0, 0, 0.15);
+  }
+
+  .global-drawer__dialog--with-back .global-drawer__close svg path {
+    stroke-width: 2;
+  }
+
+  .global-drawer__close {
+    display: inline-flex;
+    flex: 0 0 var(--drawer-close-icon-size, 24px);
+    width: var(--drawer-close-icon-size, 24px);
+    height: var(--drawer-close-icon-size, 24px);
+    align-items: center;
+    justify-content: center;
+    color: var(--color-foreground);
+    line-height: 0;
+  }
+
+  .global-drawer__close svg {
+    width: var(--drawer-close-icon-size, 24px);
+    height: var(--drawer-close-icon-size, 24px);
+  }
+
+  .global-drawer__content {
+    display: block;
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 0 24px 24px;
+    overflow-y: auto;
+  }
+
+  @media screen and (min-width: 750px) {
+    .global-drawer__dialog.global-drawer__dialog {
+      width: min(var(--drawer-width-desktop, 512px), calc(100vw - 32px));
+      max-width: min(var(--drawer-width-desktop, 512px), calc(100vw - 32px));
+    }
+
+    .global-drawer__close {
+      flex-basis: var(--drawer-close-icon-size-desktop, var(--drawer-close-icon-size, 24px));
+      width: var(--drawer-close-icon-size-desktop, var(--drawer-close-icon-size, 24px));
+      height: var(--drawer-close-icon-size-desktop, var(--drawer-close-icon-size, 24px));
+    }
+
+    .global-drawer__close svg {
+      width: var(--drawer-close-icon-size-desktop, var(--drawer-close-icon-size, 24px));
+      height: var(--drawer-close-icon-size-desktop, var(--drawer-close-icon-size, 24px));
+    }
+  }
+
+  @keyframes global-drawer-slide-in {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes global-drawer-slide-out {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(100%);
+    }
+  }
+{% endstylesheet %}

@@ -1,0 +1,48 @@
+{% liquid
+  assign badge_color = block.settings.color | default: '#FFFFFF'
+  assign icon_url = block.settings.icon | append: '.svg' | asset_url
+%}
+
+<div class="catering-hero__badge" {{ block.shopify_attributes }}>
+  {%- if block.settings.icon != blank -%}
+    <span
+      class="catering-hero__badge-icon"
+      aria-hidden="true"
+      style="background-color: {{ badge_color }}; -webkit-mask-image: url('{{ icon_url }}'); mask-image: url('{{ icon_url }}');"
+    ></span>
+  {%- endif -%}
+  {%- if block.settings.label != blank -%}
+    <span class="catering-hero__badge-label" style="color: {{ badge_color }};">{{ block.settings.label }}</span>
+  {%- endif -%}
+</div>
+
+{% schema %}
+{
+  "name": "Catering Badge",
+  "settings": [
+    {
+      "type": "select",
+      "id": "icon",
+      "label": "Icon",
+      "options": [
+        { "value": "dipped-strawberry", "label": "Strawberry" },
+        { "value": "truck", "label": "Truck" },
+        { "value": "gift", "label": "Gift" }
+      ],
+      "default": "dipped-strawberry"
+    },
+    {
+      "type": "text",
+      "id": "label",
+      "label": "Label",
+      "default": "Plan."
+    },
+    {
+      "type": "color",
+      "id": "color",
+      "label": "Color",
+      "default": "#FFFFFF"
+    }
+  ]
+}
+{% endschema %}

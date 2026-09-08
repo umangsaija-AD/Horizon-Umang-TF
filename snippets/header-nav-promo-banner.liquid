@@ -1,0 +1,69 @@
+{%- doc -%}
+Promotional banner for header navigation (mega menu). Rendered from `_header-nav-promo-banner` block.
+
+@param {object} block - Parent theme block (required for `shopify_attributes` in the editor) @param {string} [label] -
+Small label text @param {string} [title] - Richtext HTML from block settings @param {object} [image] - Image from
+image_picker @param {string} [link] - Destination URL
+{%- enddoc -%}
+
+{% liquid
+  assign title_plain = title | strip_html | strip
+  assign show = false
+  if image != blank or title_plain != blank or label != blank
+    assign show = true
+  endif
+%}
+
+{% if show %}
+  {% if link != blank %}
+    <a
+      href="{{ link }}"
+      class="header-nav-promo-banner tw-flex tw-flex-col tw-gap-2 tw-no-underline tw-transition-opacity hover:tw-opacity-90"
+      {{ block.shopify_attributes }}
+    >
+  {% else %}
+    <div class="header-nav-promo-banner tw-flex tw-flex-col tw-gap-2" {{ block.shopify_attributes }}>
+  {% endif %}
+  {% if image != blank %}
+    <div class="tw-relative tw-overflow-hidden tw-rounded-lg">
+      <img
+        src="{{ image | image_url: width: 200 }}"
+        alt="{{ title_plain | default: label | default: shop.name | escape }}"
+        class="tw-aspect-4/3 tw-w-[396px] tw-object-cover tw-rounded-lg"
+      >
+
+      <div class="tw-absolute tw-left-0 tw-top-0 tw-flex tw-flex-col tw-gap-1.5 tw-p-6">
+        {% if label != blank %}
+          <span class="tw-text-foreground/80 tw-text-tag tw-font-medium tw-uppercase">{{ label | escape }}</span>
+        {% endif %}
+        {% if title_plain != blank %}
+          <div class="rte tw-text-body-small tw-font-semibold tw-text-foreground [&_p:first-child]:mt-0 [&_p:last-child]:mb-0">
+            {{ title }}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  {% else %}
+    {% if label != blank %}
+      <span class="tw-text-foreground/80 tw-text-tag tw-font-medium tw-uppercase">{{ label | escape }}</span>
+    {% endif %}
+    {% if title_plain != blank %}
+      <div class="rte tw-text-body-small tw-font-semibold tw-text-foreground [&_p:first-child]:mt-0 [&_p:last-child]:mb-0">
+        {{ title }}
+      </div>
+    {% endif %}
+  {% endif %}
+
+  {% if link != blank %}
+    </a>
+  {% else %}
+    </div>
+  {% endif %}
+{% elsif request.design_mode %}
+  <div
+    class="header-nav-promo-banner tw-border-foreground/25 tw-text-foreground/60 tw-flex tw-min-h-[4rem] tw-flex-col tw-gap-2 tw-rounded-lg tw-border tw-border-dashed tw-p-3 tw-text-body-small"
+    {{ block.shopify_attributes }}
+  >
+    Add a label, title, or image
+  </div>
+{% endif %}

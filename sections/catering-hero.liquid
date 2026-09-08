@@ -1,0 +1,622 @@
+{% liquid
+  assign desktop_image = section.settings.desktop_image
+  assign mobile_image = section.settings.mobile_image
+%}
+
+<section
+  id="CateringHero-{{ section.id }}"
+  class="catering-hero"
+  data-header-overlap="{{ section.settings.header_overlap }}"
+  style="--section-padding-top: {{ section.settings.padding-block-start }}px; --section-padding-bottom: {{ section.settings.padding-block-end }}px;"
+>
+  <!-- Desktop layout (>=1024px) -->
+  <div class="catering-hero__desktop">
+    {% if desktop_image %}
+      <div class="catering-hero__bg-image">
+        {{
+          desktop_image
+          | image_url: width: desktop_image.width
+          | image_tag:
+            sizes: '100vw',
+            widths: '750,1100,1500,1780,2000',
+            loading: 'eager',
+            fetchpriority: 'high',
+            class: 'catering-hero__bg-img',
+            alt: desktop_image.alt | default: heading
+        }}
+        <div class="catering-hero__gradient"></div>
+      </div>
+    {% endif %}
+
+    <div class="catering-hero__content">
+      <div class="catering-hero__text-block">
+        {%- content_for 'block', id: 'hero-heading', type: 'text' -%}
+        {%- content_for 'block', id: 'hero-subtitle', type: 'text' -%}
+
+        <div class="catering-hero__badges">
+          {%- content_for 'block', id: 'badge-1', type: 'catering-badge' -%}
+          {%- content_for 'block', id: 'badge-2', type: 'catering-badge' -%}
+          {%- content_for 'block', id: 'badge-3', type: 'catering-badge' -%}
+        </div>
+      </div>
+
+      <!-- Event Details Card -->
+      <div class="catering-hero__event-card" data-catering-event-card data-open-catering-drawer>
+        <!-- Empty state (default)  -->
+        <div data-event-empty class="catering-hero__event-empty">
+          <h3 class="catering-hero__event-title">Add Event Details</h3>
+          <p class="catering-hero__event-subtitle">Enter your zip code to explore available products.</p>
+          <div class="catering-hero__event-input" data-open-catering-drawer>
+            <span class="catering-hero__event-input-icon">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7.32661 12.1454C7.13107 12.2849 6.86893 12.2849 6.67339 12.1454C3.85664 10.1367 0.866584 6.00664 3.88891 3.02241C4.71402 2.2077 5.83311 1.75 7 1.75C8.16689 1.75 9.28598 2.2077 10.1111 3.02241C13.1334 6.00664 10.1434 10.1367 7.32661 12.1454Z" stroke="#1D1D1D" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.00065 6.99996C7.64498 6.99996 8.16732 6.47763 8.16732 5.83329C8.16732 5.18896 7.64498 4.66663 7.00065 4.66663C6.35632 4.66663 5.83398 5.18896 5.83398 5.83329C5.83398 6.47763 6.35632 6.99996 7.00065 6.99996Z" stroke="#1D1D1D" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <span class="catering-hero__event-input-placeholder">Enter zip code</span>
+          </div>
+        </div>
+
+        <!-- Filled state (hidden by default) -->
+        <div data-event-filled class="catering-hero__event-filled tw-hidden">
+          <h3 class="catering-hero__event-title">Event Details</h3>
+          <div data-event-details class="catering-hero__event-details"></div>
+          <a
+            data-edit-event
+            href="#"
+            class="catering-hero__edit-btn"
+            data-open-catering-drawer
+          >
+            Edit Details
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile layout (<1024px) -->
+  <div class="catering-hero__mobile">
+    <div class="catering-hero__mobile-image-wrap">
+      {% if mobile_image %}
+        {{
+          mobile_image
+          | image_url: width: mobile_image.width
+          | image_tag:
+            sizes: '100vw',
+            widths: '375,550,750',
+            loading: 'eager',
+            fetchpriority: 'high',
+            class: 'catering-hero__mobile-img',
+            alt: mobile_image.alt | default: ''
+        }}
+      {% elsif desktop_image %}
+        {{
+          desktop_image
+          | image_url: width: desktop_image.width
+          | image_tag:
+            sizes: '100vw',
+            widths: '375,550,750',
+            loading: 'eager',
+            fetchpriority: 'high',
+            class: 'catering-hero__mobile-img',
+            alt: desktop_image.alt | default: ''
+        }}
+      {% endif %}
+      <div class="catering-hero__mobile-gradient"></div>
+
+      <!-- Mobile content: text + card grouped together -->
+      <div class="catering-hero__mobile-content">
+        <div class="catering-hero__mobile-text">
+          <div class="catering-hero__mobile-heading">
+            {%- content_for 'block', id: 'hero-heading', type: 'text' -%}
+          </div>
+          <div class="catering-hero__mobile-subtitle">
+            {%- content_for 'block', id: 'hero-subtitle', type: 'text' -%}
+          </div>
+
+          <div class="catering-hero__mobile-badges">
+            {%- content_for 'block', id: 'badge-1', type: 'catering-badge' -%}
+            {%- content_for 'block', id: 'badge-2', type: 'catering-badge' -%}
+            {%- content_for 'block', id: 'badge-3', type: 'catering-badge' -%}
+          </div>
+        </div>
+
+        <div class="catering-hero__mobile-card-wrap">
+        <div class="catering-hero__event-card catering-hero__event-card--mobile" data-catering-event-card-mobile data-open-catering-drawer>
+          <!-- Empty state -->
+          <div data-event-empty-mobile class="catering-hero__event-empty">
+            <h3 class="catering-hero__event-title">Add Event Details</h3>
+            <p class="catering-hero__event-subtitle">Enter your zip code to explore available products.</p>
+            <div class="catering-hero__event-input" data-open-catering-drawer>
+              <span class="catering-hero__event-input-icon">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7.32661 12.1454C7.13107 12.2849 6.86893 12.2849 6.67339 12.1454C3.85664 10.1367 0.866584 6.00664 3.88891 3.02241C4.71402 2.2077 5.83311 1.75 7 1.75C8.16689 1.75 9.28598 2.2077 10.1111 3.02241C13.1334 6.00664 10.1434 10.1367 7.32661 12.1454Z" stroke="#1D1D1D" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.00065 6.99996C7.64498 6.99996 8.16732 6.47763 8.16732 5.83329C8.16732 5.18896 7.64498 4.66663 7.00065 4.66663C6.35632 4.66663 5.83398 5.18896 5.83398 5.83329C5.83398 6.47763 6.35632 6.99996 7.00065 6.99996Z" stroke="#1D1D1D" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </span>
+              <span class="catering-hero__event-input-placeholder">Enter zip code</span>
+            </div>
+          </div>
+
+          <!-- Filled state -->
+          <div data-event-filled-mobile class="catering-hero__event-filled tw-hidden">
+            <h3 class="catering-hero__event-title">Event Details</h3>
+            <div data-event-details-mobile class="catering-hero__event-details"></div>
+            <a
+              data-edit-event-mobile
+              href="#"
+              class="catering-hero__edit-btn"
+              data-open-catering-drawer
+            >
+              Edit Details
+            </a>
+          </div>
+        </div>
+      </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% render 'catering-event-drawer' %}
+{% render 'catering-cart-bar' %}
+{% render 'catering-quick-view' %}
+
+<script src="{{ 'catering-event.js' | asset_url }}" type="module"></script>
+
+<script>
+  (function() {
+    var _savedEvent = null;
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '';
+      try {
+        var d = new Date(dateStr + 'T00:00:00');
+        return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+      } catch(e) {
+        return dateStr;
+      }
+    }
+
+    function escapeHtml(str) {
+      var div = document.createElement('div');
+      div.textContent = str || '';
+      return div.innerHTML;
+    }
+
+    function renderEventCard() {
+      var saved = _savedEvent;
+
+      // Desktop card
+      var emptyEl = document.querySelector('[data-event-empty]');
+      var filledEl = document.querySelector('[data-event-filled]');
+      var detailsEl = document.querySelector('[data-event-details]');
+
+      // Mobile card
+      var emptyMobile = document.querySelector('[data-event-empty-mobile]');
+      var filledMobile = document.querySelector('[data-event-filled-mobile]');
+      var detailsMobile = document.querySelector('[data-event-details-mobile]');
+
+      if (saved) {
+        var html = '';
+        if (saved.orderType) html += '<p class="catering-hero__event-detail">Order Type: <strong>' + escapeHtml(saved.orderType) + '</strong></p>';
+        if (saved.zipCode) html += '<p class="catering-hero__event-detail">Zip Code: <strong>' + escapeHtml(saved.zipCode) + '</strong></p>';
+        if (saved.date) html += '<p class="catering-hero__event-detail">Event Date: <strong>' + escapeHtml(formatDate(saved.date)) + '</strong></p>';
+        if (saved.time) html += '<p class="catering-hero__event-detail">' + escapeHtml(saved.orderType === 'Delivery' ? 'Delivery' : 'Pickup') + ' Time: <strong>' + escapeHtml(saved.time) + '</strong></p>';
+        if (saved.store && saved.store.name) html += '<p class="catering-hero__event-detail">Store: <strong>' + escapeHtml(saved.store.name.replace('Edible Arrangements - ', '')) + '</strong></p>';
+
+        if (emptyEl) emptyEl.classList.add('tw-hidden');
+        if (filledEl) { filledEl.classList.remove('tw-hidden'); }
+        if (detailsEl) detailsEl.innerHTML = html;
+
+        if (emptyMobile) emptyMobile.classList.add('tw-hidden');
+        if (filledMobile) { filledMobile.classList.remove('tw-hidden'); }
+        if (detailsMobile) detailsMobile.innerHTML = html;
+      } else {
+        if (emptyEl) emptyEl.classList.remove('tw-hidden');
+        if (filledEl) filledEl.classList.add('tw-hidden');
+
+        if (emptyMobile) emptyMobile.classList.remove('tw-hidden');
+        if (filledMobile) filledMobile.classList.add('tw-hidden');
+      }
+    }
+
+    // Listen for event saved — store detail in memory, then re-render
+    document.addEventListener('catering:event:saved', function(e) {
+      _savedEvent = e.detail || null;
+      renderEventCard();
+    });
+
+    // Initial render — always empty on page load (no persistence)
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', renderEventCard);
+    } else {
+      renderEventCard();
+    }
+  })();
+</script>
+
+{% stylesheet %}
+  /* ---- Catering Hero ---- */
+  .catering-hero {
+    position: relative;
+    padding-top: var(--section-padding-top, 0px);
+    padding-bottom: var(--section-padding-bottom, 0px);
+    margin-bottom: 1.5rem;
+  }
+
+  /* Desktop: hidden on mobile */
+  .catering-hero__desktop {
+    display: none;
+    position: relative;
+    min-height: 667px;
+    overflow: hidden;
+  }
+
+  @media screen and (min-width: 1024px) {
+    .catering-hero__desktop {
+      display: block;
+    }
+    .catering-hero__mobile {
+      display: none;
+    }
+  }
+
+  /* Background image + gradient */
+  .catering-hero__bg-image {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+
+  .catering-hero__bg-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .catering-hero__gradient {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(270deg, rgba(0,0,0,0) 50%, rgba(0,0,0,0.4) 100%);
+    z-index: 1;
+  }
+
+  /* Desktop content */
+  .catering-hero__content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 667px;
+    padding: 0 64px 0 64px;
+    gap: 32px;
+    padding-bottom: 48px;
+  }
+
+  .catering-hero__text-block {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 410px;
+  }
+
+  /* Text color defers to the block's --color variable, falls back to white */
+  .catering-hero__text-block .text-block,
+  .catering-hero__text-block .text-block > * {
+    color: var(--color, #FFFFFF);
+  }
+
+  /* Badges */
+  .catering-hero__badges {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    align-items: center;
+  }
+
+  .catering-hero__badge {
+    display: flex;
+    flex-direction: row;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .catering-hero__badge-icon {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+  }
+
+  .catering-hero__badge-label {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 22px;
+  }
+
+  /* Event Card */
+  .catering-hero__event-card {
+    background: #FFFFFF;
+    border-radius: 8px;
+    padding: 16px;
+    max-width: 320px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    cursor: pointer;
+  }
+
+  .catering-hero__event-title {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 22px;
+    color: #1D1D1D;
+    margin: 0 0 8px 0;
+  }
+
+  .catering-hero__event-subtitle {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    color: #464646;
+    margin: 0 0 16px 0;
+  }
+
+  .catering-hero__event-input {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid #DBDBDB;
+    border-radius: 8px;
+    padding: 12px 8px;
+    height: 48px;
+  }
+
+  .catering-hero__event-input-icon {
+    display: inline-flex;
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+
+  .catering-hero__event-input-placeholder {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 17px;
+    color: #464646;
+  }
+
+  /* Filled state */
+  .catering-hero__event-details {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 10px;
+  }
+
+  .catering-hero__event-detail {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    color: #464646;
+    margin: 0;
+  }
+
+  .catering-hero__event-detail strong {
+    font-weight: 500;
+  }
+
+  .catering-hero__edit-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 17px;
+    color: #E10600;
+    border-bottom: 1px solid #E10600;
+    background: transparent;
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  .catering-hero__edit-btn:hover {
+    background: rgba(225, 6, 0, 0.05);
+  }
+
+  /* ---- Mobile layout ---- */
+  .catering-hero__mobile {
+    display: flex;
+    flex-direction: column;
+    background-color: #f5f2ed;
+  }
+
+  @media screen and (min-width: 1024px) {
+    .catering-hero__mobile {
+      display: none;
+    }
+  }
+
+  .catering-hero__mobile-image-wrap {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    min-height: 568px;
+  }
+
+  .catering-hero__mobile-img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: cover;
+    min-height: 568px;
+  }
+
+  .catering-hero__mobile-gradient {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 1;
+  }
+
+  .catering-hero__mobile-content {
+    position: absolute;
+    top: 104px;
+    bottom: 24px;
+    left: 0;
+    right: 0;
+    z-index: 2;
+    padding: 0 35px;
+  }
+
+  .catering-hero__mobile-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    text-align: center;
+  }
+
+  .catering-hero__mobile-heading .text-block,
+  .catering-hero__mobile-heading .text-block > * {
+    color: var(--color, #FFFFFF);
+    text-align: center;
+    margin: 0;
+  }
+
+  .catering-hero__mobile-subtitle .text-block,
+  .catering-hero__mobile-subtitle .text-block > * {
+    color: var(--color, #FFFFFF);
+    text-align: center;
+    margin: 0;
+  }
+
+  .catering-hero__mobile-badges {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+    margin-top:16px;
+  }
+
+  .catering-hero__mobile-badges .catering-hero__badge-label {
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  /* Mobile card wrap — flows after text, pushed to bottom of content group */
+  .catering-hero__mobile-card-wrap {
+    margin-top: 76px;
+  }
+
+  .catering-hero__mobile-card-wrap:has(.catering-hero__event-filled:not(.tw-hidden)) {
+    margin-top: 40px;
+  }
+
+  .catering-hero__event-card--mobile {
+    max-width: 100%;
+    width: 100%;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Catering Hero",
+  "tag": "div",
+  "enabled_on": {
+    "templates": ["collection"]
+  },
+  "settings": [
+    {
+      "type": "header",
+      "content": "Images"
+    },
+    {
+      "type": "image_picker",
+      "id": "desktop_image",
+      "label": "Desktop image"
+    },
+    {
+      "type": "image_picker",
+      "id": "mobile_image",
+      "label": "Mobile image"
+    },
+    {
+      "type": "header",
+      "content": "Style"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "checkbox",
+      "id": "header_overlap",
+      "label": "Overlap by header?",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "Top padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "default": 0,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "Bottom padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "default": 0,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    { "type": "text" },
+    { "type": "catering-badge" },
+    { "type": "@app" }
+  ],
+  "presets": [
+    {
+      "name": "Catering Hero",
+      "blocks": [
+        {
+          "type": "catering-badge",
+          "settings": {
+            "icon": "dipped-strawberry",
+            "label": "Plan."
+          }
+        },
+        {
+          "type": "catering-badge",
+          "settings": {
+            "icon": "truck",
+            "label": "Host."
+          }
+        },
+        {
+          "type": "catering-badge",
+          "settings": {
+            "icon": "gift",
+            "label": "Enjoy."
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

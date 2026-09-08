@@ -1,0 +1,27 @@
+{% comment %}
+  Central structured data (JSON-LD) dispatcher.
+
+  Emits page-type-appropriate schema.org markup, mirroring the structured data
+  served by the legacy ediblearrangements.com site (parity migration).
+  Rendered once from layout/theme.liquid <head>.
+
+  Each block lives in its own snippet for readability:
+    - every page -> structured-data-organization  (Organization, sitewide)
+    - collection -> structured-data-collection     (CollectionPage > ItemList)
+    - product    -> structured-data-product        (ProductGroup > hasVariant)
+    - blog       -> structured-data-blog           ([ Blog, BreadcrumbList ])
+    - article    -> structured-data-article        (Article)
+{% endcomment %}
+
+{%- render 'structured-data-organization' -%}
+
+{%- case request.page_type -%}
+  {%- when 'collection' -%}
+    {%- render 'structured-data-collection' -%}
+  {%- when 'product' -%}
+    {%- render 'structured-data-product' -%}
+  {%- when 'blog' -%}
+    {%- render 'structured-data-blog' -%}
+  {%- when 'article' -%}
+    {%- render 'structured-data-article' -%}
+{%- endcase -%}

@@ -1,0 +1,21 @@
+{%- comment -%}
+  Outputs 'true' when the Bundle Builder discount config metaobject is resolvable,
+  else 'false'. Single source of truth: Theme settings → Bundle Discounts, with the
+  fixed app metaobject (handle: config) as a fallback — mirrors how the Bundle Builder
+  drawer and cart progress bar resolve it.
+
+  Used to gracefully degrade when the config is missing:
+    - hide the Bundle Builder CTA site-wide (so the drawer can't be opened)
+    - empty a stale bundle cart on cart open
+{%- endcomment -%}
+{%- liquid
+  assign config_entry = settings.bundle_discount_config
+  unless config_entry
+    assign config_entry = shop.metaobjects['app--385259831297--bundle_discount_config'].config
+  endunless
+  if config_entry
+    echo 'true'
+  else
+    echo 'false'
+  endif
+-%}

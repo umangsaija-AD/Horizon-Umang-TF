@@ -1,0 +1,164 @@
+{% liquid
+  assign feature_icons = gift_wrap.drawer_features_icon_list.value | reverse | reverse
+  assign feature_titles = gift_wrap.drawer_features_title_list.value
+  assign feature_contents = gift_wrap.drawer_features_content_list.value
+%}
+
+<div class="gift-wrap-drawer-content">
+  {% if gift_wrap.drawer_image.value != blank %}
+    <div class="gift-wrap-drawer-content__image-frame">
+      {{
+        gift_wrap.drawer_image.value
+        | image_url: width: 704
+        | image_tag:
+          class: 'gift-wrap-drawer-content__image',
+          loading: 'lazy',
+          widths: '352, 704, 1024',
+          sizes: '(min-width: 750px) 464px, calc(100vw - 80px)',
+          alt: gift_wrap.drawer_title
+      }}
+    </div>
+  {% endif %}
+
+  <div class="gift-wrap-drawer-content__info">
+    <div class="gift-wrap-drawer-content__intro">
+      <h3 class="gift-wrap-drawer-content__heading body-regular custom-font-weight" style="--font-weight: 600;">
+        {{ gift_wrap.drawer_subtitle | escape }}
+      </h3>
+      <p class="gift-wrap-drawer-content__description body-small">
+        {{ gift_wrap.drawer_description | escape }}
+      </p>
+    </div>
+
+    {% if feature_titles != blank %}
+      <div class="gift-wrap-drawer-content__features">
+        {% for feature_title in feature_titles %}
+          {% liquid
+            if feature_title == blank
+              continue
+            endif
+
+            assign feature_index = forloop.index0
+            assign feature_icon = feature_icons[feature_index]
+            assign feature_content = feature_contents[feature_index]
+          %}
+
+          <div class="gift-wrap-drawer-content__feature">
+            {% if feature_icon != blank %}
+              <span class="gift-wrap-drawer-content__feature-icon">
+                {{
+                  feature_icon
+                  | image_url: width: 48
+                  | image_tag:
+                    class: 'gift-wrap-drawer-content__feature-icon-image',
+                    loading: 'lazy',
+                    widths: '24, 48',
+                    sizes: '24px',
+                    alt: feature_title
+                }}
+              </span>
+            {% endif %}
+            <span class="gift-wrap-drawer-content__feature-copy">
+              <span class="gift-wrap-drawer-content__feature-title body-small custom-font-weight" style="--font-weight: 600;">
+                {{ feature_title | escape }}
+              </span>
+              {% if feature_content != blank %}
+                <span class="gift-wrap-drawer-content__feature-text label">
+                  {{ feature_content | escape }}
+                </span>
+              {% endif %}
+            </span>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% stylesheet %}
+  .gift-wrap-drawer-content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .gift-wrap-drawer-content__image-frame {
+    width: 100%;
+    aspect-ratio: 3 / 2;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .gift-wrap-drawer-content__image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .gift-wrap-drawer-content__info,
+  .gift-wrap-drawer-content__features {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .gift-wrap-drawer-content__intro {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .gift-wrap-drawer-content__heading,
+  .gift-wrap-drawer-content__description {
+    margin: 0;
+  }
+
+  .gift-wrap-drawer-content__heading.gift-wrap-drawer-content__heading {
+    color: #1d1d1d;
+  }
+
+  .gift-wrap-drawer-content__description.gift-wrap-drawer-content__description {
+    color: #464646;
+  }
+
+  .gift-wrap-drawer-content__feature-title.gift-wrap-drawer-content__feature-title {
+    color: #464646;
+  }
+
+  .gift-wrap-drawer-content__feature-text.gift-wrap-drawer-content__feature-text {
+    color: #464646;
+  }
+
+  .gift-wrap-drawer-content__feature-icon {
+    color: #1d1d1d;
+  }
+
+  .gift-wrap-drawer-content__feature {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .gift-wrap-drawer-content__feature-icon {
+    display: inline-flex;
+    flex: 0 0 24px;
+    width: 24px;
+    height: 24px;
+    color: #1d1d1d;
+  }
+
+  .gift-wrap-drawer-content__feature-icon-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .gift-wrap-drawer-content__feature-copy {
+    display: flex;
+    min-width: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 8px;
+  }
+{% endstylesheet %}

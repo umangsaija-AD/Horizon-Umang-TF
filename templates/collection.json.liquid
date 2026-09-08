@@ -1,0 +1,14 @@
+{% layout none %}
+{% paginate collection.products by 3 %}
+  {% render 'collection-search-json',
+    template_name: 'collection',
+    terms: null,
+    collection_data: collection,
+    sort_by: collection.sort_by,
+    default_sort_by: collection.default_sort_by,
+    sort_options: collection.sort_options,
+    filters: collection.filters,
+    items: collection.products,
+    paginate: paginate
+  %}
+{% endpaginate %}

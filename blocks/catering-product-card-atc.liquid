@@ -1,0 +1,72 @@
+{% liquid
+  assign product = closest.product
+  assign variant = product.selected_or_first_available_variant
+%}
+
+<div
+  {{ block.shopify_attributes }}
+  data-catering-atc
+  data-variant-id="{{ variant.id }}"
+  data-product-id="{{ product.id }}"
+  data-product-handle="{{ product.handle }}"
+  class="color-{{ block.settings.color_scheme }}"
+>
+  <input type="hidden" name="id" value="{{ variant.id }}">
+  <input type="hidden" name="quantity" value="1">
+
+  {%- comment -%} Per-variant inventory so the variant drawer can disable variants that can't meet the requested quantity. {%- endcomment -%}
+  <script type="application/json" data-catering-inventory>
+    {
+      {%- for v in product.variants -%}
+        "{{ v.id }}":{"tracked":{% if v.inventory_management %}true{% else %}false{% endif %},"policy":{{ v.inventory_policy | json }},"qty":{{ v.inventory_quantity | default: 0 }}}{%- unless forloop.last -%},{%- endunless -%}
+      {%- endfor -%}
+    }
+  </script>
+
+  <div class="catering-qty" data-catering-qty>
+    <button
+      type="button"
+      class="catering-qty__btn"
+      data-catering-qty-step="down"
+      aria-label="Decrease quantity"
+      disabled
+    >
+      <svg width="12" height="2" viewBox="0 0 12 2" fill="none"><line x1="0" y1="1" x2="12" y2="1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </button>
+    <input
+      type="number"
+      class="catering-qty__count"
+      data-catering-qty-count
+      value="1"
+      min="1"
+      step="1"
+      inputmode="numeric"
+      aria-label="Quantity"
+    >
+    <button
+      type="button"
+      class="catering-qty__btn"
+      data-catering-qty-step="up"
+      aria-label="Increase quantity"
+    >
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><line x1="6" y1="0" x2="6" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="0" y1="6" x2="12" y2="6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+
+  {% content_for 'block', type: 'button', id: 'button' %}
+</div>
+
+{% schema %}
+{
+  "name": "Catering Add to Cart",
+  "tag": null,
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color theme",
+      "default": "scheme-1"
+    }
+  ]
+}
+{% endschema %}

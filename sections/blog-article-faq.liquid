@@ -1,0 +1,271 @@
+{%- liquid
+  assign faq_items = blog.metafields.custom.blog_faq.value
+  assign faq_heading = blog.metafields.blog.faq_heading
+-%}
+
+{%- if faq_items != blank and faq_items.size > 0 -%}
+  {%- liquid
+    assign char_limit = section.settings.char_limit | default: 150
+    assign read_more_label = section.settings.read_more_label | default: 'Read More'
+    assign read_less_label = section.settings.read_less_label | default: 'Read Less'
+  -%}
+
+  <div class="section-background color-{{ section.settings.color_scheme }}"></div>
+  <div
+    class="section color-{{ section.settings.color_scheme }} spacing-style"
+    style="{% render 'spacing-style', settings: section.settings %}"
+  >
+    <div class="blog-article-faq__inner">
+      {%- if faq_heading != blank -%}
+        <h2 class="blog-article-faq__heading">{{ faq_heading }}</h2>
+      {%- endif -%}
+
+      <div class="blog-article-faq__list">
+        {%- for item in faq_items -%}
+          {%- liquid
+            assign answer_html = item.answer | metafield_tag
+            assign answer_plain = answer_html | strip_html | strip
+          -%}
+          <div class="blog-article-faq__item">
+            <h3 class="blog-article-faq__question">{{ item.question }}</h3>
+
+            {%- if answer_plain.size > char_limit -%}
+              <div class="blog-article-faq__answer-preview">
+                {{ answer_plain | truncate: char_limit }}
+              </div>
+              <div class="blog-article-faq__answer-full" hidden>
+                {{ answer_html }}
+              </div>
+              <button
+                class="blog-article-faq__toggle"
+                type="button"
+                aria-expanded="false"
+              >
+                <span class="blog-article-faq__toggle-more">{{ read_more_label }}</span>
+                <span class="blog-article-faq__toggle-less" hidden>{{ read_less_label }}</span>
+              </button>
+            {%- else -%}
+              <div class="blog-article-faq__answer-full">
+                {{ answer_html }}
+              </div>
+            {%- endif -%}
+          </div>
+        {%- endfor -%}
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      var section = document.getElementById('shopify-section-{{ section.id }}');
+      if (!section) return;
+
+      section.addEventListener('click', function(event) {
+        var button = event.target.closest('.blog-article-faq__toggle');
+        if (!button) return;
+
+        var item = button.closest('.blog-article-faq__item');
+        if (!item) return;
+
+        var preview = item.querySelector('.blog-article-faq__answer-preview');
+        var full = item.querySelector('.blog-article-faq__answer-full');
+        var moreSpan = button.querySelector('.blog-article-faq__toggle-more');
+        var lessSpan = button.querySelector('.blog-article-faq__toggle-less');
+        var isExpanded = button.getAttribute('aria-expanded') === 'true';
+
+        if (isExpanded) {
+          preview.hidden = false;
+          full.hidden = true;
+          moreSpan.hidden = false;
+          lessSpan.hidden = true;
+          button.setAttribute('aria-expanded', 'false');
+        } else {
+          preview.hidden = true;
+          full.hidden = false;
+          moreSpan.hidden = true;
+          lessSpan.hidden = false;
+          button.setAttribute('aria-expanded', 'true');
+        }
+      });
+    })();
+  </script>
+{%- endif -%}
+
+{% stylesheet %}
+  .blog-article-faq__inner {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-xl-plus);
+    max-width: var(--normal-content-width);
+    margin-inline: auto;
+    width: 100%;
+    padding-top: var(--padding-lg);
+  }
+
+  @media screen and (min-width: 750px) {
+    .blog-article-faq__inner {
+      padding-top: 40px;
+    }
+  }
+
+  .blog-article-faq__heading {
+    font-size: clamp(1.5rem, calc(1.5rem + 0.5 * ((100vw - 23.4375rem) / 66.5625)), 2rem);
+    font-weight: 600;
+    color: var(--color-foreground-heading);
+    margin: 0;
+  }
+
+  .blog-article-faq__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-xl-plus);
+  }
+
+  .blog-article-faq__item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-xs);
+  }
+
+  .blog-article-faq__question {
+    font-family: var(--font-body--family);
+    font-weight: 600;
+    font-size: var(--font-size--md);
+    line-height: 22px;
+    color: var(--color-foreground);
+    margin: 0;
+  }
+
+  .blog-article-faq__answer-preview,
+  .blog-article-faq__answer-full {
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: var(--font-body-small--size);
+    line-height: 20px;
+    color: var(--color-primary);
+    margin: 0;
+  }
+
+  .blog-article-faq__answer-full p,
+  .blog-article-faq__answer-full ul,
+  .blog-article-faq__answer-full ol,
+  .blog-article-faq__answer-full h1,
+  .blog-article-faq__answer-full h2,
+  .blog-article-faq__answer-full h3,
+  .blog-article-faq__answer-full h4,
+  .blog-article-faq__answer-full h5,
+  .blog-article-faq__answer-full h6 {
+    margin: 0;
+    font-size: inherit;
+    line-height: inherit;
+    color: inherit;
+    font-weight: inherit;
+  }
+
+  .blog-article-faq__answer-full a {
+    text-decoration: underline;
+  }
+
+  .blog-article-faq__toggle {
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--color-primary-button-background);
+    border-radius: 0;
+    padding: 0;
+    padding-bottom: 1px;
+    cursor: pointer;
+    font-family: var(--font-body--family);
+    font-weight: 600;
+    font-size: var(--font-size--2xs);
+    line-height: 17px;
+    color: var(--color-primary-button-background);
+    align-self: flex-start;
+    display: inline-flex;
+  }
+
+  @media screen and (min-width: 750px) {
+    .blog-article-faq__toggle {
+      font-size: var(--font-body-small--size);
+      line-height: 20px;
+    }
+  }
+
+  .blog-article-faq__toggle:focus-visible {
+    outline: 2px solid var(--color-primary-button-background);
+    outline-offset: 2px;
+  }
+
+  .blog-article-faq__toggle-more {
+    font-size: var(--font-label--size);
+  }
+
+  @media screen and (min-width: 750px) {
+    .blog-article-faq__toggle-more {
+      font-size: var(--font-body-small--size);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Blog Article FAQ",
+  "class": "section-wrapper",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "settings": [
+    {
+      "type": "number",
+      "id": "char_limit",
+      "label": "Preview Character Limit",
+      "default": 150
+    },
+    {
+      "type": "text",
+      "id": "read_more_label",
+      "label": "Read More Label",
+      "default": "Read More"
+    },
+    {
+      "type": "text",
+      "id": "read_less_label",
+      "label": "Read Less Label",
+      "default": "Read Less"
+    },
+    {
+      "type": "header",
+      "content": "Style"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "Spacing"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "Top padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "default": 0,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "Bottom padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "default": 40,
+      "unit": "px"
+    }
+  ]
+}
+{% endschema %}

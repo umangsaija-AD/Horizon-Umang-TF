@@ -1,0 +1,45 @@
+{% doc %}
+  Personalization Variant Data
+
+  Renders a hidden JSON script tag mapping variant IDs to their
+  delivery availability metaobject data, images, and prices.
+  Used by the personalization-drawer JS to render variant cards
+  without extra API calls.
+
+  @param {object} product - Shopify product object (required)
+
+  @example
+  {% render 'personalization-variant-data', product: product %}
+{% enddoc %}
+
+{% liquid
+  assign product = product | default: empty
+  unless product != empty
+    break
+  endunless
+%}
+
+<script type="application/json" data-personalization-variant-data data-product-id="{{ product.id }}">
+  {
+    "productId": {{ product.id | json }},
+    "productTitle": {{ product.title | json }},
+    "productUrl": {{ product.url | json }},
+    "productHandle": {{ product.handle | json }},
+    "variants": [
+      {%- for variant in product.variants -%}
+        {
+          "id": {{ variant.id }},
+          "title": {{ variant.title | json }},
+          "price": {{ variant.price }},
+          "compareAtPrice": {{ variant.compare_at_price | default: 0 }},
+          "available": {{ variant.available }},
+          "image": {% if variant.featured_image %}{{ variant.featured_image.src | image_url: width: 200 | json }}{% elsif product.featured_image %}{{ product.featured_image.src | image_url: width: 200 | json }}{% else %}null{% endif %},
+          "deliveryAvailability": {% assign da = variant.metafields.ediblearrangement.delivery_availability.value %}{% if da != blank %}{
+            "name": {{ da.name.value | json }},
+            "icon": {% if da.icon.value != blank %}{{ da.icon.value | image_url: width: 64 | json }}{% else %}null{% endif %}
+          }{% else %}null{% endif %}
+        }{% unless forloop.last %},{% endunless %}
+      {%- endfor -%}
+    ]
+  }
+</script>

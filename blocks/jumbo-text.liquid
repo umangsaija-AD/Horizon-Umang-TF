@@ -1,0 +1,73 @@
+
+
+{% render 'jumbo-text' %}
+
+{% schema %}
+{
+  "name": "t:names.jumbo_text",
+  "tag": null,
+  "settings": [
+    {
+      "id": "text",
+      "type": "textarea",
+      "label": "t:settings.text",
+      "default": "t:text_defaults.be_bold"
+    },
+    {
+      "type": "text_alignment",
+      "id": "alignment",
+      "label": "t:settings.alignment",
+      "default": "left"
+    },
+    {
+      "type": "select",
+      "id": "case",
+      "label": "t:settings.case",
+      "options": [
+        {
+          "value": "none",
+          "label": "t:options.default"
+        },
+        {
+          "value": "uppercase",
+          "label": "t:options.uppercase"
+        }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "select",
+      "id": "text_effect",
+      "label": "t:settings.animation",
+      "options": [
+        {
+          "value": "none",
+          "label": "t:options.none"
+        },
+        {
+          "value": "blur",
+          "label": "t:options.blur"
+        },
+        {
+          "value": "reveal",
+          "label": "t:options.reveal"
+        }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "checkbox",
+      "id": "animation_repeat",
+      "label": "t:settings.animation_repeat",
+      "default": false,
+      "visible_if": "{{ block.settings.text_effect == \"blur\" or block.settings.text_effect == \"reveal\" }}"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:names.jumbo_text",
+      "category": "t:categories.decorative"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,29 @@
+{% liquid
+  assign bv_product_id = product.metafields.custom.ea_product_id
+  if bv_product_id == blank
+    assign bv_product_id = closest.product.metafields.custom.ea_product_id
+  endif
+  if bv_product_id == blank
+    assign bv_product_id = closest.product.id
+  endif
+%}
+
+{% if bv_product_id != blank %}
+  <div {{ block.shopify_attributes }}>
+    <div data-bv-show="rating_summary" data-bv-product-id="{{ bv_product_id }}"></div>
+  </div>
+{% endif %}
+
+{% schema %}
+{
+  "name": "BV Rating Summary",
+  "tag": null,
+  "settings": [],
+  "presets": [
+    {
+      "name": "BV Rating Summary",
+      "category": "Product"
+    }
+  ]
+}
+{% endschema %}

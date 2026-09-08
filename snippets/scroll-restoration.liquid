@@ -1,0 +1,302 @@
+{% comment %}
+  Anchor-based scroll restoration for back/forward navigation.
+
+  This theme uses cross-document view transitions (see base.css `@view-transition`
+  and view-transitions.js) plus a `rel="expect"` render blocker on #MainContent.
+  bfcache is unavailable on this storefront (Shopify serves the HTML with
+  `Cache-Control: no-store`), so on "back" the page is fully re-rendered from the
+  top and native scroll restoration doesn't return to the saved position.
+
+  Saving a raw pixel offset drifts: as the page rebuilds, content ABOVE the saved
+  position can settle at slightly different heights, so the old pixel no longer
+  points at the same place. Instead we anchor to a DOM element — we record which
+  theme section was at the top of the viewport plus how far into it we'd scrolled
+  (`shopify-section-…` ids are stable across navigations). On return we find that
+  section, wait until it (and the page) have real layout, ease to its live
+  position, then keep it pinned briefly while late images settle. If the section
+  can't be resolved we fall back to the saved pixel — so this is never worse than
+  a plain pixel restore. Motion is a single ease-out; we back off if the user
+  scrolls.
+{% endcomment %}
+<script>
+  (function () {
+    if (!('scrollRestoration' in history)) return;
+
+    // Stop the browser from doing its own (late/unreliable) restoration.
+    history.scrollRestoration = 'manual';
+
+    // Storage key for saved positions. Changing it makes any stale/legacy-format
+    // entries from an earlier build be ignored instead of read back and rejected.
+    const KEY = 'scroll-positions-ea';
+    const EASE_DURATION = 650; // ms
+    const CORRECTION_WINDOW = 1200; // ms to keep the anchor pinned after easing
+    const root = document.documentElement;
+
+    // All mutable flags live here so the shared state is easy to follow.
+    const state = {
+      saveScheduled: false, // a scroll-driven save is queued for the next frame
+      isRestoring: false, // our own scroll is in progress — don't save over the target
+      userEngaged: false, // the user scrolled/interacted — never yank them again
+      restoreDone: false, // restoration already ran for this page load
+    };
+
+    // --- Storage --------------------------------------------------------------
+
+    function pageKey() {
+      return location.pathname + location.search;
+    }
+
+    function readMap() {
+      try {
+        return JSON.parse(sessionStorage.getItem(KEY)) || {};
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function writeMap(map) {
+      try {
+        sessionStorage.setItem(KEY, JSON.stringify(map));
+      } catch (e) {}
+    }
+
+    function absoluteTop(el) {
+      return el.getBoundingClientRect().top + window.scrollY;
+    }
+
+    // The theme section currently at the top of the viewport, plus how far the
+    // viewport top sits below that section's top. Zero-height sections (e.g. the
+    // hidden desktop/mobile hero variant) are skipped so we never anchor to one.
+    function topSection() {
+      const sections = document.querySelectorAll('[id^="shopify-section-"]');
+      const y = window.scrollY;
+      let chosen = null;
+      let chosenTop = -Infinity;
+
+      sections.forEach(function (el) {
+        const rect = el.getBoundingClientRect();
+        if (rect.height === 0) return; // hidden / not laid out
+        const top = rect.top + y;
+        if (top <= y + 1 && top > chosenTop) {
+          chosen = el;
+          chosenTop = top;
+        }
+      });
+
+      // Scrolled above the first section (header region): anchor to the first
+      // visible section so the offset stays relative to real content.
+      if (!chosen) {
+        for (let i = 0; i < sections.length; i++) {
+          if (sections[i].getBoundingClientRect().height > 0) {
+            chosen = sections[i];
+            chosenTop = absoluteTop(chosen);
+            break;
+          }
+        }
+      }
+
+      if (!chosen) return null;
+      return { id: chosen.id, offset: y - chosenTop };
+    }
+
+    function save() {
+      if (state.isRestoring) return; // don't overwrite the target during our own restore
+      const y = window.scrollY;
+      const anchor = topSection();
+      const map = readMap();
+      map[pageKey()] = { y: y, id: anchor ? anchor.id : null, offset: anchor ? anchor.offset : 0 };
+      writeMap(map);
+    }
+
+    // Normalize a stored entry, tolerating the older number-only format.
+    function normalize(value) {
+      if (typeof value === 'number') return value > 0 ? { y: value, id: null, offset: 0 } : null;
+      if (value && typeof value === 'object' && typeof value.y === 'number') return value;
+      return null;
+    }
+
+    // --- Scroll helpers -------------------------------------------------------
+
+    function maxScroll() {
+      return Math.max(0, (document.scrollingElement || root).scrollHeight - window.innerHeight);
+    }
+
+    // Ease-out curve: fast at the start, decelerating into the target.
+    function easeOutCubic(t) {
+      return 1 - Math.pow(1 - t, 3);
+    }
+
+    // Apply a scroll position instantly — we do the easing ourselves, so the
+    // global `scroll-behavior: smooth` must not animate on top of it.
+    function setScroll(y) {
+      const previous = root.style.scrollBehavior;
+      root.style.scrollBehavior = 'auto';
+      window.scrollTo(0, y);
+      root.style.scrollBehavior = previous;
+    }
+
+    // Where the viewport top should be, computed live from the anchor so it tracks
+    // the element even as content above it shifts. `ready` is false while the
+    // anchor element hasn't been laid out yet (so callers keep waiting).
+    function computeTarget(saved) {
+      if (saved.id) {
+        const el = document.getElementById(saved.id);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          if (rect.height > 0) {
+            return { ready: true, value: Math.max(0, rect.top + window.scrollY + saved.offset) };
+          }
+        }
+        return { ready: false, value: saved.y }; // anchor not resolvable yet
+      }
+      return { ready: true, value: saved.y };
+    }
+
+    // --- Restore on back/forward ----------------------------------------------
+
+    // After easing, keep the anchor pinned briefly: late-loading images above can
+    // shift it, so re-snap to the live target until things settle.
+    function keepPinned(saved) {
+      const deadline = performance.now() + CORRECTION_WINDOW;
+      function hold() {
+        if (state.userEngaged) {
+          state.isRestoring = false;
+          return;
+        }
+        const t = computeTarget(saved);
+        if (t.ready && Math.abs(window.scrollY - t.value) > 2) {
+          setScroll(t.value);
+        }
+        if (performance.now() < deadline) {
+          requestAnimationFrame(hold);
+        } else {
+          state.isRestoring = false;
+        }
+      }
+      hold();
+    }
+
+    // Single ease-out animation to `to`, then hand off to keepPinned.
+    function animateTo(to, saved) {
+      const fromY = window.scrollY;
+      const distance = to - fromY;
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      if (reduceMotion || Math.abs(distance) < 2) {
+        setScroll(to);
+        keepPinned(saved);
+        return;
+      }
+
+      let startTime = null;
+      function frame(now) {
+        if (state.userEngaged) {
+          state.isRestoring = false;
+          return;
+        }
+        if (startTime === null) startTime = now;
+
+        const t = Math.min(1, (now - startTime) / EASE_DURATION);
+        setScroll(fromY + distance * easeOutCubic(t));
+
+        if (t < 1) {
+          requestAnimationFrame(frame);
+        } else {
+          keepPinned(saved);
+        }
+      }
+      requestAnimationFrame(frame);
+    }
+
+    // Wait until the anchor has laid out AND the page is tall enough to reach the
+    // target, then animate. On a back/forward re-render the page starts with ~no
+    // height and grows; if it settles shorter than the target (content changed) or
+    // a safety timeout hits, scroll as far as we can instead of waiting forever.
+    function scrollToWhenReady(saved) {
+      const start = performance.now();
+      let lastMax = -1;
+      let stableFrames = 0;
+
+      function tick() {
+        if (state.userEngaged) {
+          state.isRestoring = false;
+          return;
+        }
+
+        const t = computeTarget(saved);
+        const max = maxScroll();
+        if (t.ready && max >= t.value - 2) {
+          animateTo(t.value, saved);
+          return;
+        }
+
+        if (max > 0 && max === lastMax) {
+          stableFrames++;
+        } else {
+          stableFrames = 0;
+        }
+        lastMax = max;
+
+        const settled = max > 0 && stableFrames >= 20; // ~1/3s with no growth
+        if (settled || performance.now() - start >= 5000) {
+          animateTo(Math.min(t.value, max), saved);
+          return;
+        }
+
+        requestAnimationFrame(tick);
+      }
+      tick();
+    }
+
+    function restore() {
+      if (state.restoreDone || state.userEngaged || state.isRestoring) return;
+
+      const nav = performance.getEntriesByType('navigation')[0];
+      if (!nav || nav.type !== 'back_forward') return; // only on back/forward
+
+      const saved = normalize(readMap()[pageKey()]);
+      if (!saved || (saved.y <= 0 && !saved.id)) return;
+
+      state.restoreDone = true;
+      state.isRestoring = true;
+      scrollToWhenReady(saved);
+    }
+
+    // --- Listeners ------------------------------------------------------------
+
+    window.addEventListener(
+      'scroll',
+      function () {
+        if (state.saveScheduled) return;
+        state.saveScheduled = true;
+        requestAnimationFrame(function () {
+          state.saveScheduled = false;
+          save();
+        });
+      },
+      { passive: true }
+    );
+    window.addEventListener('pageswap', save);
+    window.addEventListener('pagehide', save);
+
+    // Once the user actively interacts we must never yank the scroll again.
+    // `once` lets each listener self-remove after the first interaction — the
+    // flags it sets are sticky, so there's nothing to do on later events.
+    ['wheel', 'touchstart', 'keydown', 'pointerdown'].forEach(function (name) {
+      window.addEventListener(
+        name,
+        function () {
+          state.userEngaged = true;
+          state.isRestoring = false;
+        },
+        { passive: true, once: true }
+      );
+    });
+
+    // Primary: fires just before the view-transition snapshot is captured.
+    window.addEventListener('pagereveal', restore);
+    // Fallbacks: no-view-transition paths and bfcache restores.
+    window.addEventListener('pageshow', restore);
+    document.addEventListener('DOMContentLoaded', restore);
+  })();
+</script>

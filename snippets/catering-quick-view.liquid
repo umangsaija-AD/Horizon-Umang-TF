@@ -1,0 +1,603 @@
+{% doc %}
+  Catering Quick View
+
+  CSS + script loader snippet for the catering Quick View drawer.
+  Rendered on catering collection pages only (guarded in main-collection.liquid).
+
+  Styles are self-contained with hardcoded Poppins font-family per the
+  catering file convention. The JS is a standalone ES module (pattern 2).
+
+  @example {% render 'catering-quick-view' %}
+{% enddoc %}
+
+<style>
+  /* ── Global drawer override ── */
+  .global-drawer__content:has(.catering-quick-view) {
+    padding: 0;
+  }
+
+  /* Quick View uses only the back affordance (which closes the drawer), so hide
+     the separate close icon. Render the back control as a chevron "<" by dropping
+     the arrow-shaft path. Scoped via :has() so other drawers are unaffected. */
+  .global-drawer__dialog:has(.catering-quick-view) .global-drawer__close {
+    display: none;
+  }
+
+  .global-drawer__dialog:has(.catering-quick-view) .global-drawer__back svg path:last-child {
+    display: none;
+  }
+
+  /* "Product details" title sized to 16px (overrides the h4 preset for QV only).
+     The title is clickable to close the drawer (see catering-quick-view.js). */
+  .global-drawer__dialog:has(.catering-quick-view) .global-drawer__title {
+    font-size: 16px;
+    line-height: 22px;
+    cursor: pointer;
+  }
+
+  /* ── Quick View wrapper ── */
+  .catering-quick-view {
+    background: #ffffff;
+    --cqv-delivery-color: #526f1b;
+  }
+
+  .catering-quick-view__body {
+    padding: 0 0 16px;
+    background: #ffffff;
+  }
+
+  /* ── Image Gallery ── */
+  .catering-quick-view__gallery {
+    padding-bottom: 0;
+  }
+
+  .catering-quick-view__main-images {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    padding: 0 16px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    /* Without this, mandatory snap aligns the first slide to the scrollport edge
+       and visually eats the 16px padding-left. scroll-padding offsets the snap
+       so the inset is preserved. */
+    scroll-padding-inline: 16px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .catering-quick-view__main-images::-webkit-scrollbar {
+    display: none;
+  }
+
+  .catering-quick-view__slide {
+    flex: 0 0 320px;
+    width: 320px;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    overflow: hidden;
+    scroll-snap-align: start;
+    position: relative;
+    background: #f3f3f3;
+  }
+
+  /* The last slide can't left-align (no full strip of content follows it), so
+     mandatory snapping would never rest on it. Align it to the end so the strip
+     can scroll to and stop on the last slide. */
+  .catering-quick-view__slide:last-child {
+    scroll-snap-align: end;
+  }
+
+  .catering-quick-view__slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* Video media (hosted <video> or external <iframe>) fills the slide frame. */
+  .catering-quick-view__slide video,
+  .catering-quick-view__slide iframe {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    border: 0;
+  }
+
+  .catering-quick-view__badge {
+    position: absolute;
+    top: 12px;
+    left: 0;
+    background: #ffffff;
+    border-radius: 0 24px 24px 0;
+    padding: 0 8px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 17px;
+    color: #1d1d1d;
+    z-index: 1;
+  }
+
+  .catering-quick-view__thumbnails {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    padding: 0 16px;
+    margin-top: 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .catering-quick-view__thumbnails::-webkit-scrollbar {
+    display: none;
+  }
+
+  .catering-quick-view__thumbnail {
+    box-sizing: border-box;
+    width: 48px;
+    height: 48px;
+    border-radius: 4px;
+    opacity: 0.88;
+    padding: 0;
+    cursor: pointer;
+    overflow: hidden;
+    background: #d9d9d9;
+    flex-shrink: 0;
+  }
+
+  /* Play badge on video thumbnails */
+  .catering-quick-view__thumbnail--video {
+    position: relative;
+  }
+
+  .catering-quick-view__thumbnail--video::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 6px 0 6px 10px;
+    border-color: transparent transparent transparent #ffffff;
+    filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.6));
+  }
+
+  .catering-quick-view__thumbnail.is-active {
+    border: 1px solid #1d1d1d;
+    opacity: 1;
+  }
+
+  .catering-quick-view__thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* ── Product Details ── */
+  .catering-quick-view__details {
+    padding: 16px 16px 0 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .catering-quick-view__content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    border-radius: 12px;
+  }
+
+  .catering-quick-view__heading-block {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .catering-quick-view__title {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    font-size: 24px;
+    line-height: 29px;
+    letter-spacing: -0.48px;
+    color: #5F0300;
+    margin: 0;
+  }
+
+  /* ── Reviews (Bazaarvoice rating summary, rendered above the title) ── */
+  /* Hide the "Write a review" link. */
+  .catering-quick-view__reviews .bv_war_component_container,
+  .catering-quick-view__reviews .bv_button_component_container {
+    display: none !important;
+  }
+
+  /* Black stars + black text throughout the widget.
+     BV fills stars with an SVG gradient; the polygon's `fill: url(#…)` is inline
+     !important and can't be overridden from a stylesheet. The gradient's "filled"
+     stop, however, is the brand red rgb(200, 16, 46) set via an inline style with
+     NO !important — so an author !important wins. Recolour just that stop to black
+     and leave the grey empty/partial stop so fractional ratings still render. */
+  .catering-quick-view__reviews stop[style*="200, 16, 46"],
+  .catering-quick-view__reviews stop[style*="200,16,46"] {
+    stop-color: #000000 !important;
+  }
+
+  .catering-quick-view__reviews,
+  .catering-quick-view__reviews * {
+    color: #000000 !important;
+  }
+
+  /* Star size 16×16 (BV defaults to 18px via the svg width/height attributes). */
+  .catering-quick-view__reviews svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  /* Underline the rating value and review count. */
+  .catering-quick-view__reviews .bv_avgRating_component_container,
+  .catering-quick-view__reviews .bv_numReviews_component_container,
+  .catering-quick-view__reviews .bv_numReviews_text {
+    text-decoration: underline !important;
+  }
+
+  .catering-quick-view__price-block {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .catering-quick-view__price {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 22px;
+    color: #1d1d1d;
+  }
+
+  .catering-quick-view__compare-price {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 20px;
+    color: #1D1D1D;
+    text-decoration: line-through;
+  }
+
+  .catering-quick-view__promo {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 17px;
+    color: #A00400;
+  }
+
+  /* Non-promotional (secondary) message — mirrors the PDP price block's
+     non_promotional_message: green, small label-style text on its own line. */
+  .catering-quick-view__non-promo {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 17px;
+    color: #526f1b;
+  }
+
+  .catering-quick-view__serving {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    color: #1d1d1d;
+  }
+
+  .catering-quick-view__delivery {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 17px;
+    color: var(--cqv-delivery-color);
+  }
+
+  /* Variant card delivery note: icon + text side by side, vertically centered.
+     The icon is rendered as a recolorable CSS mask (vector, not an <img>) tinted
+     with the delivery color, mirroring the PDP/_delivery-availability pattern. */
+  .catering-variant-card__note--delivery {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--cqv-delivery-color);
+  }
+
+  .catering-variant-card__note-icon {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    background-color: currentColor;
+    -webkit-mask: var(--cqv-note-icon) no-repeat center / contain;
+    mask: var(--cqv-note-icon) no-repeat center / contain;
+  }
+
+  .catering-quick-view__delivery img {
+    flex-shrink: 0;
+  }
+
+  /* ── Variant Section ── */
+  .catering-quick-view__variant-section {
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+  }
+
+  .catering-quick-view__variant-label {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    color: #1d1d1d;
+  }
+
+  .catering-quick-view__variant-option-name {
+    font-weight: 600;
+  }
+
+  .catering-quick-view__variant-list {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .catering-quick-view__variant-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Variant cards reuse .catering-variant-card from catering-cart-bar.liquid.
+     In the Quick View, fix each card to 240px in the horizontal scroll list. */
+  .catering-quick-view .catering-variant-card {
+    flex: 0 0 240px;
+    width: 240px;
+  }
+
+  /* Out-of-stock variant: show a disabled cursor on hover. It stays clickable
+     (selectable) — selecting it switches the Add button to "Sold out". */
+  .catering-quick-view .catering-variant-card.is-unavailable {
+    cursor: not-allowed;
+  }
+
+  /* ── CTA ── */
+  .catering-quick-view__cta {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding-bottom: 16px;
+  }
+
+  .catering-quick-view__add-btn {
+    width: 100%;
+    height: 40px;
+    background: #e10600;
+    color: #ffffff;
+    border: none;
+    border-radius: 24px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 20px;
+    cursor: pointer;
+    transition: background-color 150ms ease;
+    padding: 4px 24px;
+  }
+
+  .catering-quick-view__add-btn:not(:disabled):hover {
+    background: #c80500;
+  }
+
+  /* Sold-out / disabled: solid grey with white text, matching the grid product
+     card's disabled .button (#aaaaaa, opacity:1) from snippets/button.liquid. */
+  .catering-quick-view__add-btn:disabled {
+    background: #aaaaaa;
+    color: #ffffff;
+    opacity: 1;
+    cursor: not-allowed;
+  }
+
+  .catering-quick-view__paypal {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 17px;
+    color: #464646;
+  }
+
+  /* ── Accordion ── */
+  .catering-quick-view__accordion {
+    display: flex;
+    flex-direction: column;
+  }
+
+  details.catering-quick-view__accordion-item {
+    border-top: 1px solid #f2e7df;
+    padding: 16px 0;
+  }
+
+  summary.catering-quick-view__accordion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    list-style: none;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    font-size: 20px;
+    line-height: 24px;
+    color: #5f0300;
+  }
+
+  summary.catering-quick-view__accordion-header::-webkit-details-marker {
+    display: none;
+  }
+
+  summary.catering-quick-view__accordion-header::marker {
+    display: none;
+    content: '';
+  }
+
+  .catering-quick-view__accordion-chevron {
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+  }
+
+  details[open] > summary .catering-quick-view__accordion-chevron {
+    transform: rotate(180deg);
+  }
+
+  .catering-quick-view__accordion-content {
+    padding-top: 16px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 22.4px;
+    color: #1d1d1d;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .catering-quick-view__description {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 22.5px;
+    color: #1d1d1d;
+  }
+
+  .catering-quick-view__description ul {
+    padding-left: 20px;
+    margin: 8px 0 0 0;
+  }
+
+  .catering-quick-view__description li {
+    margin-bottom: 4px;
+  }
+
+  /* Variant-specific ingredients (rich text from the metafield). */
+  .catering-quick-view__ingredients[hidden] {
+    display: none;
+  }
+
+  .catering-quick-view__ingredients > * {
+    margin: 0;
+  }
+
+  .catering-quick-view__ingredients ul {
+    padding-left: 20px;
+    margin: 8px 0 0 0;
+  }
+
+  .catering-quick-view__ingredients li {
+    margin-bottom: 4px;
+  }
+
+  .catering-quick-view__disclaimers {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .catering-quick-view__disclaimer {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    background: #fbf7f5;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    color: #464646;
+  }
+
+  .catering-quick-view__disclaimer img {
+    flex-shrink: 0;
+  }
+
+  /* ── Loading skeleton ── */
+  /* The skeleton reuses the real gallery/detail container classes (see
+     LOADING_SKELETON_HTML in catering-quick-view.js) so image size, thumbnail
+     size, variant width, padding and gaps match the loaded layout exactly — only
+     the leaf elements become shimmer blocks. .catering-atc-spinner is unused
+     (white-on-white here). */
+  .cqv-skel {
+    position: relative;
+    overflow: hidden;
+    background: #ececec;
+    border-radius: 8px;
+  }
+
+  .cqv-skel::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.65), transparent);
+    animation: cqv-skel-shimmer 1.2s ease-in-out infinite;
+  }
+
+  @keyframes cqv-skel-shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  /* Leaf placeholders sized to mirror the real text/controls they stand in for. */
+  .cqv-skel--title {
+    height: 24px;
+    width: 70%;
+  }
+
+  .cqv-skel--price {
+    height: 16px;
+    width: 40%;
+  }
+
+  .cqv-skel--label {
+    height: 14px;
+    width: 30%;
+  }
+
+  .cqv-skel--variant {
+    flex: 0 0 240px;
+    width: 240px;
+    height: 72px;
+  }
+
+  .cqv-skel--btn {
+    height: 40px;
+    border-radius: 24px;
+  }
+
+  /* ── Desktop widths ── */
+  @media screen and (min-width: 750px) {
+    .catering-quick-view__slide {
+      flex: 0 0 320px;
+    }
+  }
+</style>
+
+<script src="{{ 'catering-quick-view.js' | asset_url }}" type="module"></script>

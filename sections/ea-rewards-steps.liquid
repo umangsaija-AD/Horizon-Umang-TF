@@ -1,0 +1,392 @@
+{%- liquid
+  assign section_pt = section.settings.padding_top
+  assign section_pb = section.settings.padding_bottom
+-%}
+
+<div class="section-background color-{{ section.settings.color_scheme }}"></div>
+<div
+  class="section section--page-width color-{{ section.settings.color_scheme }} ea-rewards-steps"
+  style="--ea-rs-pt: {{ section_pt }}px; --ea-rs-pb: {{ section_pb }}px; --ea-rs-card-bg: {{ section.settings.card_background_color }}; --ea-rs-step-num-bg: {{ section.settings.step_number_background }};"
+>
+  <div class="ea-rewards-steps__inner">
+
+    <div class="ea-rewards-steps__text-section">
+      {%- if section.settings.heading != blank -%}
+        <h2 class="ea-rewards-steps__heading">{{ section.settings.heading }}</h2>
+      {%- endif -%}
+
+      {%- if section.settings.subheading != blank -%}
+        <p class="ea-rewards-steps__subheading">{{ section.settings.subheading }}</p>
+      {%- endif -%}
+    </div>
+
+    <div class="ea-rewards-steps__card">
+      <div class="ea-rewards-steps__steps">
+        {%- for block in section.blocks -%}
+          <div class="ea-rewards-steps__step" {{ block.shopify_attributes }}>
+            <div class="ea-rewards-steps__step-number">
+              <span>{{ block.settings.step_number }}</span>
+            </div>
+            <div class="ea-rewards-steps__step-content">
+              {%- if block.settings.step_title != blank -%}
+                <h3 class="ea-rewards-steps__step-title">{{ block.settings.step_title }}</h3>
+              {%- endif -%}
+              {%- if block.settings.step_description != blank -%}
+                <p class="ea-rewards-steps__step-desc">{{ block.settings.step_description }}</p>
+              {%- endif -%}
+            </div>
+          </div>
+        {%- endfor -%}
+      </div>
+
+      {%- if section.settings.button_text != blank -%}
+        <div class="ea-rewards-steps__cta">
+          {%- if section.settings.button_link != blank -%}
+            <a
+              href="{{ section.settings.button_link }}"
+              class="ea-rewards-steps__button"
+            >
+              {{ section.settings.button_text }}
+            </a>
+          {%- else -%}
+            <span class="ea-rewards-steps__button">
+              {{ section.settings.button_text }}
+            </span>
+          {%- endif -%}
+        </div>
+      {%- endif -%}
+    </div>
+
+  </div>
+</div>
+
+{% stylesheet %}
+.ea-rewards-steps {
+  padding-block-start: var(--ea-rs-pt, 64px);
+  padding-block-end: var(--ea-rs-pb, 80px);
+}
+
+.ea-rewards-steps__inner {
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+  align-items: center;
+  width: 100%;
+}
+
+/* ── Text Section ────────────────────────────────────────── */
+.ea-rewards-steps__text-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  max-width: 838px;
+  text-align: center;
+}
+
+.ea-rewards-steps__heading {
+  font-size: 48px;
+  font-weight: 600;
+  line-height: 58px;
+  letter-spacing: -0.96px;
+  text-align: center;
+  color: var(--color-foreground-heading);
+  margin: 0;
+}
+
+.ea-rewards-steps__subheading {
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 22px;
+  text-align: center;
+  color: #464646;
+  margin: 0;
+}
+
+/* ── Card ────────────────────────────────────────────────── */
+.ea-rewards-steps__card {
+  width: 100%;
+  background-color: var(--ea-rs-card-bg, #FBF7F5);
+  border-radius: 8px;
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.05);
+  padding: 48px 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Steps Row ───────────────────────────────────────────── */
+.ea-rewards-steps__steps {
+  display: flex;
+  flex-direction: row;
+  gap: 32px;
+  justify-content: center;
+  width: 100%;
+}
+
+/* ── Individual Step ─────────────────────────────────────── */
+.ea-rewards-steps__step {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  align-items: center;
+  flex: 1;
+}
+
+.ea-rewards-steps__step-number {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: var(--ea-rs-step-num-bg, #EBDCD0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ea-rewards-steps__step-number span {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 22px;
+  color: #1D1D1D;
+}
+
+.ea-rewards-steps__step-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  justify-content: center;
+}
+
+.ea-rewards-steps__step-title {
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 38px;
+  letter-spacing: -0.64px;
+  text-align: center;
+  color: #464646;
+  margin: 0;
+}
+
+.ea-rewards-steps__step-desc {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 17px;
+  text-align: center;
+  color: #1D1D1D;
+  margin: 0;
+}
+
+/* ── CTA Button ──────────────────────────────────────────── */
+.ea-rewards-steps__cta {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.ea-rewards-steps__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 4px 24px;
+  border-radius: 24px;
+  background-color: var(--color-primary-button-background);
+  color: var(--color-primary-button-text);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  text-align: center;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  min-height: 40px;
+  transition: background-color var(--animation-speed) ease, color var(--animation-speed) ease;
+}
+
+.ea-rewards-steps__button:hover {
+  background-color: var(--color-primary-button-hover-background);
+  color: var(--color-primary-button-hover-text);
+}
+
+/* ── Mobile ──────────────────────────────────────────────── */
+@media screen and (max-width: 749px) {
+  .ea-rewards-steps {
+    padding-block-start: 32px;
+    padding-block-end: 32px;
+  }
+
+  .ea-rewards-steps__inner {
+    gap: 32px;
+  }
+
+  .ea-rewards-steps__heading {
+    font-size: 32px;
+    line-height: 38px;
+    letter-spacing: -0.64px;
+  }
+
+  .ea-rewards-steps__card {
+    padding: 32px 24px;
+  }
+
+  .ea-rewards-steps__steps {
+    flex-direction: column;
+  }
+
+  .ea-rewards-steps__step {
+    gap: 8px;
+  }
+
+  .ea-rewards-steps__step-number {
+    width: 24px;
+    height: 24px;
+  }
+
+  .ea-rewards-steps__step-number span {
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  .ea-rewards-steps__step-title {
+    font-size: 20px;
+    line-height: 24px;
+  }
+
+  .ea-rewards-steps__button {
+    width: 100%;
+  }
+}
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Rewards steps",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Get more from every gift"
+    },
+    {
+      "type": "textarea",
+      "id": "subheading",
+      "label": "Subheading"
+    },
+    {
+      "type": "text",
+      "id": "button_text",
+      "label": "Button text",
+      "default": "Start earning"
+    },
+    {
+      "type": "url",
+      "id": "button_link",
+      "label": "Button link"
+    },
+    {
+      "type": "header",
+      "content": "Style"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "color",
+      "id": "card_background_color",
+      "label": "Card background",
+      "default": "#FBF7F5"
+    },
+    {
+      "type": "color",
+      "id": "step_number_background",
+      "label": "Step circle color",
+      "default": "#EBDCD0"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "default": 64
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "default": 80
+    }
+  ],
+  "blocks": [
+    {
+      "type": "step",
+      "name": "Step",
+      "settings": [
+        {
+          "type": "text",
+          "id": "step_number",
+          "label": "Step number",
+          "default": "1"
+        },
+        {
+          "type": "text",
+          "id": "step_title",
+          "label": "Title",
+          "default": "Step title"
+        },
+        {
+          "type": "textarea",
+          "id": "step_description",
+          "label": "Description"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Rewards steps",
+      "blocks": [
+        {
+          "type": "step",
+          "settings": {
+            "step_number": "1",
+            "step_title": "Join rewards",
+            "step_description": "Receive points with every qualifying purchase. Receive more points per dollar as you reach new membership tiers."
+          }
+        },
+        {
+          "type": "step",
+          "settings": {
+            "step_number": "2",
+            "step_title": "Earn points",
+            "step_description": "Use points to redeem available rewards."
+          }
+        },
+        {
+          "type": "step",
+          "settings": {
+            "step_number": "3",
+            "step_title": "Redeem in the app",
+            "step_description": "Receive additional benefits as you unlock new membership tiers including early access to product drops, priority customer support and free upgrades."
+          }
+        }
+      ]
+    }
+  ],
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  }
+}
+{% endschema %}

@@ -1,0 +1,104 @@
+{% liquid
+  assign product_resource = closest.product
+  if request.visual_preview_mode and product_resource == blank
+    assign product_resource = collections.all.products.first
+  endif
+
+  assign brand_metaobject = shop.metaobjects.on_goody_brand.global
+  assign brand_about = blank
+  assign product_vendor = product_resource.vendor | escape
+
+  if brand_metaobject != blank
+    assign brand_about = brand_metaobject.about
+  endif
+%}
+
+<div
+  class="brand-about spacing-style text-block rich-list body-regular"
+  style="{% render 'spacing-padding', settings: block.settings %}"
+  {% if brand_about == blank %}
+    hidden
+  {% endif %}
+  {{ block.shopify_attributes }}
+>
+  {% if brand_about != blank %}
+    <div class="rte brand-about__content">
+      {{ brand_about | metafield_tag | replace: '[vendor]', product_vendor }}
+    </div>
+  {% endif %}
+</div>
+
+{% stylesheet %}
+  .brand-about {
+    width: 100%;
+    color: var(--color-foreground);
+  }
+
+  .brand-about[hidden] {
+    display: none;
+  }
+
+  .brand-about__content,
+  .brand-about__content > * {
+    margin-block: 0;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Brand about",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:content.padding"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "t:settings.top",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "t:settings.bottom",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-start",
+      "label": "t:settings.left",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-end",
+      "label": "t:settings.right",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    }
+  ],
+  "presets": [
+    {
+      "name": "Brand about",
+      "category": "t:categories.product"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,556 @@
+{%- liquid
+  assign product_resource = closest.product
+  assign cyo_total_slots = blank
+
+  if product_resource != blank
+    assign selected_variant = product_resource.selected_or_first_available_variant
+    assign cyo_total_slots = selected_variant.metafields.ediblearrangement.cyo_total_slots.value
+
+    if cyo_total_slots != blank
+      assign cyo_total_slots = cyo_total_slots | plus: 0
+      assign cyo_steps = selected_variant.metafields.ediblearrangement.cyo_steps.value
+      assign cyo_selection_type = selected_variant.metafields.ediblearrangement.cyo_selection_type.value
+      assign cyo_option_label = product_resource.metafields.ediblearrangement.cyo_option_label.value
+      assign cyo_steps_label = product_resource.metafields.ediblearrangement.cyo_steps_label.value
+
+      assign cyo_type_obj = product_resource.metafields.ediblearrangement.cyo_type.value
+      assign box_type_label = ''
+      assign box_type_plural_label = ''
+      if cyo_type_obj != blank
+        assign box_type_label = cyo_type_obj.singular_label.value | default: ''
+        assign box_type_plural_label = cyo_type_obj.plural_label.value | default: ''
+      endif
+
+      assign choose_your_fruits = 'cyo.choose_your_fruits' | t
+      assign heading_text = cyo_option_label | default: choose_your_fruits
+    endif
+  endif
+-%}
+
+{% if cyo_total_slots != blank %}
+<cyo-builder
+  {{ block.shopify_attributes }}
+  data-cyo-incomplete
+  data-total-slots="{{ cyo_total_slots }}"
+  data-product-id="{{ product_resource.id }}"
+  {% if cyo_selection_type != blank %}
+    data-selection-type="{{ cyo_selection_type }}"
+  {% endif %}
+  data-box-type-label="{{ box_type_label | escape }}"
+  data-box-type-plural-label="{{ box_type_plural_label | escape }}"
+  style="
+    {%- if block.settings.badge_text_color != blank -%}--cyo-badge-color: {{ block.settings.badge_text_color }};{%- endif -%}
+    {%- if block.settings.accent_color != blank -%}--cyo-accent-color: {{ block.settings.accent_color }};{%- endif -%}
+    {%- if block.settings.card_border_color != blank -%}--cyo-card-border-color: {{ block.settings.card_border_color }};{%- endif -%}
+    {%- if block.settings.card_hover_border_color != blank -%}--cyo-card-hover-border-color: {{ block.settings.card_hover_border_color }};{%- endif -%}
+  "
+>
+  <div class="cyo-builder">
+    {%- if cyo_selection_type == 'combination' or cyo_selection_type == 'segmented' -%}
+      <h2 class="cyo-builder__title">{{ heading_text }}</h2>
+    {%- endif -%}
+
+    {%- if cyo_steps != blank and cyo_steps.size > 0 -%}
+      {%- for step_collection in cyo_steps -%}
+        {%- liquid
+          assign step_title = step_collection.metafields.ediblearrangement.cyo_step_title.value | default: heading_text
+          assign step_subtitle = step_collection.metafields.ediblearrangement.cyo_step_subtitle.value
+          assign selection_limit = step_collection.metafields.ediblearrangement.cyo_selection_limit.value | default: 4
+          assign total_quantity = step_collection.metafields.ediblearrangement.cyo_total_quantity.value | default: cyo_total_slots
+        -%}
+
+        <div
+          class="cyo-builder__step"
+          data-cyo-step="{{ forloop.index0 }}"
+          data-selection-limit="{{ selection_limit }}"
+          data-step-quantity="{{ total_quantity }}"
+        >
+          <button
+            type="button"
+            class="cyo-builder__header button-unstyled"
+            ref="stepHeaders[]"
+            aria-expanded="true"
+            on:click="/handleToggle"
+          >
+            <div class="cyo-builder__header-text">
+              <h3 class="cyo-builder__heading">{{ step_title }}</h3>
+              {%- if step_subtitle != blank -%}
+                <p class="cyo-builder__subtitle">{{ step_subtitle }}</p>
+              {%- endif -%}
+              {%- unless cyo_selection_type == 'combination' or cyo_selection_type == 'segmented' -%}
+                <p class="cyo-builder__helper">{{ 'cyo.helper_text' | t }}</p>
+              {%- endunless -%}
+            </div>
+            <span class="cyo-builder__chevron" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+          </button>
+
+          <div class="cyo-builder__body" ref="stepBodies[]">
+            <div class="cyo-builder__scroller">
+              <button
+                type="button"
+                class="cyo-builder__scroll-arrow cyo-builder__scroll-arrow--prev button-unstyled"
+                data-cyo-scroll-prev
+                aria-label="Previous options"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path d="M15 6L9 12L15 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+              <div class="cyo-builder__cards">
+                {%- for item in step_collection.products -%}
+                  {%- liquid
+                    assign card_image = item.featured_image
+                    assign card_image_url = card_image | image_url: width: 80
+                    if forloop.parentloop.index == 1
+                      assign card_loading = 'eager'
+                      assign card_fetchpriority = 'high'
+                    else
+                      assign card_loading = 'lazy'
+                      assign card_fetchpriority = ''
+                    endif
+                  -%}
+                  <button
+                    type="button"
+                    class="cyo-builder__card button-unstyled"
+                    data-cyo-option
+                    data-product-handle="{{ item.handle }}"
+                    data-product-id="{{ item.id }}"
+                    data-variant-id="{{ item.selected_or_first_available_variant.id }}"
+                    data-product-title="{{ item.title | escape }}"
+                    data-product-image="{{ card_image_url }}"
+                    aria-pressed="false"
+                    ref="cards[]"
+                    on:click="/handleCardClick"
+                  >
+                    {%- if card_image != blank -%}
+                      <img
+                        class="cyo-builder__card-image"
+                        src="{{ card_image_url }}"
+                        alt="{{ item.title | escape }}"
+                        width="40"
+                        height="40"
+                        loading="{{ card_loading }}"
+                        {% if card_fetchpriority != '' %}fetchpriority="{{ card_fetchpriority }}"{% endif %}
+                      >
+                    {%- endif -%}
+                    <div class="cyo-builder__card-content">
+                      {%- if item.tags contains 'limited-time' -%}
+                        <span class="cyo-builder__card-badge">{{ block.settings.badge_text }}</span>
+                      {%- endif -%}
+                      <span class="cyo-builder__card-title">{{ item.title }}</span>
+                    </div>
+                  </button>
+                {%- endfor -%}
+              </div>
+              <button
+                type="button"
+                class="cyo-builder__scroll-arrow cyo-builder__scroll-arrow--next button-unstyled"
+                data-cyo-scroll-next
+                aria-label="Next options"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      {%- endfor -%}
+    {%- endif -%}
+
+    <button
+      type="button"
+      class="cyo-builder__clear button-unstyled"
+      ref="clearButton"
+      on:click="/handleClear"
+      style="display: none;"
+    >
+      {{ 'cyo.clear_selected' | t }}
+    </button>
+  </div>
+</cyo-builder>
+
+<script src="{{ 'cyo-builder.js' | asset_url }}" type="module"></script>
+
+{% style %}
+  #shopify-section-{{ section.id }} button[name="add"]:not([data-cyo-ready]) {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+{% endstyle %}
+{% endif %}
+
+{% stylesheet %}
+  .cyo-builder {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    position: relative;
+  }
+
+  .cyo-builder__step {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .cyo-builder__header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    width: 100%;
+    text-align: start;
+    cursor: pointer;
+    padding: 0;
+    background: none;
+    border: none;
+  }
+
+  .cyo-builder__header-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+  }
+
+  .cyo-builder__heading {
+    font-size: var(--font-size--2xl);
+    line-height: 1.2;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--color-black-secondary);
+    margin: 0;
+  }
+
+  .cyo-builder__subtitle {
+    font-size: var(--font-size--sm);
+    line-height: 1.43;
+    font-weight: 600;
+    color: var(--color-black-secondary);
+    margin: 0;
+  }
+
+  .cyo-builder__helper {
+    font-size: var(--font-size--2xs);
+    line-height: 1.42;
+    font-weight: 400;
+    color: var(--color-black-secondary);
+    margin: 0;
+  }
+
+  .cyo-builder__chevron {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+    color: var(--color-black-secondary);
+  }
+
+  .cyo-builder__header[aria-expanded="false"] .cyo-builder__chevron {
+    transform: rotate(-90deg);
+  }
+
+  .cyo-builder__body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: clip;
+    interpolate-size: allow-keywords;
+    block-size: auto;
+    opacity: 1;
+    transition:
+      block-size var(--animation-speed-slow, 0.3s) var(--animation-easing, ease),
+      opacity var(--animation-speed-slow, 0.3s) var(--animation-easing, ease);
+  }
+
+  .cyo-builder__header[aria-expanded="false"] ~ .cyo-builder__body {
+    block-size: 0;
+    opacity: 0;
+  }
+
+  .cyo-builder__header[aria-expanded="true"] ~ .cyo-builder__body {
+    @starting-style {
+      block-size: 0;
+      opacity: 0;
+    }
+  }
+
+  .cyo-builder__scroller {
+    position: relative;
+  }
+
+  .cyo-builder__cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  @media screen and (min-width: 1280px) {
+    .cyo-builder__cards {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      scroll-behavior: smooth;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .cyo-builder__cards::-webkit-scrollbar {
+      display: none;
+    }
+
+    .cyo-builder__card {
+      flex-shrink: 0;
+    }
+  }
+
+  .cyo-builder__scroll-arrow {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: var(--layer-heightened);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    color: #1d1d1d;
+    cursor: pointer;
+    padding: 0;
+    border: none;
+  }
+
+  .cyo-builder__scroll-arrow.is-visible {
+    display: flex;
+  }
+
+  .cyo-builder__scroll-arrow--prev {
+    left: 0;
+    opacity: 0.6;
+    transition: opacity 0.15s ease;
+  }
+
+  .cyo-builder__scroll-arrow--prev:hover,
+  .cyo-builder__scroll-arrow--prev:focus-visible {
+    opacity: 1;
+  }
+
+  .cyo-builder__scroll-arrow--next {
+    right: 0;
+  }
+
+  /* Hide arrows below desktop — touch scroll instead */
+  @media screen and (max-width: 1279px) {
+    .cyo-builder__scroll-arrow {
+      display: none !important;
+    }
+  }
+
+  /* Hide arrows for combination layout */
+  cyo-builder[data-selection-type="combination"] .cyo-builder__scroll-arrow {
+    display: none !important;
+  }
+
+  .cyo-builder__card {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    width: 220px;
+    min-height: 64px;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid var(--cyo-card-border-color, #c6c6c6);
+    background-color: #ffffff;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+    text-align: start;
+  }
+
+  .cyo-builder__card:hover {
+    border-color: var(--cyo-card-hover-border-color, #999999);
+  }
+
+  .cyo-builder__card[aria-pressed="true"] {
+    border-color: var(--color-black-secondary);
+    background-color: rgba(29, 29, 29, 0.03);
+  }
+
+  .cyo-builder__card-image {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    flex-shrink: 0;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  }
+
+  .cyo-builder__card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .cyo-builder__card-badge {
+    font-size: var(--font-size--2xs);
+    line-height: 1.42;
+    font-weight: 500;
+    color: var(--cyo-badge-color, #A00400);
+  }
+
+  .cyo-builder__card-title {
+    font-size: var(--font-size--sm);
+    line-height: 1.43;
+    font-weight: 500;
+    color: var(--color-black-secondary);
+  }
+
+  .cyo-builder__title {
+    font-size: var(--font-size--2xl);
+    line-height: 1.2;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--color-black-secondary);
+    margin: 0;
+  }
+
+  cyo-builder[data-selection-type="combination"] .cyo-builder__card {
+    width: 100%;
+  }
+
+  .cyo-builder__clear {
+    font-size: var(--font-size--sm);
+    font-weight: 600;
+    line-height: 1.43;
+    color: var(--cyo-accent-color, #e10600);
+    text-decoration: none;
+    border-bottom: 1px solid var(--cyo-accent-color, #e10600);
+    cursor: pointer;
+    background: none;
+    padding: 0;
+    align-self: flex-start;
+    transition: opacity 0.15s ease;
+  }
+
+  .cyo-builder__clear:hover {
+    opacity: 0.7;
+  }
+
+  @media screen and (max-width: 749px) {
+    .cyo-builder__heading {
+      font-size: var(--font-size--xl);
+      line-height: 1.2;
+    }
+
+    .cyo-builder__title {
+      font-size: var(--font-size--xl);
+      line-height: 1.2;
+    }
+
+    .cyo-builder__header {
+      min-height: 48px;
+    }
+
+    .cyo-builder__cards {
+      max-height: 280px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .cyo-builder__card {
+      width: calc(50% - 4px);
+      min-width: 0;
+    }
+
+    cyo-builder[data-selection-type="combination"] .cyo-builder__card {
+      width: 100%;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "CYO builder",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Badge"
+    },
+    {
+      "type": "text",
+      "id": "badge_text",
+      "label": "Badge text",
+      "default": "Limited Time Only"
+    },
+    {
+      "type": "header",
+      "content": "Colors"
+    },
+    {
+      "type": "color",
+      "id": "badge_text_color",
+      "label": "Badge text color",
+      "default": "#A00400"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "Accent color",
+      "default": "#e10600"
+    },
+    {
+      "type": "color",
+      "id": "card_border_color",
+      "label": "Card border color",
+      "default": "#c6c6c6"
+    },
+    {
+      "type": "color",
+      "id": "card_hover_border_color",
+      "label": "Card hover border",
+      "default": "#999999"
+    },
+    {
+      "type": "header",
+      "content": "Spacing"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "Top padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "Bottom padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    }
+  ],
+  "presets": [
+    {
+      "name": "CYO builder"
+    }
+  ]
+}
+{% endschema %}

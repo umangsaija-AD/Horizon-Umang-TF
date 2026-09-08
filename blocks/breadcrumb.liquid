@@ -1,0 +1,99 @@
+{%- liquid
+  assign bc_product = closest.product | default: product
+  assign bc_collection = collection | default: bc_product.collections.first
+  assign bc_page = page
+-%}
+
+{% capture chevron %}
+  <span class="breadcrumb__separator" aria-hidden="true">
+    {{ 'chevron-down.svg' | inline_asset_content | replace: '<svg', '<svg class="breadcrumb__icon"' }}
+  </span>
+{% endcapture %}
+
+<nav {{ block.shopify_attributes }} class="breadcrumb" aria-label="{{ 'accessibility.breadcrumb' | t }}">
+  <a class="breadcrumb__link label" href="{{ routes.root_url }}">{{ 'accessibility.home' | t }}</a>
+
+  {% if bc_collection %}
+    {{ chevron }}
+    <a
+      class="{% if bc_product == blank %}breadcrumb__current{% else %}breadcrumb__link{% endif %} label"
+      href="{{ bc_collection.url }}"
+      {% if bc_product == blank %}
+        aria-current="page"
+      {% endif %}
+    >
+      {{ bc_collection.title }}
+    </a>
+  {% endif %}
+
+  {% if bc_product %}
+    {{ chevron }}
+    <span class="breadcrumb__current label" aria-current="page">{{ bc_product.title }}</span>
+  {% elsif bc_page %}
+    {{ chevron }}
+    <span class="breadcrumb__current label" aria-current="page">{{ bc_page.title }}</span>
+  {% endif %}
+</nav>
+
+{% stylesheet %}
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin-block-end: var(--margin-lg);
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .breadcrumb::-webkit-scrollbar {
+    display: none;
+  }
+
+  .breadcrumb__link,
+  .breadcrumb__current,
+  .breadcrumb__separator {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .breadcrumb__link {
+    text-decoration: underline;
+  }
+
+  .breadcrumb__separator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+  }
+
+  .breadcrumb__icon {
+    width: 16px;
+    height: 16px;
+    transform: rotate(-90deg);
+  }
+
+  @media screen and (min-width: 750px) {
+    .breadcrumb {
+      margin-block-end: var(--margin-xs);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Breadcrumb",
+  "tag": null,
+  "settings": [],
+  "presets": [
+    {
+      "name": "Breadcrumb",
+      "category": "Navigation"
+    }
+  ]
+}
+{% endschema %}

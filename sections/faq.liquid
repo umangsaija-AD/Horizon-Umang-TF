@@ -1,0 +1,158 @@
+{% liquid
+  assign metaobject = section.settings.faq_metaobject
+  assign faq_items = metaobject.items.value
+%}
+
+{% if faq_items.size > 0 %}
+  <div class="section-background color-{{ section.settings.color_scheme }}"></div>
+
+  <div
+    class="
+      section
+      section--{{ section.settings.section_width }}
+      color-{{ section.settings.color_scheme }}
+      spacing-style
+    "
+    style="{% render 'spacing-style', settings: section.settings %}"
+  >
+    <div
+      class="faq__content gap-style"
+      style="{% render 'gap-style', value: section.settings.gap %}"
+    >
+      <div>
+        {% content_for 'block', id: 'heading', type: 'text' %}
+      </div>
+
+      {%
+        content_for 'block',
+        id: 'faq-accordion',
+        type: '_faq-accordion',
+        closest.metaobject.faq_collection: metaobject
+      %}
+    </div>
+  </div>
+
+  {% comment %}
+    FAQPage structured data — generated from the same metaobject Q&A rendered
+    above (mirrors the legacy site's FAQ schema; only marks up visible content).
+  {% endcomment %}
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {%- assign faq_first_done = false -%}
+        {%- for item in faq_items -%}
+          {%- if item.question.value != blank -%}
+            {%- if faq_first_done -%},{%- endif -%}
+            {%- capture faq_answer -%}{{ item.answer | metafield_tag }}{%- endcapture -%}
+            {
+              "@type": "Question",
+              "name": {{ item.question.value | strip_html | strip_newlines | json }},
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": {{ faq_answer | strip_html | strip_newlines | json }}
+              }
+            }
+            {%- assign faq_first_done = true -%}
+          {%- endif -%}
+        {%- endfor -%}
+      ]
+    }
+  </script>
+{% endif %}
+
+{% stylesheet %}
+  .faq__content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+    width: 100%;
+    max-width: 928px;
+    margin-inline: auto;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Dynamic Faq",
+  "tag": "section",
+  "class": "faq-section-wrapper",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "blocks": [{ "type": "_faq-accordion" }],
+  "settings": [
+    {
+      "type": "metaobject",
+      "id": "faq_metaobject",
+      "metaobject_type": "faq_collection",
+      "label": "FAQ metaobject"
+    },
+    {
+      "type": "header",
+      "content": "t:content.layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "t:settings.width",
+      "options": [
+        { "value": "page-width", "label": "t:options.page" },
+        { "value": "full-width", "label": "t:options.full" }
+      ],
+      "default": "page-width"
+    },
+    {
+      "type": "range",
+      "id": "gap",
+      "label": "t:settings.gap",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 32
+    },
+    {
+      "type": "header",
+      "content": "t:content.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:settings.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "t:content.padding"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "t:settings.top",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 48
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "t:settings.bottom",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 48
+    }
+  ],
+  "presets": [
+    {
+      "name": "Dynamic Faq",
+      "category": "t:categories.text"
+    }
+  ]
+}
+{% endschema %}

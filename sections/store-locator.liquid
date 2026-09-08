@@ -1,0 +1,120 @@
+<div class="section-background color-{{ section.settings.color_scheme }}"></div>
+<div
+  class="section section--{{ section.settings.section_width }} spacing-style {% if section.settings.color_scheme != blank %}color-{{ section.settings.color_scheme }}{% endif %}"
+  style="{% render 'spacing-padding', settings: section.settings %}"
+>
+  <div class="store-locator__header">
+    {% content_for 'blocks' %}
+  </div>
+
+  <div class="store-locator__widget">
+    <!-- Storepoint Widget Embed Start -->
+    <div id="storepoint-widget"></div>
+    <script>
+      window.Storepoint=window.Storepoint||{_q:[],on:function(e,c){this._q.push([e,c])}};
+      window.loadStorepoint=function(){new StorepointWidget('169fcf28194dc8','#storepoint-widget',{});};
+      !function(){var t=document.createElement("script");t.type="text/javascript";t.async=!0;t.src="https://widget.storepoint.co/embed.js";t.onload=function(){"function"==typeof window.loadStorepoint&&window.loadStorepoint()};document.head.appendChild(t);}();
+    </script>
+    <!-- Storepoint Widget Embed End -->
+  </div>
+</div>
+
+{% stylesheet %}
+  .store-locator__header {
+    width: 100%;
+  }
+
+  .store-locator__widget {
+    margin-top: 24px;
+    width: 100%;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Store Locator",
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        {
+          "value": "page-width",
+          "label": "Page width"
+        },
+        {
+          "value": "full-width",
+          "label": "Full width"
+        }
+      ],
+      "default": "full-width"
+    },
+    {
+      "type": "header",
+      "content": "Padding"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "Top",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 40
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "Bottom",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 40
+    }
+  ],
+  "blocks": [
+    {
+      "type": "breadcrumb"
+    },
+    {
+      "type": "text"
+    },
+    {
+      "type": "@app"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Store Locator",
+      "blocks": [
+        {
+          "type": "breadcrumb"
+        },
+        {
+          "type": "text",
+          "settings": {
+            "text": "<h1>Store Locator</h1>",
+            "alignment": "center",
+            "type_preset": "h2"
+          }
+        },
+        {
+          "type": "text",
+          "settings": {
+            "text": "<p>Find an Edible store near you.</p>",
+            "alignment": "center"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

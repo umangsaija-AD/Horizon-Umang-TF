@@ -1,0 +1,190 @@
+{%- doc -%}
+Renders an accordion of FAQ items from a metaobject. The metaobject should have an `items` field
+(list.metaobject_reference) pointing to FAQ item metaobjects, each with `question` and `answer` fields.
+
+Expects closest.metaobject to be passed from the parent section.
+{%- enddoc -%}
+
+{% liquid
+  assign block_settings = block.settings
+  assign metaobject = closest.metaobject.faq_collection
+  assign items = metaobject.items.value
+  assign heading_color = block_settings.heading_color | default: 'var(--color-foreground)'
+
+  if heading_color == 'custom'
+    assign heading_color = block_settings.custom_heading_color | default: '#1d1d1d'
+  endif
+%}
+
+{% if items != blank %}
+  <div
+    class="faq-accordion accordion accordion--{{ block_settings.icon }} tw-flex tw-w-full tw-flex-col"
+    style="--faq-heading-color: {{ heading_color }};"
+    {{ block.shopify_attributes }}
+  >
+    {% for item in items %}
+      {% capture accordion_row_children %}
+        <details
+          class="details tw-py-4 md:tw-py-5 {% if block_settings.dividers %}tw-border-b{% if forloop.first %} tw-border-t{% endif %}{% endif %}"
+          {% if forloop.first and block_settings.open_first %}
+            open
+          {% endif %}
+        >
+          <summary class="details--header tw-mb-0 tw-flex tw-cursor-pointer tw-list-none tw-items-center tw-justify-between tw-gap-4 tw-p-0">
+            <span class="tw-min-w-0 tw-flex-1 tw-text-{{ block_settings.type_preset | default: 'body-regular' }} tw-font-semibold">
+              {{ item.question.value }}
+            </span>
+
+            {% if block_settings.icon == 'caret' %}
+              <span class="icon-caret icon-animated tw-flex tw-h-6 tw-w-6 tw-shrink-0 tw-items-center tw-justify-center">
+                {{- 'icon-caret.svg' | inline_asset_content -}}
+              </span>
+            {% else %}
+              <span class="icon-plus tw-flex tw-h-6 tw-w-6 tw-shrink-0 tw-items-center tw-justify-center">
+                {{- 'icon-plus.svg' | inline_asset_content -}}
+              </span>
+            {% endif %}
+          </summary>
+
+          <div class="details-content faq-accordion__content">
+            <div class="faq-accordion__answer rich-list tw-text-{{ block_settings.content_type_preset | default: 'body-small' }} tw-leading-[1.4]">
+              {{ item.answer | metafield_tag }}
+            </div>
+          </div>
+        </details>
+      {% endcapture %}
+
+      {% assign open_first = false %}
+      {% if forloop.first and block_settings.open_first %}
+        {% assign open_first = true %}
+      {% endif %}
+
+      {%
+        render 'accordion-custom-component',
+        children: accordion_row_children,
+        open_by_default_on_desktop: open_first,
+        open_by_default_on_mobile: open_first
+      %}
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% stylesheet %}
+  .faq-accordion {
+    color: var(--color-foreground);
+  }
+
+  .faq-accordion .details {
+    border-color: var(--color-border);
+  }
+
+  .faq-accordion .details--header {
+    color: var(--faq-heading-color);
+  }
+
+  .faq-accordion__content {
+    padding-block-start: var(--padding-xs);
+  }
+
+  .faq-accordion .faq-accordion__answer a {
+    color: var(--color-primary);
+    text-decoration: underline;
+    text-decoration-color: currentcolor;
+  }
+
+  .faq-accordion .faq-accordion__answer a:hover {
+    color: var(--color-primary-hover);
+    text-decoration-color: currentcolor;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "FAQ Accordion",
+  "tag": null,
+  "settings": [
+    {
+      "type": "select",
+      "id": "icon",
+      "label": "t:settings.icon",
+      "options": [
+        { "value": "caret", "label": "t:options.caret" },
+        { "value": "plus", "label": "t:options.plus" }
+      ],
+      "default": "caret"
+    },
+    {
+      "type": "checkbox",
+      "id": "dividers",
+      "label": "t:settings.dividers",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "open_first",
+      "label": "Open first item by default",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "t:content.typography"
+    },
+    {
+      "type": "select",
+      "id": "type_preset",
+      "label": "Heading preset",
+      "options": [
+        { "value": "h4", "label": "t:options.h4" },
+        { "value": "h5", "label": "t:options.h5" },
+        { "value": "h6", "label": "t:options.h6" },
+        { "value": "body-regular", "label": "t:options.body_regular" },
+        { "value": "body-small", "label": "t:options.body_small" },
+        { "value": "label", "label": "t:options.label" }
+      ],
+      "default": "body-regular"
+    },
+    {
+      "type": "select",
+      "id": "content_type_preset",
+      "label": "Content preset",
+      "options": [
+        { "value": "body-regular", "label": "t:options.body_regular" },
+        { "value": "body-small", "label": "t:options.body_small" },
+        { "value": "label", "label": "t:options.label" }
+      ],
+      "default": "body-small"
+    },
+    {
+      "type": "select",
+      "id": "heading_color",
+      "label": "t:settings.heading_color",
+      "options": [
+        {
+          "value": "var(--color-foreground-heading)",
+          "label": "t:options.heading"
+        },
+        {
+          "value": "var(--color-foreground)",
+          "label": "t:options.text"
+        },
+        {
+          "value": "var(--color-primary)",
+          "label": "t:options.link"
+        },
+        {
+          "value": "custom",
+          "label": "t:options.custom"
+        }
+      ],
+      "default": "var(--color-foreground)"
+    },
+    {
+      "type": "color",
+      "id": "custom_heading_color",
+      "label": "t:settings.custom_heading_color",
+      "default": "#1d1d1d",
+      "visible_if": "{{ block.settings.heading_color == 'custom' }}"
+    }
+  ]
+}
+{% endschema %}

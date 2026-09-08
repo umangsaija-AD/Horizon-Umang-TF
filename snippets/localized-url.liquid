@@ -1,0 +1,114 @@
+{%- doc -%}
+  Normalizes a footer/nav link to the CURRENT locale/market root (routes.root_url).
+
+  Guarantees that — no matter what shape the input URL arrives in — the shopper is
+  sent to the correctly localized path for the locale they are currently browsing
+  (e.g. /en-ca/pages/about or /fr-ca/pages/about):
+
+    "/pages/about"                          -> /<locale>/pages/about
+    "https://site.com/pages/about"          -> /<locale>/pages/about
+    "//site.com/pages/about"                -> /<locale>/pages/about
+    "/en-ca/pages/about" (stale/wrong loc)  -> /<locale>/pages/about
+
+  Steps: (1) reduce any absolute/protocol-relative URL to its path, (2) strip an
+  existing leading locale segment (xx or xx-yy, a published locale, or the current
+  root segment) so we never double-prefix or keep the wrong locale, (3) prepend the
+  current routes.root_url. On the primary locale (root_url == '/') the path is
+  returned unprefixed. mailto:, tel:, and pure anchors (#) are left untouched.
+
+  @param {string} url - The raw link URL (e.g. link.url)
+
+  @example
+  <a href="{% render 'localized-url', url: link.url %}">{{ link.title }}</a>
+{%- enddoc -%}
+{%- liquid
+  assign _url = url
+  assign _root = routes.root_url
+  assign _result = _url
+
+  assign _skip = false
+  if _url == blank
+    assign _skip = true
+  else
+    assign _first = _url | slice: 0
+    if _first == '#'
+      assign _skip = true
+    elsif _url contains 'mailto:' or _url contains 'tel:'
+      assign _skip = true
+    endif
+  endif
+
+  unless _skip
+    # 1. Reduce to a path (strip scheme + host for absolute / protocol-relative URLs)
+    assign _first2 = _url | slice: 0, 2
+    assign _path = _url
+    if _first2 == '//'
+      assign _rest = _url | remove_first: '//'
+      assign _host = _rest | split: '/' | first
+      assign _path = _rest | remove_first: _host
+    elsif _url contains '://'
+      assign _rest = _url | split: '://' | last
+      assign _host = _rest | split: '/' | first
+      assign _path = _rest | remove_first: _host
+    endif
+
+    # Ensure the path has a single leading slash and is never blank
+    assign _pfirst = _path | slice: 0
+    if _pfirst != '/'
+      assign _path = '/' | append: _path
+    endif
+    if _path == blank
+      assign _path = '/'
+    endif
+
+    # 2. Detect + strip an existing leading locale segment
+    assign _seg_raw = _path | remove_first: '/' | split: '/' | first
+    assign _seg = _seg_raw | downcase
+    assign _is_locale = false
+
+    if _seg != blank
+      assign _seg_size = _seg | size
+
+      # xx-yy dash form (en-ca, fr-ca, pt-br, es-419 ...)
+      if _seg contains '-' and _seg_size <= 6
+        assign _is_locale = true
+      endif
+
+      # plain 2-letter language that is actually a published locale
+      if _seg_size == 2
+        for _loc in shop.published_locales
+          assign _lc = _loc.iso_code | downcase
+          if _lc == _seg
+            assign _is_locale = true
+          endif
+        endfor
+      endif
+
+      # matches the current locale root segment
+      assign _root_seg = _root | remove_first: '/' | split: '/' | first | downcase
+      if _root_seg != blank and _seg == _root_seg
+        assign _is_locale = true
+      endif
+    endif
+
+    if _is_locale
+      assign _path = _path | remove_first: '/' | remove_first: _seg_raw
+      assign _pf = _path | slice: 0
+      if _pf != '/'
+        assign _path = '/' | append: _path
+      endif
+      if _path == blank
+        assign _path = '/'
+      endif
+    endif
+
+    # 3. Prepend the current locale root
+    if _root == '/'
+      assign _result = _path
+    else
+      assign _result = _root | append: _path
+    endif
+  endunless
+
+  echo _result
+-%}

@@ -1,0 +1,407 @@
+{%- liquid
+  assign sort_by = results.sort_by | default: results.default_sort_by
+  assign filters = results.filters
+  assign active_count = 0
+
+  for filter in filters
+    for value in filter.active_values
+      assign active_count = active_count | plus: 1
+    endfor
+    if filter.type == 'price_range'
+      if filter.min_value.value != null or filter.max_value.value != null
+        assign active_count = active_count | plus: 1
+      endif
+    endif
+  endfor
+
+  assign filter_base_url = results.url
+  if template contains 'search'
+    assign filter_base_url = routes.search_url
+    if search.terms != blank
+      assign encoded_terms = search.terms | url_encode
+      assign filter_base_url = filter_base_url | append: '?type=product&q=' | append: encoded_terms
+    endif
+  endif
+-%}
+
+<collection-filters class="tw-fixed tw-inset-0 tw-z-20 tw-hidden tw-bg-black/50 tw-p-4 lg:tw-static lg:tw-z-auto lg:tw-m-0 lg:tw-block lg:tw-w-[280px] lg:tw-shrink-0 lg:tw-bg-transparent [&.--mobile-active]:tw-block">
+  {%- comment -%} Sidebar / filter groups {%- endcomment -%}
+  <div
+    {{ block.shopify_attributes }}
+    data-filter-drawer
+    class="tw-h-full tw-overflow-auto tw-rounded-lg tw-bg-white tw-p-4 tw-pb-0 tw-shadow-[2px_0_10px_rgba(0,0,0,0.1)] lg:tw-h-auto lg:tw-w-auto lg:tw-p-0 lg:tw-shadow-none"
+  >
+    <div class="-tw-mx-4 tw-flex tw-items-center tw-justify-between tw-border-b tw-border-chocolate-300 tw-px-4 tw-pb-4 tw-pt-0 lg:tw-mx-0 lg:tw-px-0 lg:tw-pt-4">
+      <span class="tw-block tw-text-body-regular tw-font-semibold tw-text-secondary-500 lg:tw-hidden">{{ 'collection.filters.filter_by' | t }}</span>
+      <span class="tw-hidden tw-text-tag tw-font-medium tw-uppercase tw-text-secondary-500 lg:tw-block">{{ 'collection.filters.filter_by' | t }}</span>
+      <button
+        data-mobile-close
+        type="button"
+        class="tw-flex tw-cursor-pointer tw-border-none tw-bg-transparent tw-text-xl lg:tw-hidden"
+      >
+        <span class="tw-inline-flex tw-h-6 tw-w-6 lg:tw-h-5 lg:tw-w-5">
+          {{ 'icon-close.svg' | inline_asset_content }}
+        </span>
+      </button>
+    </div>
+
+    <div class="tw-border-b tw-border-chocolate-300 tw-py-6 lg:tw-hidden" data-filter-group>
+      <button
+        data-filter-toggle
+        class="tw-flex tw-w-full tw-cursor-pointer tw-items-center tw-justify-between tw-border-none tw-bg-transparent tw-py-[3.5px] tw-text-left tw-text-tag tw-font-medium tw-uppercase tw-text-secondary-500"
+        type="button"
+      >
+        <span>{{ 'collection.filters.sort_by' | t }}</span>
+        <span
+          data-toggle-icon
+          class="tw-inline-flex tw-h-4 tw-w-4 tw-transition-transform tw-duration-200 [&.--active]:tw-rotate-180"
+        >
+          {{ 'chevron-down.svg' | inline_asset_content }}
+        </span>
+      </button>
+
+      <ul data-filter-list class="tw-m-0 tw-mt-4 tw-list-none tw-space-y-4 tw-p-0">
+        {%- for option in results.sort_options -%}
+          <li
+            {% if forloop.index > 5 %}
+              data-overflow-item class="tw-hidden"
+            {% endif %}
+          >
+            <label class="tw-flex tw-cursor-pointer tw-items-center tw-gap-2 tw-text-body-small">
+              <input
+                type="radio"
+                name="mobile-sort-by"
+                data-mobile-sort
+                value="{{ option.value }}"
+                {% if option.value == sort_by %}
+                  checked
+                {% endif %}
+                class="tw-h-4 tw-w-4 tw-shrink-0 tw-accent-gray-800"
+              >
+              <span>{{ option.name }}</span>
+            </label>
+          </li>
+        {%- endfor -%}
+        {% if results.sort_options.size > 5 %}
+          {%- assign show_all_label = 'collection.filters.show_all' | t -%}
+          <li>
+            <span data-show-more data-total="{{ results.sort_options.size }}" data-label-show-all="{{ show_all_label }}" data-label-show-less="{{ 'collection.filters.show_less' | t }}" class="tw-mt-1 tw-inline-block">
+              {%- render 'button',
+                element_type: 'button',
+                label: show_all_label,
+                style_class: 'link',
+                button_size: 'small'
+              -%}
+            </span>
+          </li>
+        {% endif %}
+      </ul>
+    </div>
+
+    {% for filter in filters %}
+      {% if filter.type == 'list' %}
+        <div class="tw-border-b tw-border-chocolate-300 tw-py-6" data-filter-group>
+          <button
+            data-filter-toggle
+            class="tw-flex tw-w-full tw-cursor-pointer tw-items-center tw-justify-between tw-border-none tw-bg-transparent tw-py-[3.5px] tw-text-left tw-text-tag tw-font-medium tw-uppercase tw-text-secondary-500"
+            type="button"
+          >
+            <span>{{ filter.label }}</span>
+            <span
+              data-toggle-icon
+              class="tw-inline-flex tw-h-4 tw-w-4 tw-transition-transform tw-duration-200 [&.--active]:tw-rotate-180"
+            >
+              {{ 'chevron-down.svg' | inline_asset_content }}
+            </span>
+          </button>
+
+          <ul data-filter-list class="tw-m-0 tw-mt-4 tw-list-none tw-space-y-4 tw-p-0">
+            {% for value in filter.values %}
+              <li
+                {% if forloop.index > 5 %}
+                  data-overflow-item class="tw-hidden"
+                {% endif %}
+              >
+                <a
+                  href="{% if value.active %}{{ value.url_to_remove }}{% else %}{{ value.url_to_add }}{% endif %}"
+                  data-filter-link
+                  data-param-name="{{ value.param_name }}"
+                  data-param-value="{{ value.value }}"
+                  data-active="{% if value.active %}true{% else %}false{% endif %}"
+                  class="tw-flex tw-cursor-pointer tw-items-center tw-gap-2 tw-text-body-small tw-text-inherit tw-no-underline"
+                >
+                  <span
+                    data-check-icon
+                    class="tw-inline-flex tw-h-4 tw-w-4 tw-shrink-0 tw-items-center tw-justify-center tw-rounded tw-rounded-sm tw-border tw-border-solid tw-border-brand-black tw-bg-white [&.--active]:tw-bg-brand-black {% if value.active %}--active{% endif %}"
+                  >
+                    {{ 'icon-check.svg' | inline_asset_content }}
+                  </span>
+                  <span>{{ value.label }}</span>
+                </a>
+              </li>
+            {% endfor %}
+            {% if filter.values.size > 5 %}
+              {%- assign show_all_label = 'collection.filters.show_all' | t -%}
+              <li>
+                <span data-show-more data-total="{{ filter.values.size }}" data-label-show-all="{{ show_all_label }}" data-label-show-less="{{ 'collection.filters.show_less' | t }}" class="tw-mt-1 tw-inline-block">
+                  {%- render 'button',
+                    element_type: 'button',
+                    label: show_all_label,
+                    style_class: 'link',
+                    button_size: 'small'
+                  -%}
+                </span>
+              </li>
+            {% endif %}
+          </ul>
+        </div>
+      {% elsif filter.type == 'price_range' %}
+        {%- liquid
+          assign current_min_cents = filter.min_value.value | plus: 0
+          assign current_max_cents = filter.max_value.value | plus: 0
+          assign has_price = false
+          if filter.min_value.value != null or filter.max_value.value != null
+            assign has_price = true
+          endif
+          assign price_ranges = settings.price_filter_ranges | newline_to_br | split: '<br />'
+        -%}
+        <div class="tw-border-b tw-border-chocolate-300 tw-py-6" data-filter-group>
+          <button
+            data-filter-toggle
+            class="tw-flex tw-w-full tw-cursor-pointer tw-items-center tw-justify-between tw-border-none tw-bg-transparent tw-py-[3.5px] tw-text-left tw-text-tag tw-font-medium tw-uppercase tw-text-secondary-500"
+            type="button"
+          >
+            <span>{{ filter.label }}</span>
+            <span
+              data-toggle-icon
+              class="tw-inline-flex tw-h-4 tw-w-4 tw-transition-transform tw-duration-200 [&.--active]:tw-rotate-180"
+            >
+              {{ 'chevron-down.svg' | inline_asset_content }}
+            </span>
+          </button>
+
+          <ul data-filter-list class="tw-m-0 tw-mt-4 tw-list-none tw-space-y-4 tw-p-0">
+            {% for range in price_ranges %}
+              {%- liquid
+                assign parts = range | strip | split: '|'
+                assign range_min = parts[0] | plus: 0
+                assign range_max = parts[1] | plus: 0
+                assign range_gte = range_min | divided_by: 100
+                assign range_lte = range_max | divided_by: 100
+
+                assign formatted_min = range_min | money_without_trailing_zeros
+                assign formatted_max = range_max | money_without_trailing_zeros
+                if range_min == 0
+                  assign range_label = 'collection.price_under' | t: price: formatted_max
+                else
+                  assign range_label = 'collection.price_range_label' | t: min: formatted_min, max: formatted_max
+                endif
+
+                assign is_active = false
+                if has_price
+                  if range_min >= current_min_cents and range_max <= current_max_cents
+                    assign is_active = true
+                  endif
+                endif
+              -%}
+              <li
+                {% if forloop.index > 5 %}
+                  data-overflow-item class="tw-hidden"
+                {% endif %}
+              >
+                <a
+                  href="#"
+                  data-price-link
+                  data-price-gte="{% if range_min > 0 %}{{ range_gte }}{% endif %}"
+                  data-price-lte="{{ range_lte }}"
+                  data-active="{% if is_active %}true{% else %}false{% endif %}"
+                  class="tw-flex tw-cursor-pointer tw-items-center tw-gap-2 tw-text-body-small tw-text-inherit tw-no-underline"
+                >
+                  <span
+                    data-check-icon
+                    class="tw-inline-flex tw-h-4 tw-w-4 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-sm tw-border tw-border-solid tw-border-brand-black tw-bg-white [&.--active]:tw-bg-brand-black {% if is_active %}--active{% endif %}"
+                  >
+                    {{ 'icon-check.svg' | inline_asset_content }}
+                  </span>
+                  <span>{{ range_label }}</span>
+                </a>
+              </li>
+            {% endfor %}
+            {% if price_ranges.size > 5 %}
+              {%- assign show_all_label = 'collection.filters.show_all' | t -%}
+              <li>
+                <span data-show-more data-total="{{ price_ranges.size }}" data-label-show-all="{{ show_all_label }}" data-label-show-less="{{ 'collection.filters.show_less' | t }}" class="tw-mt-1 tw-inline-block">
+                  {%- render 'button',
+                    element_type: 'button',
+                    label: show_all_label,
+                    style_class: 'link',
+                    button_size: 'small'
+                  -%}
+                </span>
+              </li>
+            {% endif %}
+          </ul>
+        </div>
+      {% endif %}
+    {% endfor %}
+
+    <div class="tw-sticky tw-bottom-0 -tw-mx-4 tw-flex tw-items-center tw-gap-12 tw-border-t tw-border-chocolate-300 tw-bg-white tw-px-4 tw-py-4 lg:tw-mx-0 lg:tw-hidden lg:tw-px-0">
+      {%- assign filter_clear_all_label = 'collection.filters.clear_all' | t -%}
+      <span data-clear-filters data-href="{{ filter_base_url }}" class="">
+        {%- render 'button', element_type: 'button', label: filter_clear_all_label, style_class: 'link', button_size: 'small' -%}
+      </span>
+      <span
+        data-mobile-apply
+        data-collection-url="{{ filter_base_url }}"
+        class="tw-flex-1"
+        style="--color-background: rgba(0,0,0,0); --color-foreground-heading: #ffffff; --color-foreground: #ffffff; --color-primary: #e10600; --color-primary-hover: #a00400; --color-border: #e6e6e6; --color-shadow: #000000; --color-primary-button-background: #e10600; --color-primary-button-text: #ffffff; --color-primary-button-border: #ffffff; --color-primary-button-hover-background: #a00400; --color-primary-button-hover-text: #ffffff; --color-primary-button-hover-border: #000000; --color-secondary-button-background: #ffffff; --color-secondary-button-text: #000000; --color-secondary-button-border: #ffffff; --color-secondary-button-hover-background: #f2e7df; --color-secondary-button-hover-text: #000000; --color-secondary-button-hover-border: #ffffff;"
+      >
+        {%- assign apply_filters_label = 'collection.filters.apply_filters' | t -%}
+        {%- render 'button',
+          block: null,
+          width_mobile: 'fill',
+          element_type: 'button',
+          label: apply_filters_label,
+          style_class: 'button',
+          button_size: 'medium'
+        -%}
+      </span>
+    </div>
+  </div>
+</collection-filters>
+
+{% javascript %}
+  class CollectionFilters extends HTMLElement {
+    connectedCallback() {
+      this._drawer = this;
+      this._closeBtn = this.querySelector('[data-mobile-close]');
+      this._applyBtn = this.querySelector('[data-mobile-apply]');
+      this._isMobile = () => window.innerWidth < 1024;
+
+      const externalToggle = document.querySelector('[data-mobile-filter-toggle]');
+      externalToggle?.addEventListener('click', () => this.openDrawer());
+      this._closeBtn?.addEventListener('click', () => this.closeDrawer());
+
+      this.querySelectorAll('[data-filter-link]').forEach((link) => {
+        link.addEventListener('click', (e) => {
+          if (!this._isMobile()) return;
+          e.preventDefault();
+
+          const isActive = link.dataset.active === 'true';
+          link.dataset.active = isActive ? 'false' : 'true';
+
+          const icon = link.querySelector('[data-check-icon]');
+          icon.classList.toggle('--active');
+        });
+      });
+
+      this.querySelectorAll('[data-price-link]').forEach((link) => {
+        link.addEventListener('click', (e) => {
+          if (!this._isMobile()) return;
+          e.preventDefault();
+
+          const isActive = link.dataset.active === 'true';
+          link.dataset.active = isActive ? 'false' : 'true';
+
+          const icon = link.querySelector('[data-check-icon]');
+          icon.classList.toggle('--active');
+        });
+      });
+
+      this._applyBtn?.addEventListener('click', () => {
+        const baseUrl = this._applyBtn.dataset.collectionUrl;
+        const url = new URL(baseUrl, window.location.origin);
+
+        const sortRadio = this.querySelector('[data-mobile-sort]:checked');
+        if (sortRadio) {
+          url.searchParams.set('sort_by', sortRadio.value);
+        }
+
+        this.querySelectorAll('[data-filter-link][data-active="true"]').forEach((link) => {
+          url.searchParams.append(link.dataset.paramName, link.dataset.paramValue);
+        });
+
+        const activePrices = this.querySelectorAll('[data-price-link][data-active="true"]');
+        const priceRanges = [];
+        activePrices.forEach((pl) => {
+          priceRanges.push({
+            gte: pl.dataset.priceGte ? parseInt(pl.dataset.priceGte, 10) : 0,
+            lte: parseInt(pl.dataset.priceLte, 10),
+          });
+        });
+
+        this.closeDrawer();
+
+        if (priceRanges.length > 0) {
+          document.dispatchEvent(
+            new CustomEvent('collection:navigate', {
+              detail: { url: url.toString(), priceRanges },
+            }),
+          );
+        } else {
+          document.dispatchEvent(
+            new CustomEvent('collection:navigate', {
+              detail: { url: url.toString() },
+            }),
+          );
+        }
+      });
+
+      this.querySelectorAll('[data-filter-toggle]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const group = btn.closest('[data-filter-group]');
+          const list = group.querySelector('[data-filter-list]');
+          const icon = btn.querySelector('[data-toggle-icon]');
+          const isHidden = list.hidden;
+          list.hidden = !isHidden;
+          icon.classList.toggle('--active', isHidden);
+        });
+      });
+
+      this.querySelectorAll('[data-show-more]').forEach((wrapper) => {
+        wrapper.addEventListener('click', () => {
+          const group = wrapper.closest('[data-filter-group]');
+          const items = group.querySelectorAll('[data-overflow-item]');
+          const label = wrapper.querySelector('button');
+          const expanded = wrapper.dataset.expanded === 'true';
+
+          items.forEach((item) => item.classList.toggle('tw-hidden', expanded));
+          wrapper.dataset.expanded = expanded ? 'false' : 'true';
+          if (label) label.textContent = expanded ? (wrapper.dataset.labelShowAll || 'Show all') : (wrapper.dataset.labelShowLess || 'Show less');
+        });
+      });
+    }
+
+    openDrawer() {
+      this._drawer?.classList.add('--mobile-active');
+    }
+
+    closeDrawer() {
+      this._drawer?.classList.remove('--mobile-active');
+    }
+  }
+
+  if (!customElements.get('collection-filters')) {
+    customElements.define('collection-filters', CollectionFilters);
+  }
+{% endjavascript %}
+
+{% stylesheet %}
+@media screen and (min-width: 1024px) {
+  collection-filters.tw-fixed {
+    position: sticky;
+    top: calc(var(--sticky-header-offset, 0px) + 18px);
+    align-self: start;
+    max-height: calc(100vh - var(--sticky-header-offset, 0px) - 36px);
+    overflow-y: auto;
+  }
+}
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Filters",
+  "tag": null,
+  "settings": []
+}
+{% endschema %}

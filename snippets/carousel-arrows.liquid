@@ -1,0 +1,54 @@
+{%- doc -%}
+  Renders standardized carousel prev/next arrows (Figma "Right Left Arrows").
+  Fixed white circular buttons — not color-scheme dependent.
+
+  @param {string} position - Position modifier, e.g. bottom-right, top-left
+  @param {string} [icon] - Icon style: arrow or caret (chevron is aliased to caret). Defaults to arrow.
+  @param {string} [visibility_class] - Optional visibility class (hidden--mobile, hidden--desktop)
+  @param {string} [wrapper_class] - Optional extra classes on the arrows container
+
+  @example
+  {% render 'carousel-arrows', position: 'bottom-right', icon: 'caret', visibility_class: 'hidden--mobile' %}
+{%- enddoc -%}
+
+{%- liquid
+  assign icon_style = icon | default: 'arrow'
+  if icon_style == 'chevron' or icon_style == 'chevron_large'
+    assign icon_style = 'caret'
+  elsif icon_style == 'arrows_large'
+    assign icon_style = 'arrow'
+  endif
+
+  assign icon_asset = 'icon-arrow.svg'
+  assign icon_wrapper_class = 'icon-arrow'
+  if icon_style == 'caret'
+    assign icon_asset = 'icon-caret.svg'
+    assign icon_wrapper_class = 'icon-caret'
+  endif
+-%}
+
+<div class="carousel-arrows carousel-arrows--icon-{{ icon_style }} swipable-group__arrows swipable-group__arrows--{{ position }} {{ visibility_class }} {{ wrapper_class }}">
+  <button
+    type="button"
+    class="swipable-group__arrow"
+    data-prev
+    aria-label="{{ 'accessibility.slideshow_previous' | t }}"
+    disabled
+  >
+    <span class="svg-wrapper {{ icon_wrapper_class }} flip-x">
+      {{- icon_asset | inline_asset_content -}}
+    </span>
+  </button>
+  <button
+    type="button"
+    class="swipable-group__arrow"
+    data-next
+    aria-label="{{ 'accessibility.slideshow_next' | t }}"
+  >
+    <span class="svg-wrapper {{ icon_wrapper_class }}">
+      {{- icon_asset | inline_asset_content -}}
+    </span>
+  </button>
+</div>
+
+{% render 'carousel-arrows-styles' %}

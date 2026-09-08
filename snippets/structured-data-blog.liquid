@@ -1,0 +1,92 @@
+{% comment %}
+  Blog (listing) JSON-LD — a Blog object with a blogPost (BlogPosting) array.
+  Rendered from structured-data.liquid on blog pages.
+
+  Notes:
+    - Articles are enumerated using the same page size as the blog listing
+      (sections/main-blog.liquid paginates by 6), so the JSON-LD describes the
+      posts actually rendered in the grid.
+    - Each post uses the excerpt (falling back to truncated content) rather than
+      the full body, to keep the page head light — the full articleBody lives on
+      the article page itself.
+    - BreadcrumbList is emitted separately via structured-data-breadcrumb.
+{% endcomment %}
+{%- assign blog_url = request.origin | append: blog.url -%}
+{%- paginate blog.articles by 6 -%}
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Blog",
+      "@id": {{ blog_url | append: '#blog' | json }},
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": {{ blog_url | append: '#webpage' | json }}
+      },
+      "headline": {{ blog.title | json }},
+      "name": {{ blog.title | json }},
+      "description": {{ blog.title | json }},
+      "url": {{ blog_url | json }},
+      "publisher": {
+        "@type": "Organization",
+        "name": "Edible Arrangements",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://rescloud.ediblearrangements.com/image/private/s--b1zrBt9Y--/v1674225926/Creative-Marketing/site_support/edible_logo_new.svg"
+        }
+      },
+      "blogPost": [
+        {%- for article in blog.articles -%}
+          {%- liquid
+            assign a_url = request.origin | append: article.url
+            # Use the excerpt on the listing to keep the page head light; the
+            # full body lives on the article page. excerpt_or_content falls back
+            # to the full body, so prefer the explicit excerpt and otherwise
+            # strip + truncate the content.
+            assign article_summary = article.excerpt
+            if article_summary == blank
+              assign article_summary = article.content | strip_html | truncate: 500
+            endif
+          -%}
+          {
+            "@type": "BlogPosting",
+            "@id": {{ a_url | append: '#article' | json }},
+            "articleBody": {{ article_summary | strip_html | strip_newlines | json }},
+            "author": {
+              "@type": "Person",
+              "name": {{ article.author | json }}
+            },
+            "creator": {{ article.author | json }},
+            "comment": [],
+            "commentCount": {{ article.comments_count | json }},
+            "dateCreated": {{ article.created_at | date: '%Y-%m-%dT%H:%M:%S%z' | json }},
+            "dateModified": {{ article.published_at | date: '%Y-%m-%dT%H:%M:%S%z' | json }},
+            "datePublished": {{ article.published_at | date: '%Y-%m-%dT%H:%M:%S%z' | json }},
+            "description": {{ article_summary | strip_html | strip_newlines | json }},
+            "headline": {{ article.title | json }},
+            {%- if article.image %}
+            "image": {
+              "@type": "ImageObject",
+              "width": {{ article.image.width | json }},
+              "height": {{ article.image.height | json }},
+              "url": {{ article.image | image_url: width: 1200 | prepend: 'https:' | json }}
+            },
+            {%- endif %}
+            "keywords": {{ article.tags | json }},
+            "mainEntityOfPage": {
+              "@type": "WebPage",
+              "url": {{ a_url | json }}
+            },
+            "publisher": {
+              "@type": "Organization",
+              "name": "Edible Arrangements"
+            },
+            {%- if article.image %}
+            "thumbnailUrl": {{ article.image | image_url: width: 400 | prepend: 'https:' | json }},
+            {%- endif %}
+            "url": {{ a_url | json }}
+          }{%- unless forloop.last -%},{%- endunless -%}
+        {%- endfor -%}
+      ]
+    }
+  </script>
+{%- endpaginate -%}

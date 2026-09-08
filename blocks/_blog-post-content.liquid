@@ -1,0 +1,109 @@
+
+
+<div class="blog-post-content rte">
+  <rte-formatter>
+    {{ article.content }}
+  </rte-formatter>
+</div>
+
+{% stylesheet %}
+  .blog-post-content {
+    max-width: var(--normal-content-width);
+    margin: 0 auto;
+  }
+
+  .blog-post-content :is(h1, h2, h3, h4, h5, h6) {
+    font-weight: 600;
+    color: var(--color-foreground-heading);
+  }
+
+  .blog-post-content h1 {
+    font-family: var(--font-h1--family);
+    font-size: var(--font-h1--size);
+    line-height: var(--font-h1--line-height);
+    letter-spacing: var(--font-h1--letter-spacing);
+    text-transform: var(--font-h1--case);
+  }
+
+  .blog-post-content h2 {
+    font-family: var(--font-h2--family);
+    font-size: var(--font-h2--size);
+    line-height: var(--font-h2--line-height);
+    letter-spacing: var(--font-h2--letter-spacing);
+    text-transform: var(--font-h2--case);
+  }
+
+  .blog-post-content h3 {
+    font-family: var(--font-h3--family);
+    font-size: var(--font-h3--size);
+    line-height: var(--font-h3--line-height);
+    letter-spacing: var(--font-h3--letter-spacing);
+    text-transform: var(--font-h3--case);
+  }
+
+  .blog-post-content h4 {
+    font-family: var(--font-h4--family);
+    font-size: var(--font-h4--size);
+    line-height: var(--font-h4--line-height);
+    letter-spacing: var(--font-h4--letter-spacing);
+    text-transform: var(--font-h4--case);
+  }
+
+  .blog-post-content h5 {
+    font-family: var(--font-h5--family);
+    font-size: var(--font-h5--size);
+    line-height: var(--font-h5--line-height);
+    letter-spacing: var(--font-h5--letter-spacing);
+    text-transform: var(--font-h5--case);
+  }
+
+  .blog-post-content h6 {
+    font-family: var(--font-h6--family);
+    font-size: var(--font-h6--size);
+    line-height: var(--font-h6--line-height);
+    letter-spacing: var(--font-h6--letter-spacing);
+    text-transform: var(--font-h6--case);
+  }
+
+  .blog-post-content a {
+    color: var(--color-primary-button-background);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+
+  .blog-post-content a:hover {
+    color: var(--color-primary-button-background);
+  }
+
+  .blog-post-content ul {
+    list-style: disc;
+  }
+
+  .blog-post-content ol {
+    list-style: auto;
+  }
+
+  .blog-post-content iframe {
+    width: 100%;
+  }
+
+  .blog-post-content table {
+    border: 1px solid rgb(var(--color-foreground-rgb) / var(--opacity-10)); 
+  }
+
+  .blog-post-content img {
+    border-radius: 8px;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:names.content",
+  "settings": [],
+  "presets": [
+    {
+      "name": "t:names.content"
+    }
+  ]
+}
+{% endschema %}

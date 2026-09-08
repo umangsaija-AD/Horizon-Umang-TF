@@ -1,0 +1,180 @@
+{% liquid
+  assign product = closest.product
+  assign msg = product.metafields.ediblearrangement.non_promotional_message.value
+
+  if msg == blank
+    assign current_variant = product.selected_or_first_available_variant
+    if current_variant
+      assign msg = current_variant.metafields.ediblearrangement.delivery_availability.value
+    endif
+  endif
+%}
+
+{%- liquid
+  assign da_color = block.settings.color | default: ''
+  assign non_promotional_color = block.settings.non_promotional_color | default: ''
+  assign preset_m = block.settings.typography_mobile | default: 'label'
+  assign preset_d = block.settings.typography_desktop
+  if preset_d == blank
+    assign preset_d = preset_m
+  endif
+  assign fw_m = block.settings.font_weight_mobile | default: '500'
+  assign fw_d = block.settings.font_weight_desktop
+  if fw_d == blank
+    assign fw_d = fw_m
+  endif
+  assign mb_m = block.settings.margin_bottom_mobile | default: 0
+  assign mb_d = block.settings.margin_bottom_desktop | default: 0
+-%}
+
+{% if msg %}
+  <div
+    {{ block.shopify_attributes }}
+    style="--mb-m: {{ mb_m }}px; --mb-d: {{ mb_d }}px; --fw-m: {{ fw_m }}; --fw-d: {{ fw_d }};{% if da_color != blank %} --da-color: {{ da_color }};{% endif %}{% if non_promotional_color != blank %} --non-promotional-color: {{ non_promotional_color }};{% endif %}"
+    class="tw-flex tw-items-center tw-gap-1 tw-text-{{ preset_m }} md:tw-text-{{ preset_d }} tw-mb-[var(--mb-m)] tw-font-[number:var(--fw-m)] md:tw-mb-[var(--mb-d)] md:tw-font-[number:var(--fw-d)]"
+  >
+    {% if msg.icon %}
+      <img
+        src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+        alt="{{ msg.name | escape }}"
+        width="16"
+        height="16"
+        style="--mask-image-url: url('{{ msg.icon.value | image_url: width: 64 }}');{% if da_color != blank %}background-color: var(--da-color){% endif %}"
+        class="{% if da_color == blank %}tw-bg-brand-green {% endif %}tw-h-4 tw-w-4 tw-object-contain [mask-image:var(--mask-image-url)]"
+      >
+    {% endif %}
+    {% if msg.name %}
+      <span
+        {% if da_color != blank %}
+          style="color: var(--da-color)"
+        {% endif %}
+        class="{% if da_color == blank %}tw-text-brand-green {% endif %}"
+      >
+        {{ msg.name }}
+      </span>
+    {% elsif msg %}
+      <span class="tw-text-[var(--non-promotional-color)]">
+        {{ msg }}
+      </span>
+    {% endif %}
+  </div>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Delivery Availability",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Typography"
+    },
+    {
+      "type": "select",
+      "id": "typography_mobile",
+      "label": "Preset (mobile)",
+      "options": [
+        { "value": "h1", "label": "H1" },
+        { "value": "h2", "label": "H2" },
+        { "value": "h3", "label": "H3" },
+        { "value": "h4", "label": "H4" },
+        { "value": "h5", "label": "H5" },
+        { "value": "h6", "label": "H6" },
+        { "value": "display", "label": "Display" },
+        { "value": "body-regular", "label": "Body Regular" },
+        { "value": "body-small", "label": "Body Small" },
+        { "value": "label", "label": "Label" },
+        { "value": "tag", "label": "Tag" }
+      ],
+      "default": "label"
+    },
+    {
+      "type": "select",
+      "id": "typography_desktop",
+      "label": "Preset (desktop)",
+      "options": [
+        { "value": "", "label": "Same as mobile" },
+        { "value": "display", "label": "Display" },
+        { "value": "h1", "label": "H1" },
+        { "value": "h2", "label": "H2" },
+        { "value": "h3", "label": "H3" },
+        { "value": "h4", "label": "H4" },
+        { "value": "h5", "label": "H5" },
+        { "value": "h6", "label": "H6" },
+        { "value": "body-regular", "label": "Body Regular" },
+        { "value": "body-small", "label": "Body Small" },
+        { "value": "label", "label": "Label" },
+        { "value": "tag", "label": "Tag" }
+      ],
+      "default": ""
+    },
+    {
+      "type": "select",
+      "id": "font_weight_mobile",
+      "label": "Font weight (mobile)",
+      "options": [
+        { "value": "400", "label": "Normal" },
+        { "value": "500", "label": "Medium" },
+        { "value": "600", "label": "Semibold" },
+        { "value": "700", "label": "Bold" }
+      ],
+      "default": "500"
+    },
+    {
+      "type": "select",
+      "id": "font_weight_desktop",
+      "label": "Font weight (desktop)",
+      "options": [
+        { "value": "", "label": "Same as mobile" },
+        { "value": "400", "label": "Normal" },
+        { "value": "500", "label": "Medium" },
+        { "value": "600", "label": "Semibold" },
+        { "value": "700", "label": "Bold" }
+      ],
+      "default": ""
+    },
+    {
+      "type": "color",
+      "id": "color",
+      "label": "Color",
+      "default": "#1B873D"
+    },
+    {
+      "type": "color",
+      "id": "non_promotional_color",
+      "label": "Non Promotional Color",
+      "default": "#E10600"
+    },
+    {
+      "type": "header",
+      "content": "Spacing"
+    },
+    {
+      "type": "range",
+      "id": "margin_bottom_mobile",
+      "label": "Margin bottom (mobile)",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "margin_bottom_desktop",
+      "label": "Margin bottom (desktop)",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "default": 0
+    }
+  ],
+  "presets": [
+    {
+      "name": "Delivery Availability",
+      "category": "Product"
+    }
+  ]
+}
+{% endschema %}

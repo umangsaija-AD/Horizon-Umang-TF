@@ -1,0 +1,51 @@
+{% doc %}
+Renders the CYO "Your Box" thumbnail for the gallery thumbnail strip.
+
+Shows a red square with "Your Box" text in white.
+
+@param {number} [thumbnail_radius] - Border radius for the thumbnail in px
+
+@example
+{% render 'cyo-thumbnail', thumbnail_radius: 8 %}
+{% enddoc %}
+
+{%- assign thumb_radius = thumbnail_radius | default: 8 -%}
+
+<button
+  class="slideshow-control button button-unstyled slideshow-controls__thumbnail cyo-thumbnail"
+  aria-label="{{ 'cyo.your_box_preview_label' | t }}"
+  on:click="/select/0"
+  ref="thumbnails[]"
+  aria-selected="true"
+  data-cyo-thumbnail
+  style="--aspect-ratio: 1; --thumbnail-radius: {{ thumb_radius }}px;"
+>
+  <span class="cyo-thumbnail__inner">
+    <span class="cyo-thumbnail__text">{{ 'cyo.your_box' | t | replace: ' ', '<br>' }}</span>
+  </span>
+</button>
+
+{% stylesheet %}
+  .cyo-thumbnail {
+    flex-shrink: 0;
+  }
+
+  .cyo-thumbnail__inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 1;
+    background-color: #e10600;
+    border-radius: var(--thumbnail-radius, 8px);
+  }
+
+  .cyo-thumbnail__text {
+    font-size: var(--font-size--sm);
+    font-weight: 600;
+    line-height: 1.43;
+    color: #ffffff;
+    text-align: center;
+  }
+{% endstylesheet %}

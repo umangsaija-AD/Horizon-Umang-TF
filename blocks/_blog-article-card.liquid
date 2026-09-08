@@ -1,0 +1,111 @@
+{%- doc -%}
+Renders a blog article card. Composes child blocks (image, title, description, link) so merchants can reorder, hide, or
+add app blocks between elements.
+
+@param {object} article - The article object (passed from section loop)
+{%- enddoc -%}
+
+{% liquid
+  assign block_settings = block.settings
+  assign onboarding = false
+  if article == blank
+    assign onboarding = true
+  endif
+%}
+
+<div
+  class="blog-article-card color-{{ block_settings.color_scheme }}"
+  style="border-radius: {{ block_settings.border_radius }}px;"
+  {% if onboarding %}
+    data-placeholder="true"
+  {% endif %}
+  {{ block.shopify_attributes }}
+>
+  <div class="blog-article-card__media">
+    {% unless onboarding %}
+      <a class="blog-article-card__link" href="{{ article.url }}" aria-label="{{ article.title | escape }}"></a>
+    {% endunless %}
+    {% content_for 'block', id: 'image', type: 'image', closest.article: article %}
+  </div>
+
+  <div class="blog-article-card__inner">
+    <div class="blog-article-card__content">
+      {% content_for 'blocks' %}
+    </div>
+    {% capture read_more_block %}
+      {% content_for 'block', id: 'read-more', type: 'button' %}
+    {% endcapture %}
+    {% if read_more_block != blank %}
+      <div class="blog-article-card__read-more">
+        {{ read_more_block }}
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% stylesheet %}
+  .blog-article-card {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+  }
+
+  .blog-article-card__link {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+
+  .blog-article-card__media {
+    position: relative;
+  }
+
+  .blog-article-card__inner {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    flex: 1;
+    gap: 12px;
+    padding-block: 24px;
+  }
+
+  .blog-article-card__content {
+    flex: 1;
+  }
+
+  .blog-article-card__content,
+  .blog-article-card__read-more {
+    padding-inline: 24px;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:names.blog_article_card",
+  "tag": null,
+  "blocks": [{ "type": "text" }, { "type": "group" }],
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:settings.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "label": "t:settings.border_radius",
+      "min": 0,
+      "max": 40,
+      "step": 1,
+      "unit": "px",
+      "default": 8
+    }
+  ]
+}
+{% endschema %}

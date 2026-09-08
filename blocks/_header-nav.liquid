@@ -1,0 +1,49 @@
+{%- liquid
+  assign mobile_styles = 'tw-max-h-[calc(81dvh+var(--height-exclude-top-bar,_0px))] tw-overflow-auto tw-border-t tw-border-t-secondary-50 tw-hidden [&.--is-open]:!tw-block tw-absolute tw-top-full tw-left-0 tw-w-full tw-bg-white tw-rounded-b-lg'
+  assign desktop_styles = 'lg:tw-max-h-none lg:tw-border-t-0 lg:tw-static lg:!tw-flex lg:tw-overflow-visible'
+-%}
+<div
+  {{ block.shopify_attributes }}
+  class="tw-js-mobile-nav js-mobile-nav tw-items-center tw-gap-2 [&.--is-open]:!tw-block {{ desktop_styles }} {{ mobile_styles }}"
+>
+  <div class="tw-block tw-overflow-hidden lg:[display:contents]">
+    <div class="tw-flex tw-translate-x-0 tw-flex-col tw-rounded-b-lg tw-p-6 tw-transition-transform tw-duration-300 tw-ease-in-out has-[.--is-open]:-tw-translate-x-full lg:[display:contents]">
+      <div class="-tw-mx-6 tw-mb-3 tw-overflow-auto tw-pb-3 tw-pl-6 lg:tw-hidden">
+        {% content_for 'block', type: '_mobile-menu-carousel', id: 'mobile-menu-carousel' %}
+      </div>
+
+      {%- content_for 'blocks' -%}
+
+      <div class="tw-mt-6 tw-border-t tw-border-t-secondary-50 tw-pt-6 lg:tw-hidden">
+        {% content_for 'block', type: '_header-nav-promo-banner', id: 'header-nav-promo-banner' %}
+      </div>
+
+      <div class="tw-mt-6 tw-border-t tw-border-t-secondary-50 tw-pt-6 lg:tw-hidden">
+        {% if customer %}
+          <a class="body-regular text-brand-black tw-mb-3 tw-block tw-text-body-regular" href="/account/logout">
+            Sign Out
+          </a>
+        {% else %}
+          <a class="body-regular text-brand-black tw-mb-3 tw-block tw-text-body-regular" href="/account/login">
+            Sign In
+          </a>
+        {% endif %}
+
+        {% content_for 'block', type: 'links', id: 'mobile-links' %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "t:names.header_navigation",
+  "tag": null,
+  "blocks": [
+    {
+      "type": "_header-navigation-item"
+    }
+  ],
+  "settings": []
+}
+{% endschema %}

@@ -1,0 +1,56 @@
+{% comment %}
+  Collection (PLP) JSON-LD — CollectionPage > ItemList of Products.
+  Rendered from structured-data.liquid (page <head>) on collection pages.
+
+  This is intentionally DECOUPLED from the visible product grid: the grid uses
+  load-more (no crawlable ?page navigation), so tying the schema to the grid
+  slice would only ever expose the first page of products to search engines.
+  Instead we enumerate the collection independently, up to Shopify Liquid's
+  paginate ceiling of 250, so the canonical collection URL advertises the full
+  catalog (products beyond 250 remain covered by their PDP schema + sitemap).
+
+  Notes:
+    - Multi-variant products emit AggregateOffer (low/high price); single-variant
+      products emit a single Offer, mirroring the legacy site.
+{% endcomment %}
+{%- # theme-check-disable PaginationSize -%}
+{%- paginate collection.products by 250 -%}
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org/",
+      "@type": "CollectionPage",
+      "name": {{ collection.title | json }},
+      "description": {{ collection.description | strip_html | strip_newlines | json }},
+      "url": {{ request.origin | append: collection.url | json }},
+      "primaryImageOfPage": {% if collection.image %}{{ collection.image | image_url: width: 1200 | prepend: 'https:' | json }}{% else %}""{% endif %},
+      "mainEntity": {
+        "@type": "ItemList",
+        "itemListElement": [
+          {%- for product in collection.products -%}
+            {
+              "@type": "ListItem",
+              "position": {{ forloop.index | plus: paginate.current_offset }},
+              "item": {
+                "@type": "Product",
+                "name": {{ product.title | json }},
+                "image": {% if product.featured_image %}{{ product.featured_image | image_url: width: 800 | prepend: 'https:' | json }}{% else %}""{% endif %},
+                "offers": {% if product.variants.size > 1 %}{
+                  "@type": "AggregateOffer",
+                  "lowPrice": {{ product.price_min | divided_by: 100.0 }},
+                  "highPrice": {{ product.price_max | divided_by: 100.0 }},
+                  "priceCurrency": {{ cart.currency.iso_code | json }}
+                }{% else %}{
+                  "@type": "Offer",
+                  "price": {{ product.price | divided_by: 100.0 }},
+                  "priceCurrency": {{ cart.currency.iso_code | json }}
+                }{% endif %},
+                "url": {{ request.origin | append: product.url | json }}
+              }
+            }{%- unless forloop.last -%},{%- endunless -%}
+          {%- endfor -%}
+        ]
+      }
+    }
+  </script>
+{%- endpaginate -%}
+{%- # theme-check-enable PaginationSize -%}

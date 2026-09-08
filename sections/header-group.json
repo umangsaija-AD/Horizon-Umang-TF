@@ -1,0 +1,892 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "type": "header",
+  "name": "Header",
+  "sections": {
+    "header_announcements_9jGBFp": {
+      "type": "header-announcements",
+      "blocks": {
+        "announcement_BxgCk9": {
+          "type": "_announcement",
+          "settings": {
+            "text": "Save Up to 25% Off Select Valentine's Day Gifts! <a href=\"#\" title=\"#\"><span style=\"text-decoration:underline\"><strong>Shop Now</strong></span></a>",
+            "link": "shopify://collections",
+            "type_preset": "label",
+            "font": "var(--font-body--family)",
+            "font_size": "1rem",
+            "weight": "",
+            "case": "none"
+          },
+          "blocks": {}
+        },
+        "header-announcements-links": {
+          "type": "links",
+          "static": true,
+          "settings": {
+            "menu": "top-support-links",
+            "layout_direction": "row",
+            "link_gap": 12,
+            "type_preset": "label",
+            "link_font_weight": "600",
+            "font": "var(--font-body--family)",
+            "font_size": "1rem",
+            "weight": "",
+            "case": "none",
+            "padding-block-start": 8,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 24
+          },
+          "blocks": {}
+        }
+      },
+      "block_order": [
+        "announcement_BxgCk9"
+      ],
+      "name": "t:names.announcement_bar",
+      "settings": {
+        "speed": 5,
+        "section_width": "page-width",
+        "color_scheme": "scheme-58084d4c-a86e-4d0a-855e-a0966e5043f7",
+        "divider_width": 1,
+        "padding-block-start": 8,
+        "padding-block-end": 8
+      }
+    },
+    "header_section": {
+      "type": "header",
+      "blocks": {
+        "header-logo": {
+          "type": "_header-logo",
+          "static": true,
+          "settings": {
+            "hide_logo_on_home_page": false,
+            "padding-block-start": 0,
+            "padding-block-end": 0
+          },
+          "blocks": {}
+        },
+        "header-navigation": {
+          "type": "_header-nav",
+          "static": true,
+          "settings": {},
+          "blocks": {
+            "header_navigation_item_fEe3aU": {
+              "type": "_header-navigation-item",
+              "name": "t:names.menu_item",
+              "settings": {
+                "title": "Shop All",
+                "link": "",
+                "submenu": "shop-all",
+                "text_color": "#1d1d1d",
+                "highlight_titles": "Shop All",
+                "highlight_color": "#e10600",
+                "visibility": "desktop"
+              },
+              "blocks": {
+                "header_nav_promo_banner_7RLQpq": {
+                  "type": "_header-nav-promo-banner",
+                  "name": "t:names.nav_promo_banner",
+                  "settings": {
+                    "label": "Save up to 25%",
+                    "title": "<p>Create Your Own Bundle</p>",
+                    "image": "shopify://shop_images/banner_1.jpg",
+                    "link": "shopify://collections"
+                  },
+                  "blocks": {}
+                },
+                "header_nav_promo_banner_4iy9w7": {
+                  "type": "_header-nav-promo-banner",
+                  "name": "t:names.nav_promo_banner",
+                  "settings": {
+                    "label": "Save 15%",
+                    "title": "<p>Most Popular Employee<br/>Appreciation Gifts</p>",
+                    "image": "shopify://shop_images/banner_2.jpg",
+                    "link": "#"
+                  },
+                  "blocks": {}
+                }
+              },
+              "block_order": [
+                "header_nav_promo_banner_7RLQpq",
+                "header_nav_promo_banner_4iy9w7"
+              ]
+            },
+            "header_navigation_item_rKCdmk": {
+              "type": "_header-navigation-item",
+              "name": "t:names.menu_item",
+              "settings": {
+                "title": "Occasions",
+                "link": "",
+                "submenu": "occasions",
+                "text_color": "#1d1d1d",
+                "highlight_titles": "Shop All",
+                "highlight_color": "#e10600",
+                "visibility": "mobile"
+              },
+              "blocks": {}
+            },
+            "header_navigation_item_eKNyNb": {
+              "type": "_header-navigation-item",
+              "name": "t:names.menu_item",
+              "settings": {
+                "title": "Same Day",
+                "link": "shopify://collections",
+                "submenu": "",
+                "icon": "shopify://shop_images/lightning_8725091e-edc1-454b-a0bf-40295056a5b1.svg",
+                "text_color": "#1d1d1d",
+                "highlight_titles": "",
+                "highlight_color": "",
+                "visibility": "both"
+              },
+              "blocks": {}
+            },
+            "header_navigation_item_4zVrkF": {
+              "type": "_header-navigation-item",
+              "name": "t:names.menu_item",
+              "settings": {
+                "title": "Valentine’s Day",
+                "link": "shopify://collections/all",
+                "submenu": "",
+                "text_color": "#e10600",
+                "highlight_titles": "",
+                "highlight_color": "",
+                "visibility": "both"
+              },
+              "blocks": {}
+            },
+            "header_navigation_item_F3CxRd": {
+              "type": "_header-navigation-item",
+              "name": "t:names.menu_item",
+              "settings": {
+                "title": "Under $50",
+                "link": "#",
+                "submenu": "",
+                "text_color": "#1d1d1d",
+                "highlight_titles": "",
+                "highlight_color": "",
+                "visibility": "both"
+              },
+              "blocks": {}
+            },
+            "header_navigation_item_eMJy6m": {
+              "type": "_header-navigation-item",
+              "name": "t:names.menu_item",
+              "settings": {
+                "title": "Create Your Own",
+                "link": "shopify://pages/bundle-builder",
+                "submenu": "",
+                "text_color": "#1d1d1d",
+                "highlight_titles": "",
+                "highlight_color": "",
+                "visibility": "both"
+              },
+              "blocks": {}
+            },
+            "header_navigation_item_NMdQEG": {
+              "type": "_header-navigation-item",
+              "name": "t:names.menu_item",
+              "settings": {
+                "title": "Shop All",
+                "link": "shopify://collections/shop-all",
+                "submenu": "",
+                "text_color": "#1d1d1d",
+                "highlight_titles": "",
+                "highlight_color": "",
+                "visibility": "mobile"
+              },
+              "blocks": {}
+            },
+            "mobile-menu-carousel": {
+              "type": "_mobile-menu-carousel",
+              "static": true,
+              "settings": {
+                "carousel_item_width": 90,
+                "carousel_gap": 8
+              },
+              "blocks": {
+                "mobile_menu_carousel_item_caqcdn": {
+                  "type": "_mobile-menu-carousel-item",
+                  "name": "Mobile Menu Carousel Item",
+                  "settings": {},
+                  "blocks": {
+                    "image_ThyPEi": {
+                      "type": "image",
+                      "name": "t:names.image",
+                      "settings": {
+                        "image": "shopify://shop_images/Product_Flowers.png",
+                        "use_as_background": false,
+                        "link": "https://myedible.myshopify.com/",
+                        "image_ratio": "adapt",
+                        "custom_ratio_width": 1,
+                        "custom_ratio_height": 1,
+                        "image_ratio_mobile": "same",
+                        "custom_ratio_width_mobile": 1,
+                        "custom_ratio_height_mobile": 1,
+                        "width": "fill",
+                        "custom_width": 100,
+                        "width_mobile": "fill",
+                        "custom_width_mobile": 100,
+                        "height": "fit",
+                        "border": "none",
+                        "border_width": 1,
+                        "border_opacity": 100,
+                        "border_radius": 8,
+                        "enable_parallax": false,
+                        "parallax_overflow": "bottom",
+                        "parallax_image_style": "cover",
+                        "padding-block-start": 0,
+                        "padding-block-end": 0,
+                        "padding-inline-start": 0,
+                        "padding-inline-end": 0
+                      },
+                      "blocks": {}
+                    },
+                    "text_467VUe": {
+                      "type": "text",
+                      "name": "t:names.heading",
+                      "settings": {
+                        "text": "<p>Arrangements</p>",
+                        "enable_read_more": false,
+                        "read_more_label": "Read more",
+                        "read_less_label": "Read less",
+                        "characters_limit": 0,
+                        "width": "100%",
+                        "max_width": "normal",
+                        "alignment": "center",
+                        "type_preset": "label",
+                        "type_preset_desktop": "",
+                        "weight": "600",
+                        "color": "var(--color-foreground)",
+                        "highlight_color": "var(--color-primary)",
+                        "custom_highlight_color": "#1d1d1d",
+                        "background": false,
+                        "background_color": "#00000026",
+                        "corner_radius": 0,
+                        "padding-block-start": 0,
+                        "padding-block-end": 0,
+                        "padding-inline-start": 0,
+                        "padding-inline-end": 0
+                      },
+                      "blocks": {}
+                    }
+                  },
+                  "block_order": [
+                    "image_ThyPEi",
+                    "text_467VUe"
+                  ]
+                },
+                "mobile_menu_carousel_item_PhpkPz": {
+                  "type": "_mobile-menu-carousel-item",
+                  "name": "Mobile Menu Carousel Item",
+                  "settings": {},
+                  "blocks": {
+                    "image_qVhXdw": {
+                      "type": "image",
+                      "name": "t:names.image",
+                      "settings": {
+                        "image": "shopify://shop_images/Product_Flowers.png",
+                        "use_as_background": false,
+                        "link": "",
+                        "image_ratio": "adapt",
+                        "custom_ratio_width": 1,
+                        "custom_ratio_height": 1,
+                        "image_ratio_mobile": "same",
+                        "custom_ratio_width_mobile": 1,
+                        "custom_ratio_height_mobile": 1,
+                        "width": "fill",
+                        "custom_width": 100,
+                        "width_mobile": "fill",
+                        "custom_width_mobile": 100,
+                        "height": "fit",
+                        "border": "none",
+                        "border_width": 1,
+                        "border_opacity": 100,
+                        "border_radius": 8,
+                        "enable_parallax": false,
+                        "parallax_overflow": "bottom",
+                        "parallax_image_style": "cover",
+                        "padding-block-start": 0,
+                        "padding-block-end": 0,
+                        "padding-inline-start": 0,
+                        "padding-inline-end": 0
+                      },
+                      "blocks": {}
+                    },
+                    "text_BWgWNp": {
+                      "type": "text",
+                      "name": "t:names.heading",
+                      "settings": {
+                        "text": "<p>Platters & Boards</p>",
+                        "enable_read_more": false,
+                        "read_more_label": "Read more",
+                        "read_less_label": "Read less",
+                        "characters_limit": 0,
+                        "width": "100%",
+                        "max_width": "normal",
+                        "alignment": "center",
+                        "type_preset": "label",
+                        "type_preset_desktop": "",
+                        "weight": "600",
+                        "color": "var(--color-foreground)",
+                        "highlight_color": "var(--color-primary)",
+                        "custom_highlight_color": "#1d1d1d",
+                        "background": false,
+                        "background_color": "#00000026",
+                        "corner_radius": 0,
+                        "padding-block-start": 0,
+                        "padding-block-end": 0,
+                        "padding-inline-start": 0,
+                        "padding-inline-end": 0
+                      },
+                      "blocks": {}
+                    }
+                  },
+                  "block_order": [
+                    "image_qVhXdw",
+                    "text_BWgWNp"
+                  ]
+                },
+                "mobile_menu_carousel_item_HKy4Qa": {
+                  "type": "_mobile-menu-carousel-item",
+                  "name": "Mobile Menu Carousel Item",
+                  "settings": {},
+                  "blocks": {
+                    "image_Cd6icD": {
+                      "type": "image",
+                      "name": "t:names.image",
+                      "settings": {
+                        "image": "shopify://shop_images/Product_Flowers.png",
+                        "use_as_background": false,
+                        "link": "",
+                        "image_ratio": "adapt",
+                        "custom_ratio_width": 1,
+                        "custom_ratio_height": 1,
+                        "image_ratio_mobile": "same",
+                        "custom_ratio_width_mobile": 1,
+                        "custom_ratio_height_mobile": 1,
+                        "width": "fill",
+                        "custom_width": 100,
+                        "width_mobile": "fill",
+                        "custom_width_mobile": 100,
+                        "height": "fit",
+                        "border": "none",
+                        "border_width": 1,
+                        "border_opacity": 100,
+                        "border_radius": 8,
+                        "enable_parallax": false,
+                        "parallax_overflow": "bottom",
+                        "parallax_image_style": "cover",
+                        "padding-block-start": 0,
+                        "padding-block-end": 0,
+                        "padding-inline-start": 0,
+                        "padding-inline-end": 0
+                      },
+                      "blocks": {}
+                    },
+                    "text_gdpqC7": {
+                      "type": "text",
+                      "name": "t:names.heading",
+                      "settings": {
+                        "text": "<p>Baked Goods</p>",
+                        "enable_read_more": false,
+                        "read_more_label": "Read more",
+                        "read_less_label": "Read less",
+                        "characters_limit": 0,
+                        "width": "100%",
+                        "max_width": "normal",
+                        "alignment": "center",
+                        "type_preset": "label",
+                        "type_preset_desktop": "",
+                        "weight": "600",
+                        "color": "var(--color-foreground)",
+                        "highlight_color": "var(--color-primary)",
+                        "custom_highlight_color": "#1d1d1d",
+                        "background": false,
+                        "background_color": "#00000026",
+                        "corner_radius": 0,
+                        "padding-block-start": 0,
+                        "padding-block-end": 0,
+                        "padding-inline-start": 0,
+                        "padding-inline-end": 0
+                      },
+                      "blocks": {}
+                    }
+                  },
+                  "block_order": [
+                    "image_Cd6icD",
+                    "text_gdpqC7"
+                  ]
+                },
+                "mobile_menu_carousel_item_rgQJzE": {
+                  "type": "_mobile-menu-carousel-item",
+                  "name": "Mobile Menu Carousel Item",
+                  "settings": {},
+                  "blocks": {
+                    "image_64HNY9": {
+                      "type": "image",
+                      "name": "t:names.image",
+                      "settings": {
+                        "image": "shopify://shop_images/Product_Flowers.png",
+                        "use_as_background": false,
+                        "link": "",
+                        "image_ratio": "adapt",
+                        "custom_ratio_width": 1,
+                        "custom_ratio_height": 1,
+                        "image_ratio_mobile": "same",
+                        "custom_ratio_width_mobile": 1,
+                        "custom_ratio_height_mobile": 1,
+                        "width": "fill",
+                        "custom_width": 100,
+                        "width_mobile": "fill",
+                        "custom_width_mobile": 100,
+                        "height": "fit",
+                        "border": "none",
+                        "border_width": 1,
+                        "border_opacity": 100,
+                        "border_radius": 8,
+                        "enable_parallax": false,
+                        "parallax_overflow": "bottom",
+                        "parallax_image_style": "cover",
+                        "padding-block-start": 0,
+                        "padding-block-end": 0,
+                        "padding-inline-start": 0,
+                        "padding-inline-end": 0
+                      },
+                      "blocks": {}
+                    },
+                    "text_Wbz6jf": {
+                      "type": "text",
+                      "name": "t:names.heading",
+                      "settings": {
+                        "text": "<p>Arrangements</p>",
+                        "enable_read_more": false,
+                        "read_more_label": "Read more",
+                        "read_less_label": "Read less",
+                        "characters_limit": 0,
+                        "width": "100%",
+                        "max_width": "normal",
+                        "alignment": "center",
+                        "type_preset": "label",
+                        "type_preset_desktop": "",
+                        "weight": "600",
+                        "color": "var(--color-foreground)",
+                        "highlight_color": "var(--color-primary)",
+                        "custom_highlight_color": "#1d1d1d",
+                        "background": false,
+                        "background_color": "#00000026",
+                        "corner_radius": 0,
+                        "padding-block-start": 0,
+                        "padding-block-end": 0,
+                        "padding-inline-start": 0,
+                        "padding-inline-end": 0
+                      },
+                      "blocks": {}
+                    }
+                  },
+                  "block_order": [
+                    "image_64HNY9",
+                    "text_Wbz6jf"
+                  ]
+                }
+              },
+              "block_order": [
+                "mobile_menu_carousel_item_caqcdn",
+                "mobile_menu_carousel_item_PhpkPz",
+                "mobile_menu_carousel_item_HKy4Qa",
+                "mobile_menu_carousel_item_rgQJzE"
+              ]
+            },
+            "header-nav-promo-banner": {
+              "type": "_header-nav-promo-banner",
+              "static": true,
+              "settings": {
+                "label": "Save 15%",
+                "title": "<p>Most Popular Employee<br/>Appreciation Gifts</p>",
+                "image": "shopify://shop_images/banner_1.jpg",
+                "link": "#"
+              },
+              "blocks": {}
+            },
+            "mobile-links": {
+              "type": "links",
+              "name": "Mobile Links",
+              "static": true,
+              "settings": {
+                "menu": "mobile-bottom-links",
+                "layout_direction": "column",
+                "link_gap": 12,
+                "type_preset": "body-regular",
+                "link_font_weight": "",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "weight": "",
+                "case": "none",
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            }
+          },
+          "block_order": [
+            "header_navigation_item_fEe3aU",
+            "header_navigation_item_rKCdmk",
+            "header_navigation_item_eKNyNb",
+            "header_navigation_item_4zVrkF",
+            "header_navigation_item_F3CxRd",
+            "header_navigation_item_eMJy6m",
+            "header_navigation_item_NMdQEG"
+          ]
+        },
+        "country-selector": {
+          "type": "country-selector",
+          "static": true,
+          "settings": {
+            "enable_on": "desktop",
+            "show_currency_code": false,
+            "show_flag": true,
+            "show_language_selector": true
+          },
+          "blocks": {}
+        },
+        "search-drawer": {
+          "type": "_search-drawer",
+          "static": true,
+          "settings": {
+            "placeholder_text": "Search florals, treats, and more",
+            "title": "Bestseller",
+            "collection": "baked-goods",
+            "top_searchs": "one, two, three"
+          },
+          "blocks": {
+            "product-card": {
+              "type": "_product-card",
+              "static": true,
+              "settings": {},
+              "blocks": {
+                "delivery_availability_3Cnge9": {
+                  "type": "_delivery-availability",
+                  "name": "Delivery Availability",
+                  "settings": {
+                    "typography_mobile": "label",
+                    "typography_desktop": "",
+                    "font_weight_mobile": "500",
+                    "font_weight_desktop": "",
+                    "color": "#1b873d",
+                    "non_promotional_color": "#e10600",
+                    "margin_bottom_mobile": 4,
+                    "margin_bottom_desktop": 4
+                  },
+                  "blocks": {}
+                },
+                "product_title_KNycdF": {
+                  "type": "product-title",
+                  "name": "t:names.title",
+                  "settings": {
+                    "width": "fit-content",
+                    "max_width": "normal",
+                    "alignment": "left",
+                    "type_preset": "body-small",
+                    "type_preset_desktop": "body-regular",
+                    "weight": "",
+                    "weight_desktop": "",
+                    "color": "var(--color-foreground)",
+                    "background": false,
+                    "background_color": "#00000026",
+                    "corner_radius": 0,
+                    "padding-block-start": 0,
+                    "padding-block-end": 0,
+                    "padding-inline-start": 0,
+                    "padding-inline-end": 0,
+                    "margin_bottom_mobile": 8,
+                    "margin_bottom_desktop": 12
+                  },
+                  "blocks": {}
+                },
+                "product_options_count_taMf6W": {
+                  "type": "_product-options-count",
+                  "name": "Product Options Count",
+                  "settings": {
+                    "typography_mobile": "label",
+                    "typography_desktop": "body-small",
+                    "font_weight_mobile": "400",
+                    "font_weight_desktop": "",
+                    "margin_bottom_mobile": 10,
+                    "margin_bottom_desktop": 6
+                  },
+                  "blocks": {}
+                },
+                "product_price_info_PipWLQ": {
+                  "type": "_product-price-info",
+                  "name": "Product Price Info",
+                  "settings": {
+                    "typography_mobile": "label",
+                    "typography_desktop": "body-small",
+                    "font_weight_mobile": "500",
+                    "font_weight_desktop": "",
+                    "margin_bottom_mobile": 4,
+                    "margin_bottom_desktop": 6
+                  },
+                  "blocks": {}
+                },
+                "product_discount_info_YKMnVi": {
+                  "type": "_product-discount-info",
+                  "name": "Product Discount Info",
+                  "settings": {
+                    "typography_mobile": "label",
+                    "typography_desktop": "body-small",
+                    "font_weight_mobile": "500",
+                    "font_weight_desktop": "",
+                    "color": "#a00400",
+                    "margin_bottom_mobile": 0,
+                    "margin_bottom_desktop": 0
+                  },
+                  "blocks": {}
+                },
+                "product-badge": {
+                  "type": "_product-badge",
+                  "static": true,
+                  "settings": {},
+                  "blocks": {}
+                },
+                "product-image-gallery": {
+                  "type": "_product-image-gallery",
+                  "static": true,
+                  "settings": {
+                    "gradient_style": "product-media-primary"
+                  },
+                  "blocks": {}
+                },
+                "bundle-builder-cta": {
+                  "type": "_bundle-builder-button",
+                  "static": true,
+                  "settings": {
+                    "label": "Add",
+                    "style_class": "button",
+                    "weight": "",
+                    "button_size": "theme",
+                    "button_size_mobile": "theme",
+                    "width": "fit-content",
+                    "custom_width": 100,
+                    "width_mobile": "fit-content",
+                    "custom_width_mobile": 100
+                  },
+                  "blocks": {}
+                },
+                "product-card-atc": {
+                  "type": "product-card-atc",
+                  "static": true,
+                  "settings": {
+                    "color_scheme": ""
+                  },
+                  "blocks": {
+                    "button": {
+                      "type": "button",
+                      "static": true,
+                      "settings": {
+                        "element_type": "button",
+                        "label": "Add To Cart",
+                        "link": "",
+                        "open_in_new_tab": false,
+                        "style_class": "button",
+                        "weight": "",
+                        "button_size": "medium",
+                        "button_size_mobile": "small",
+                        "width": "fit-content",
+                        "custom_width": 100,
+                        "width_mobile": "fit-content",
+                        "custom_width_mobile": 100
+                      },
+                      "blocks": {}
+                    }
+                  },
+                  "block_order": []
+                }
+              },
+              "block_order": [
+                "delivery_availability_3Cnge9",
+                "product_title_KNycdF",
+                "product_options_count_taMf6W",
+                "product_price_info_PipWLQ",
+                "product_discount_info_YKMnVi"
+              ]
+            }
+          },
+          "block_order": []
+        }
+      },
+      "settings": {
+        "header_wrapper_drop_shadow": "sm"
+      }
+    },
+    "personalization_drawer": {
+      "type": "personalization-drawer",
+      "blocks": {
+        "pd_variant_selector": {
+          "type": "variant-selector",
+          "settings": {
+            "heading": "Select size"
+          }
+        },
+        "pd_gift_addons": {
+          "type": "gift-addon-tab",
+          "settings": {
+            "heading": "Add to your gift",
+            "subtitle": "Make them feel extra special."
+          }
+        },
+        "pd_message_greeting": {
+          "type": "message-option",
+          "settings": {
+            "title": "Add a real custom greeting card",
+            "product": "premium-greeting-card",
+            "button_label": "Add",
+            "is_complementary": false,
+            "iframe_url": "https://printible.ediblearrangements.com/?token=MTc4MDM4OTYwNDU0OQ==&locale=en-US",
+            "description_text": "Tell your loved one how much they mean to you.",
+            "max_characters": 300,
+            "tab_write_own": "Write my own",
+            "tab_generate": "Write one for me"
+          }
+        },
+        "pd_message_gift_note": {
+          "type": "message-option",
+          "settings": {
+            "title": "Send a complimentary gift message",
+            "product": "complimentary-gift-message",
+            "button_label": "Add - FREE",
+            "is_complementary": true,
+            "iframe_url": "https://printible.ediblearrangements.com/?token=MTc4MDM4OTYwNDU0OQ==&locale=en-US",
+            "description_text": "Tell your loved one how much they mean to you.",
+            "max_characters": 300,
+            "tab_write_own": "Write my own",
+            "tab_generate": "Write one for me"
+          }
+        },
+        "pd_digital_card": {
+          "type": "digital-card",
+          "settings": {
+            "product": "goody-digital-card",
+            "heading": "Add a free digital card",
+            "subtitle": "Your digital card will include your selections below, a tracking number, and a summary of the products being sent.",
+            "card_label": "Add your card",
+            "card_label_active": "Edit your card",
+            "button_label": "Add - FREE",
+            "active_heading": "How would you like to send your FREE digital card?",
+            "active_description": "On completing your purchase, your digital card will be delivered to the recipient via either text or email as chosen below.",
+            "tab_text": "Text",
+            "tab_email": "Email",
+            "phone_placeholder": "Enter your recipient's phone number*",
+            "email_placeholder": "Enter your recipient's email*",
+            "info_banner_text": "Please add a Digital Card to continue to checkout"
+          }
+        },
+        "pd_gift_wrap": {
+          "type": "gift-wrap",
+          "settings": {
+            "description": "Choose your premium gift wrapping!",
+            "learn_more_text": "Learn More"
+          }
+        }
+      },
+      "block_order": [
+        "pd_variant_selector",
+        "pd_gift_addons",
+        "pd_message_greeting",
+        "pd_message_gift_note",
+        "pd_digital_card",
+        "pd_gift_wrap"
+      ],
+      "settings": {
+        "heading": "Personalize your gift"
+      }
+    },
+    "ea_cart_drawer": {
+      "type": "ea-cart-drawer",
+      "settings": {
+        "color_scheme": "scheme-1",
+        "heading": "Your Cart",
+        "edit_item_title": "Edit your item",
+        "variant_delivery_availability_color": "#526f1b",
+        "gift_upgrades_title": "Upgrade your gift",
+        "progress_text": "Spend [amount] more to unlock free next day delivery!",
+        "progress_complete_text": "Yay! You have unlocked free next day delivery!",
+        "show_confetti_animation": true,
+        "free_delivery_threshold": 100,
+        "progress_color": "#e10600",
+        "show_bundle_discount_progress": true,
+        "checkout_button_text": "Continue to Checkout",
+        "delivery_price": "15.99",
+        "delivery_label": "1-Hour Delivery",
+        "empty_heading": "Your cart is empty",
+        "empty_text": "Not sure where to start?",
+        "empty_collections": [
+          "same-day-delivery",
+          "1-hour-delivery",
+          "catering",
+          "create-your-own"
+        ],
+        "empty_bg_color_1": "#fbf7f5",
+        "empty_bg_color_2": "#f2e7df",
+        "gift_wrap_description": "Choose your premium gift wrapping!",
+        "gift_wrap_learn_more_text": "Learn More",
+        "gift_wrap_learn_more_panel_title": "Complimentary Gift Wrapping",
+        "gift_message_title": "Add a personal message",
+        "gift_message_subtitle": "Include a message or greeting card.",
+        "gift_message_panel_title": "Send a complimentary gift message",
+        "greeting_card_panel_title": "Customize Greeting Card",
+        "personal_message_background": "#fbf7f5",
+        "cart_conflict_title": "Before you start..",
+        "cart_conflict_description": "You cannot combine regular items with bundle items.\nDo you wish to replace items currently in your cart with your bundle?",
+        "cart_conflict_clear_cta_text": "Clear Cart and Continue",
+        "cart_conflict_keep_cta_text": "Keep my Cart"
+      }
+    },
+    "ea_bundle_builder_drawer": {
+      "type": "ea-bundle-builder-drawer",
+      "settings": {
+        "heading": "Build your bundle",
+        "add_to_cart_text": "Add to Cart",
+        "total_savings_label": "Total Savings",
+        "variant_select_title": "Select Variant",
+        "progress_color": "#e10600",
+        "max_quantity": 9,
+        "secondary_add_text": "Add",
+        "gift_wrap_description": "Choose your premium gift wrapping!",
+        "gift_wrap_learn_more_text": "Learn More",
+        "step_1_title": "Choose your first item",
+        "step_1_shop_all_link": "shopify://pages/bundle-builder",
+        "step_2_title": "Add more, save more",
+        "step_2_subtitle": "The more you add, the more you save.",
+        "step_3_title": "Add a personal message",
+        "step_3_subtitle": "Make it extra special with a note or card.",
+        "gc_product": "",
+        "gc_iframe_url": "https://printible.ediblearrangements.com/?token=MTc4MDM4OTYwNDU0OQ==&locale=en-US",
+        "gc_title": "Add a real custom greeting card",
+        "gc_button_label": "Add",
+        "gm_product": "",
+        "gm_title": "Send a complimentary gift message",
+        "gm_button_label": "Add - FREE",
+        "gm_description": "Tell your loved one how much they mean to you.",
+        "gm_max_characters": 300
+      }
+    }
+  },
+  "order": [
+    "header_announcements_9jGBFp",
+    "header_section",
+    "personalization_drawer",
+    "ea_cart_drawer",
+    "ea_bundle_builder_drawer"
+  ]
+}

@@ -1,0 +1,1453 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "collection_header": {
+      "type": "collection-header",
+      "blocks": {
+        "breadcrumb": {
+          "type": "breadcrumb",
+          "static": true,
+          "settings": {},
+          "blocks": {}
+        },
+        "title": {
+          "type": "text",
+          "static": true,
+          "settings": {
+            "text": "<p>{{ closest.collection.title }}</p>",
+            "enable_read_more": false,
+            "read_more_label": "Read more",
+            "read_less_label": "Read less",
+            "characters_limit": 0,
+            "width": "fit-content",
+            "max_width": "normal",
+            "alignment": "left",
+            "type_preset": "h1",
+            "type_preset_desktop": "",
+            "weight": "600",
+            "color": "var(--color-foreground-heading)",
+            "highlight_color": "var(--color-primary)",
+            "custom_highlight_color": "#1d1d1d",
+            "background": false,
+            "background_color": "#00000026",
+            "corner_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {}
+        }
+      },
+      "name": "Collection Header",
+      "settings": {
+        "color_scheme": "scheme-1",
+        "header_overlap": false,
+        "mobile_padding_top": 16,
+        "mobile_padding_bottom": 16,
+        "desktop_padding_top": 48,
+        "desktop_padding_bottom": 24
+      }
+    },
+    "collection_viewer": {
+      "type": "collection-viewer",
+      "blocks": {
+        "promotional_card_4h3YmR": {
+          "type": "promotional-card",
+          "name": "Promotional Card",
+          "settings": {
+            "row_index": 1,
+            "column_index": 0,
+            "column_span": 1,
+            "row_index_mobile": -1,
+            "column_index_mobile": -1,
+            "vertical_alignment": "top",
+            "horizontal_alignment": "left",
+            "color_scheme": "scheme-5",
+            "background_color": "rgba(0,0,0,0)"
+          },
+          "blocks": {
+            "image_bxTDb3": {
+              "type": "image",
+              "name": "t:names.image",
+              "settings": {
+                "image": "shopify://shop_images/Promo_Image.jpg",
+                "use_as_background": true,
+                "link": "",
+                "image_ratio": "adapt",
+                "custom_ratio_width": 1,
+                "custom_ratio_height": 1,
+                "image_ratio_mobile": "same",
+                "custom_ratio_width_mobile": 1,
+                "custom_ratio_height_mobile": 1,
+                "width": "fill",
+                "custom_width": 100,
+                "width_mobile": "fill",
+                "custom_width_mobile": 100,
+                "height": "fit",
+                "border": "none",
+                "border_width": 1,
+                "border_opacity": 100,
+                "border_radius": 8,
+                "enable_parallax": false,
+                "parallax_overflow": "bottom",
+                "parallax_image_style": "cover",
+                "padding-block-start": 0,
+                "padding-block-end": 12,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "text_iCtgfi": {
+              "type": "text",
+              "name": "t:names.heading",
+              "settings": {
+                "text": "<p>Celebrate with 15% off fruit gifts</p>",
+                "enable_read_more": false,
+                "read_more_label": "Read more",
+                "read_less_label": "Read less",
+                "characters_limit": 0,
+                "width": "fit-content",
+                "max_width": "normal",
+                "alignment": "left",
+                "type_preset": "h3",
+                "type_preset_desktop": "",
+                "weight": "600",
+                "color": "var(--color-foreground)",
+                "highlight_color": "var(--color-primary)",
+                "custom_highlight_color": "#1d1d1d",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 0,
+                "padding-block-end": 8,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "text_ax9LTU": {
+              "type": "text",
+              "name": "t:names.text",
+              "settings": {
+                "text": "<p>Delicious fruit gifts at special<br/>limited-time prices</p>",
+                "enable_read_more": false,
+                "read_more_label": "Read more",
+                "read_less_label": "Read less",
+                "characters_limit": 0,
+                "width": "fit-content",
+                "max_width": "normal",
+                "alignment": "left",
+                "type_preset": "body-regular",
+                "type_preset_desktop": "",
+                "weight": "",
+                "color": "var(--color-foreground)",
+                "highlight_color": "var(--color-primary)",
+                "custom_highlight_color": "#1d1d1d",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 0,
+                "padding-block-end": 8,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "button_cwykLE": {
+              "type": "button",
+              "name": "t:names.button",
+              "settings": {
+                "element_type": "link",
+                "label": "Explore Deals",
+                "link": "shopify://collections/all",
+                "open_in_new_tab": false,
+                "style_class": "link",
+                "weight": "",
+                "button_size": "small",
+                "button_size_mobile": "theme",
+                "width": "fit-content",
+                "custom_width": 100,
+                "width_mobile": "fit-content",
+                "custom_width_mobile": 100
+              },
+              "blocks": {}
+            }
+          },
+          "block_order": [
+            "image_bxTDb3",
+            "text_iCtgfi",
+            "text_ax9LTU",
+            "button_cwykLE"
+          ]
+        },
+        "filters": {
+          "type": "filters",
+          "static": true,
+          "settings": {},
+          "blocks": {}
+        },
+        "product-card": {
+          "type": "_product-card",
+          "static": true,
+          "settings": {},
+          "blocks": {
+            "delivery_availability_a9RTTz": {
+              "type": "_delivery-availability",
+              "name": "Delivery Availability",
+              "settings": {
+                "typography_mobile": "label",
+                "typography_desktop": "label",
+                "font_weight_mobile": "500",
+                "font_weight_desktop": "500",
+                "color": "#1b873d",
+                "non_promotional_color": "#e10600",
+                "margin_bottom_mobile": 4,
+                "margin_bottom_desktop": 4
+              },
+              "blocks": {}
+            },
+            "product_title_JCGNca": {
+              "type": "product-title",
+              "name": "t:names.title",
+              "settings": {
+                "width": "fit-content",
+                "max_width": "normal",
+                "alignment": "left",
+                "type_preset": "body-small",
+                "type_preset_desktop": "body-regular",
+                "weight": "600",
+                "weight_desktop": "",
+                "color": "var(--color-foreground)",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0,
+                "margin_bottom_mobile": 8,
+                "margin_bottom_desktop": 12
+              },
+              "blocks": {}
+            },
+            "product_options_count_3HRWfW": {
+              "type": "_product-options-count",
+              "name": "Product Options Count",
+              "settings": {
+                "typography_mobile": "label",
+                "typography_desktop": "body-small",
+                "font_weight_mobile": "400",
+                "font_weight_desktop": "400",
+                "margin_bottom_mobile": 10,
+                "margin_bottom_desktop": 6
+              },
+              "blocks": {}
+            },
+            "product_price_info_w4R4wP": {
+              "type": "_product-price-info",
+              "name": "Product Price Info",
+              "settings": {
+                "typography_mobile": "label",
+                "typography_desktop": "body-small",
+                "font_weight_mobile": "500",
+                "font_weight_desktop": "500",
+                "margin_bottom_mobile": 4,
+                "margin_bottom_desktop": 6
+              },
+              "blocks": {}
+            },
+            "product_discount_info_zUmJCK": {
+              "type": "_product-discount-info",
+              "name": "Product Discount Info",
+              "settings": {
+                "typography_mobile": "label",
+                "typography_desktop": "body-small",
+                "font_weight_mobile": "500",
+                "font_weight_desktop": "500",
+                "color": "#a00400",
+                "margin_bottom_mobile": 0,
+                "margin_bottom_desktop": 0
+              },
+              "blocks": {}
+            },
+            "product-badge": {
+              "type": "_product-badge",
+              "static": true,
+              "settings": {},
+              "blocks": {}
+            },
+            "product-image-gallery": {
+              "type": "_product-image-gallery",
+              "static": true,
+              "settings": {
+                "gradient_style": "none"
+              },
+              "blocks": {}
+            },
+            "bundle-builder-cta": {
+              "type": "_bundle-builder-button",
+              "static": true,
+              "settings": {
+                "label": "Add",
+                "style_class": "button",
+                "weight": "",
+                "button_size": "theme",
+                "button_size_mobile": "theme",
+                "width": "fit-content",
+                "custom_width": 100,
+                "width_mobile": "fit-content",
+                "custom_width_mobile": 100
+              },
+              "blocks": {}
+            },
+            "product-card-atc": {
+              "type": "product-card-atc",
+              "static": true,
+              "settings": {
+                "color_scheme": ""
+              },
+              "blocks": {
+                "button": {
+                  "type": "button",
+                  "static": true,
+                  "settings": {
+                    "element_type": "button",
+                    "label": "Add To Cart",
+                    "link": "",
+                    "open_in_new_tab": false,
+                    "style_class": "button",
+                    "weight": "",
+                    "button_size": "medium",
+                    "button_size_mobile": "small",
+                    "width": "custom",
+                    "custom_width": 100,
+                    "width_mobile": "fit-content",
+                    "custom_width_mobile": 100
+                  },
+                  "blocks": {}
+                }
+              },
+              "block_order": []
+            }
+          },
+          "block_order": [
+            "delivery_availability_a9RTTz",
+            "product_title_JCGNca",
+            "product_options_count_3HRWfW",
+            "product_price_info_w4R4wP",
+            "product_discount_info_zUmJCK"
+          ]
+        }
+      },
+      "block_order": [
+        "promotional_card_4h3YmR"
+      ],
+      "name": "Collection Viewer",
+      "settings": {
+        "fallback_collection": "",
+        "fallback_collection_heading": "Our Bestsellers"
+      }
+    },
+    "blog_article_list_pgWUAa": {
+      "type": "blog-article-list",
+      "blocks": {
+        "heading": {
+          "type": "text",
+          "static": true,
+          "settings": {
+            "text": "<p>Fruit gifting inspiration hub</p>",
+            "enable_read_more": false,
+            "read_more_label": "Read more",
+            "read_less_label": "Read less",
+            "characters_limit": 0,
+            "width": "fit-content",
+            "max_width": "normal",
+            "alignment": "left",
+            "type_preset": "h1",
+            "type_preset_desktop": "",
+            "weight": "600",
+            "color": "var(--color-foreground-heading)",
+            "highlight_color": "var(--color-primary)",
+            "custom_highlight_color": "#1d1d1d",
+            "background": false,
+            "background_color": "#00000026",
+            "corner_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {}
+        },
+        "subheading": {
+          "type": "text",
+          "static": true,
+          "settings": {
+            "text": "<p>Fresh ideas for thoughtful fruit gifts</p>",
+            "enable_read_more": false,
+            "read_more_label": "Read more",
+            "read_less_label": "Read less",
+            "characters_limit": 0,
+            "width": "fit-content",
+            "max_width": "normal",
+            "alignment": "left",
+            "type_preset": "body-regular",
+            "type_preset_desktop": "",
+            "weight": "",
+            "color": "var(--color-foreground)",
+            "highlight_color": "var(--color-primary)",
+            "custom_highlight_color": "#1d1d1d",
+            "background": false,
+            "background_color": "#00000026",
+            "corner_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {}
+        },
+        "button": {
+          "type": "button",
+          "static": true,
+          "settings": {
+            "element_type": "link",
+            "label": "Read The Blog",
+            "link": "{{ closest.blog.url }}",
+            "open_in_new_tab": false,
+            "style_class": "link",
+            "weight": "",
+            "button_size": "medium",
+            "button_size_mobile": "small",
+            "width": "fit-content",
+            "custom_width": 100,
+            "width_mobile": "fit-content",
+            "custom_width_mobile": 100
+          },
+          "blocks": {}
+        },
+        "static-blog-article-card": {
+          "type": "_blog-article-card",
+          "name": "t:names.blog_article_card",
+          "static": true,
+          "settings": {
+            "color_scheme": "scheme-7",
+            "border_radius": 8
+          },
+          "blocks": {
+            "text_gdigJF": {
+              "type": "text",
+              "settings": {
+                "text": "<p>{{ closest.article.title }}</p>",
+                "enable_read_more": false,
+                "read_more_label": "Read more",
+                "read_less_label": "Read less",
+                "characters_limit": 0,
+                "width": "fit-content",
+                "max_width": "normal",
+                "alignment": "left",
+                "type_preset": "h5",
+                "type_preset_desktop": "",
+                "weight": "600",
+                "color": "var(--color-foreground-heading)",
+                "highlight_color": "var(--color-primary)",
+                "custom_highlight_color": "#1d1d1d",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 0,
+                "padding-block-end": 12,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "text_jhgNFE": {
+              "type": "text",
+              "settings": {
+                "text": "{{ closest.article.content }}",
+                "enable_read_more": false,
+                "read_more_label": "Read more",
+                "read_less_label": "Read less",
+                "characters_limit": 100,
+                "width": "fit-content",
+                "max_width": "normal",
+                "alignment": "left",
+                "type_preset": "body-regular",
+                "type_preset_desktop": "",
+                "weight": "",
+                "color": "var(--color-foreground)",
+                "highlight_color": "var(--color-primary)",
+                "custom_highlight_color": "#1d1d1d",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "image": {
+              "type": "image",
+              "static": true,
+              "settings": {
+                "image": "{{ closest.article.image }}",
+                "use_as_background": false,
+                "link": "",
+                "image_ratio": "landscape",
+                "custom_ratio_width": 1,
+                "custom_ratio_height": 1,
+                "image_ratio_mobile": "same",
+                "custom_ratio_width_mobile": 1,
+                "custom_ratio_height_mobile": 1,
+                "width": "fill",
+                "custom_width": 100,
+                "width_mobile": "fill",
+                "custom_width_mobile": 100,
+                "height": "fit",
+                "border": "none",
+                "border_width": 1,
+                "border_opacity": 100,
+                "border_radius": 0,
+                "enable_parallax": false,
+                "parallax_overflow": "bottom",
+                "parallax_image_style": "cover",
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "read-more": {
+              "type": "button",
+              "static": true,
+              "settings": {
+                "element_type": "link",
+                "label": "Read more",
+                "link": "{{ closest.article.url }}",
+                "open_in_new_tab": false,
+                "style_class": "link",
+                "weight": "",
+                "button_size": "medium",
+                "button_size_mobile": "small",
+                "width": "fit-content",
+                "custom_width": 100,
+                "width_mobile": "fit-content",
+                "custom_width_mobile": 100
+              },
+              "blocks": {}
+            }
+          },
+          "block_order": [
+            "text_gdigJF",
+            "text_jhgNFE"
+          ]
+        }
+      },
+      "name": "t:names.blog_article_list",
+      "settings": {
+        "blog": "news",
+        "layout_type": "carousel",
+        "post_limit": 6,
+        "columns": 4,
+        "mobile_card_size": "80cqw",
+        "columns_gap": 24,
+        "columns_gap_mobile": 12,
+        "rows_gap": 24,
+        "icons_style": "none",
+        "icons_visibility": "both",
+        "icons_position": "bottom-right",
+        "icons_gap": 24,
+        "color_scheme": "",
+        "enable_gradient_background": false,
+        "gradient_start_color": "",
+        "gradient_end_color": "",
+        "gradient_direction": "to bottom",
+        "section_width": "page-width",
+        "gap": 40,
+        "padding-block-start": 0,
+        "padding-block-end": 80
+      }
+    },
+    "section_cBm8kt": {
+      "type": "section",
+      "blocks": {
+        "text_6xULde": {
+          "type": "text",
+          "settings": {
+            "text": "<p>Find the perfect fruit basket gift</p>",
+            "enable_read_more": true,
+            "read_more_label": "Read more",
+            "read_less_label": "Read less",
+            "characters_limit": 0,
+            "width": "fit-content",
+            "max_width": "normal",
+            "alignment": "left",
+            "type_preset": "h1",
+            "type_preset_desktop": "",
+            "weight": "600",
+            "color": "#5F0300",
+            "highlight_color": "var(--color-primary)",
+            "custom_highlight_color": "#1d1d1d",
+            "background": false,
+            "background_color": "#00000026",
+            "corner_radius": 0,
+            "padding-block-start": 80,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {}
+        },
+        "group_aM4Fm8": {
+          "type": "group",
+          "settings": {
+            "content_direction": "row",
+            "vertical_on_mobile": true,
+            "horizontal_alignment": "flex-start",
+            "vertical_alignment": "flex-start",
+            "align_baseline": false,
+            "horizontal_alignment_flex_direction_column": "flex-start",
+            "vertical_alignment_flex_direction_column": "center",
+            "gap": 56,
+            "grid_columns_desktop": 3,
+            "grid_columns_mobile": 1,
+            "grid_row_gap": 32,
+            "css_class": "",
+            "width": "fill",
+            "custom_width": 100,
+            "width_mobile": "fill",
+            "custom_width_mobile": 100,
+            "height": "fit",
+            "custom_height": 100,
+            "inherit_color_scheme": true,
+            "color_scheme": "",
+            "background_media": "none",
+            "video_position": "cover",
+            "background_image_position": "cover",
+            "border": "none",
+            "border_width": 1,
+            "border_opacity": 100,
+            "border_radius": 0,
+            "toggle_overlay": false,
+            "overlay_color": "#00000026",
+            "overlay_style": "solid",
+            "gradient_direction": "to top",
+            "overlay_end_color": "rgba(0,0,0,0)",
+            "gradient_position": 50,
+            "link": "",
+            "open_in_new_tab": false,
+            "placeholder": "",
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {
+            "group_CtEEeE": {
+              "type": "group",
+              "settings": {
+                "content_direction": "column",
+                "vertical_on_mobile": true,
+                "horizontal_alignment": "flex-start",
+                "vertical_alignment": "center",
+                "align_baseline": false,
+                "horizontal_alignment_flex_direction_column": "flex-start",
+                "vertical_alignment_flex_direction_column": "center",
+                "gap": 8,
+                "grid_columns_desktop": 4,
+                "grid_columns_mobile": 1,
+                "grid_row_gap": 16,
+                "css_class": "",
+                "width": "fill",
+                "custom_width": 100,
+                "width_mobile": "fill",
+                "custom_width_mobile": 100,
+                "height": "fit",
+                "custom_height": 100,
+                "inherit_color_scheme": true,
+                "color_scheme": "",
+                "background_media": "none",
+                "video_position": "cover",
+                "background_image_position": "cover",
+                "border": "none",
+                "border_width": 1,
+                "border_opacity": 100,
+                "border_radius": 0,
+                "toggle_overlay": false,
+                "overlay_color": "#00000026",
+                "overlay_style": "solid",
+                "gradient_direction": "to top",
+                "overlay_end_color": "rgba(0,0,0,0)",
+                "gradient_position": 50,
+                "link": "",
+                "open_in_new_tab": false,
+                "placeholder": "",
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {
+                "text_V8amrR": {
+                  "type": "text",
+                  "settings": {
+                    "text": "<p>Affordable Fruit Baskets</p>",
+                    "enable_read_more": false,
+                    "read_more_label": "Read more",
+                    "read_less_label": "Read less",
+                    "characters_limit": 0,
+                    "width": "fit-content",
+                    "max_width": "normal",
+                    "alignment": "left",
+                    "type_preset": "body-regular",
+                    "type_preset_desktop": "",
+                    "weight": "600",
+                    "color": "var(--color-foreground)",
+                    "highlight_color": "var(--color-primary)",
+                    "custom_highlight_color": "#1d1d1d",
+                    "background": false,
+                    "background_color": "#00000026",
+                    "corner_radius": 0,
+                    "padding-block-start": 0,
+                    "padding-block-end": 0,
+                    "padding-inline-start": 0,
+                    "padding-inline-end": 0
+                  },
+                  "blocks": {}
+                },
+                "text_H9wc9D": {
+                  "type": "text",
+                  "settings": {
+                    "text": "<p>Edible Arrangements® features a variety of gifts at every price point, so no matter your budget, you can be sure that we have something to fit your needs. Choose a box of mouth...</p>",
+                    "enable_read_more": false,
+                    "read_more_label": "Read more",
+                    "read_less_label": "Read less",
+                    "characters_limit": 0,
+                    "width": "fit-content",
+                    "max_width": "normal",
+                    "alignment": "left",
+                    "type_preset": "body-small",
+                    "type_preset_desktop": "",
+                    "weight": "",
+                    "color": "var(--color-foreground)",
+                    "highlight_color": "var(--color-primary)",
+                    "custom_highlight_color": "#1d1d1d",
+                    "background": false,
+                    "background_color": "#00000026",
+                    "corner_radius": 0,
+                    "padding-block-start": 0,
+                    "padding-block-end": 0,
+                    "padding-inline-start": 0,
+                    "padding-inline-end": 0
+                  },
+                  "blocks": {}
+                },
+                "button_KaB7BN": {
+                  "type": "button",
+                  "settings": {
+                    "element_type": "link",
+                    "label": "Read More",
+                    "link": "https://myedible.myshopify.com/blogs/news/50-mouthwatering-summer-fruit-dessert-ideas",
+                    "open_in_new_tab": false,
+                    "style_class": "link",
+                    "weight": "",
+                    "button_size": "medium",
+                    "button_size_mobile": "small",
+                    "width": "fit-content",
+                    "custom_width": 100,
+                    "width_mobile": "fit-content",
+                    "custom_width_mobile": 100
+                  },
+                  "blocks": {}
+                }
+              },
+              "block_order": [
+                "text_V8amrR",
+                "text_H9wc9D",
+                "button_KaB7BN"
+              ]
+            },
+            "group_eXwB6N": {
+              "type": "group",
+              "settings": {
+                "content_direction": "column",
+                "vertical_on_mobile": true,
+                "horizontal_alignment": "flex-start",
+                "vertical_alignment": "center",
+                "align_baseline": false,
+                "horizontal_alignment_flex_direction_column": "flex-start",
+                "vertical_alignment_flex_direction_column": "center",
+                "gap": 8,
+                "grid_columns_desktop": 4,
+                "grid_columns_mobile": 1,
+                "grid_row_gap": 16,
+                "css_class": "",
+                "width": "fill",
+                "custom_width": 100,
+                "width_mobile": "fill",
+                "custom_width_mobile": 100,
+                "height": "fit",
+                "custom_height": 100,
+                "inherit_color_scheme": true,
+                "color_scheme": "",
+                "background_media": "none",
+                "video_position": "cover",
+                "background_image_position": "cover",
+                "border": "none",
+                "border_width": 1,
+                "border_opacity": 100,
+                "border_radius": 0,
+                "toggle_overlay": false,
+                "overlay_color": "#00000026",
+                "overlay_style": "solid",
+                "gradient_direction": "to top",
+                "overlay_end_color": "rgba(0,0,0,0)",
+                "gradient_position": 50,
+                "link": "",
+                "open_in_new_tab": false,
+                "placeholder": "",
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {
+                "text_79kzpy": {
+                  "type": "text",
+                  "settings": {
+                    "text": "<p>Fruit Basket Ideas</p>",
+                    "enable_read_more": false,
+                    "read_more_label": "Read more",
+                    "read_less_label": "Read less",
+                    "characters_limit": 0,
+                    "width": "fit-content",
+                    "max_width": "normal",
+                    "alignment": "left",
+                    "type_preset": "body-regular",
+                    "type_preset_desktop": "",
+                    "weight": "600",
+                    "color": "var(--color-foreground)",
+                    "highlight_color": "var(--color-primary)",
+                    "custom_highlight_color": "#1d1d1d",
+                    "background": false,
+                    "background_color": "#00000026",
+                    "corner_radius": 0,
+                    "padding-block-start": 0,
+                    "padding-block-end": 0,
+                    "padding-inline-start": 0,
+                    "padding-inline-end": 0
+                  },
+                  "blocks": {}
+                },
+                "text_LKt4e6": {
+                  "type": "text",
+                  "settings": {
+                    "text": "<p>Want to purchase a fruit basket but have no idea where to start? Edible Arrangements® has you covered. Whether you're in search of a gift for a particular occasion or just because...</p>",
+                    "enable_read_more": false,
+                    "read_more_label": "Read more",
+                    "read_less_label": "Read less",
+                    "characters_limit": 0,
+                    "width": "fit-content",
+                    "max_width": "normal",
+                    "alignment": "left",
+                    "type_preset": "body-small",
+                    "type_preset_desktop": "",
+                    "weight": "",
+                    "color": "var(--color-foreground)",
+                    "highlight_color": "var(--color-primary)",
+                    "custom_highlight_color": "#1d1d1d",
+                    "background": false,
+                    "background_color": "#00000026",
+                    "corner_radius": 0,
+                    "padding-block-start": 0,
+                    "padding-block-end": 0,
+                    "padding-inline-start": 0,
+                    "padding-inline-end": 0
+                  },
+                  "blocks": {}
+                },
+                "button_X9bytB": {
+                  "type": "button",
+                  "settings": {
+                    "element_type": "link",
+                    "label": "Read More",
+                    "link": "#",
+                    "open_in_new_tab": false,
+                    "style_class": "link",
+                    "weight": "",
+                    "button_size": "medium",
+                    "button_size_mobile": "small",
+                    "width": "fit-content",
+                    "custom_width": 100,
+                    "width_mobile": "fit-content",
+                    "custom_width_mobile": 100
+                  },
+                  "blocks": {}
+                }
+              },
+              "block_order": [
+                "text_79kzpy",
+                "text_LKt4e6",
+                "button_X9bytB"
+              ]
+            },
+            "group_LakXTJ": {
+              "type": "group",
+              "settings": {
+                "content_direction": "column",
+                "vertical_on_mobile": true,
+                "horizontal_alignment": "flex-start",
+                "vertical_alignment": "center",
+                "align_baseline": false,
+                "horizontal_alignment_flex_direction_column": "flex-start",
+                "vertical_alignment_flex_direction_column": "center",
+                "gap": 8,
+                "grid_columns_desktop": 4,
+                "grid_columns_mobile": 1,
+                "grid_row_gap": 16,
+                "css_class": "",
+                "width": "fill",
+                "custom_width": 100,
+                "width_mobile": "fill",
+                "custom_width_mobile": 100,
+                "height": "fit",
+                "custom_height": 100,
+                "inherit_color_scheme": true,
+                "color_scheme": "",
+                "background_media": "none",
+                "video_position": "cover",
+                "background_image_position": "cover",
+                "border": "none",
+                "border_width": 1,
+                "border_opacity": 100,
+                "border_radius": 0,
+                "toggle_overlay": false,
+                "overlay_color": "#00000026",
+                "overlay_style": "solid",
+                "gradient_direction": "to top",
+                "overlay_end_color": "rgba(0,0,0,0)",
+                "gradient_position": 50,
+                "link": "",
+                "open_in_new_tab": false,
+                "placeholder": "",
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {
+                "text_DEAzRd": {
+                  "type": "text",
+                  "settings": {
+                    "text": "<p>Creative Fruit Baskets</p>",
+                    "enable_read_more": false,
+                    "read_more_label": "Read more",
+                    "read_less_label": "Read less",
+                    "characters_limit": 0,
+                    "width": "fit-content",
+                    "max_width": "normal",
+                    "alignment": "left",
+                    "type_preset": "body-regular",
+                    "type_preset_desktop": "",
+                    "weight": "600",
+                    "color": "var(--color-foreground)",
+                    "highlight_color": "var(--color-primary)",
+                    "custom_highlight_color": "#1d1d1d",
+                    "background": false,
+                    "background_color": "#00000026",
+                    "corner_radius": 0,
+                    "padding-block-start": 0,
+                    "padding-block-end": 0,
+                    "padding-inline-start": 0,
+                    "padding-inline-end": 0
+                  },
+                  "blocks": {}
+                },
+                "text_bJJFRP": {
+                  "type": "text",
+                  "settings": {
+                    "text": "<p>Looking for a creative fruit basket? Edible Arrangements® offers a variety of fruit baskets and fresh fruit arrangements for every occasion – and every theme! Whether you're...</p>",
+                    "enable_read_more": false,
+                    "read_more_label": "Read more",
+                    "read_less_label": "Read less",
+                    "characters_limit": 0,
+                    "width": "fit-content",
+                    "max_width": "normal",
+                    "alignment": "left",
+                    "type_preset": "body-small",
+                    "type_preset_desktop": "",
+                    "weight": "",
+                    "color": "var(--color-foreground)",
+                    "highlight_color": "var(--color-primary)",
+                    "custom_highlight_color": "#1d1d1d",
+                    "background": false,
+                    "background_color": "#00000026",
+                    "corner_radius": 0,
+                    "padding-block-start": 0,
+                    "padding-block-end": 0,
+                    "padding-inline-start": 0,
+                    "padding-inline-end": 0
+                  },
+                  "blocks": {}
+                },
+                "button_meHTic": {
+                  "type": "button",
+                  "settings": {
+                    "element_type": "link",
+                    "label": "Read More",
+                    "link": "#",
+                    "open_in_new_tab": false,
+                    "style_class": "link",
+                    "weight": "",
+                    "button_size": "medium",
+                    "button_size_mobile": "small",
+                    "width": "fit-content",
+                    "custom_width": 100,
+                    "width_mobile": "fit-content",
+                    "custom_width_mobile": 100
+                  },
+                  "blocks": {}
+                }
+              },
+              "block_order": [
+                "text_DEAzRd",
+                "text_bJJFRP",
+                "button_meHTic"
+              ]
+            }
+          },
+          "block_order": [
+            "group_CtEEeE",
+            "group_eXwB6N",
+            "group_LakXTJ"
+          ]
+        },
+        "group_RVyaTg": {
+          "type": "group",
+          "settings": {
+            "content_direction": "grid",
+            "vertical_on_mobile": true,
+            "horizontal_alignment": "flex-start",
+            "vertical_alignment": "flex-start",
+            "align_baseline": false,
+            "horizontal_alignment_flex_direction_column": "flex-start",
+            "vertical_alignment_flex_direction_column": "center",
+            "gap": 56,
+            "grid_columns_desktop": 3,
+            "grid_columns_mobile": 1,
+            "grid_row_gap": 16,
+            "css_class": "",
+            "width": "fit-content",
+            "custom_width": 100,
+            "width_mobile": "fill",
+            "custom_width_mobile": 100,
+            "height": "fit",
+            "custom_height": 100,
+            "inherit_color_scheme": true,
+            "color_scheme": "",
+            "background_media": "none",
+            "video_position": "cover",
+            "background_image_position": "cover",
+            "border": "none",
+            "border_width": 1,
+            "border_opacity": 100,
+            "border_radius": 0,
+            "toggle_overlay": false,
+            "overlay_color": "#00000026",
+            "overlay_style": "solid",
+            "gradient_direction": "to top",
+            "overlay_end_color": "rgba(0,0,0,0)",
+            "gradient_position": 50,
+            "link": "",
+            "open_in_new_tab": false,
+            "placeholder": "",
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {
+            "group_C4JM4q": {
+              "type": "group",
+              "settings": {
+                "content_direction": "column",
+                "vertical_on_mobile": true,
+                "horizontal_alignment": "flex-start",
+                "vertical_alignment": "center",
+                "align_baseline": false,
+                "horizontal_alignment_flex_direction_column": "flex-start",
+                "vertical_alignment_flex_direction_column": "center",
+                "gap": 8,
+                "grid_columns_desktop": 4,
+                "grid_columns_mobile": 1,
+                "grid_row_gap": 16,
+                "css_class": "",
+                "width": "fill",
+                "custom_width": 100,
+                "width_mobile": "fill",
+                "custom_width_mobile": 100,
+                "height": "fit",
+                "custom_height": 100,
+                "inherit_color_scheme": true,
+                "color_scheme": "",
+                "background_media": "none",
+                "video_position": "cover",
+                "background_image_position": "cover",
+                "border": "none",
+                "border_width": 1,
+                "border_opacity": 100,
+                "border_radius": 0,
+                "toggle_overlay": false,
+                "overlay_color": "#00000026",
+                "overlay_style": "solid",
+                "gradient_direction": "to top",
+                "overlay_end_color": "rgba(0,0,0,0)",
+                "gradient_position": 50,
+                "link": "",
+                "open_in_new_tab": false,
+                "placeholder": "",
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {
+                "text_CW8yWh": {
+                  "type": "text",
+                  "settings": {
+                    "text": "<p>Fun Fruit Baskets</p>",
+                    "enable_read_more": false,
+                    "read_more_label": "Read more",
+                    "read_less_label": "Read less",
+                    "characters_limit": 0,
+                    "width": "fit-content",
+                    "max_width": "normal",
+                    "alignment": "left",
+                    "type_preset": "body-regular",
+                    "type_preset_desktop": "",
+                    "weight": "600",
+                    "color": "var(--color-foreground)",
+                    "highlight_color": "var(--color-primary)",
+                    "custom_highlight_color": "#1d1d1d",
+                    "background": false,
+                    "background_color": "#00000026",
+                    "corner_radius": 0,
+                    "padding-block-start": 0,
+                    "padding-block-end": 0,
+                    "padding-inline-start": 0,
+                    "padding-inline-end": 0
+                  },
+                  "blocks": {}
+                },
+                "text_Fq9Yei": {
+                  "type": "text",
+                  "settings": {
+                    "text": "<p>For many occasions, flower bouquets were a go-to gift for many years. Whether it's for a birthday, Valentine's Day, Christmas, or just because, flowers are a safe, convenient...</p>",
+                    "enable_read_more": false,
+                    "read_more_label": "Read more",
+                    "read_less_label": "Read less",
+                    "characters_limit": 0,
+                    "width": "fit-content",
+                    "max_width": "normal",
+                    "alignment": "left",
+                    "type_preset": "body-small",
+                    "type_preset_desktop": "",
+                    "weight": "",
+                    "color": "var(--color-foreground)",
+                    "highlight_color": "var(--color-primary)",
+                    "custom_highlight_color": "#1d1d1d",
+                    "background": false,
+                    "background_color": "#00000026",
+                    "corner_radius": 0,
+                    "padding-block-start": 0,
+                    "padding-block-end": 0,
+                    "padding-inline-start": 0,
+                    "padding-inline-end": 0
+                  },
+                  "blocks": {}
+                },
+                "button_wnG9Ad": {
+                  "type": "button",
+                  "settings": {
+                    "element_type": "link",
+                    "label": "Read More",
+                    "link": "shopify://collections/add-ons",
+                    "open_in_new_tab": false,
+                    "style_class": "link",
+                    "weight": "",
+                    "button_size": "medium",
+                    "button_size_mobile": "small",
+                    "width": "fit-content",
+                    "custom_width": 100,
+                    "width_mobile": "fit-content",
+                    "custom_width_mobile": 100
+                  },
+                  "blocks": {}
+                }
+              },
+              "block_order": [
+                "text_CW8yWh",
+                "text_Fq9Yei",
+                "button_wnG9Ad"
+              ]
+            },
+            "group_kXkgce": {
+              "type": "group",
+              "settings": {
+                "content_direction": "column",
+                "vertical_on_mobile": true,
+                "horizontal_alignment": "flex-start",
+                "vertical_alignment": "center",
+                "align_baseline": false,
+                "horizontal_alignment_flex_direction_column": "flex-start",
+                "vertical_alignment_flex_direction_column": "center",
+                "gap": 8,
+                "grid_columns_desktop": 4,
+                "grid_columns_mobile": 1,
+                "grid_row_gap": 16,
+                "css_class": "",
+                "width": "fill",
+                "custom_width": 100,
+                "width_mobile": "fill",
+                "custom_width_mobile": 100,
+                "height": "fit",
+                "custom_height": 100,
+                "inherit_color_scheme": true,
+                "color_scheme": "",
+                "background_media": "none",
+                "video_position": "cover",
+                "background_image_position": "cover",
+                "border": "none",
+                "border_width": 1,
+                "border_opacity": 100,
+                "border_radius": 0,
+                "toggle_overlay": false,
+                "overlay_color": "#00000026",
+                "overlay_style": "solid",
+                "gradient_direction": "to top",
+                "overlay_end_color": "rgba(0,0,0,0)",
+                "gradient_position": 50,
+                "link": "",
+                "open_in_new_tab": false,
+                "placeholder": "",
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {
+                "text_tAXzg9": {
+                  "type": "text",
+                  "settings": {
+                    "text": "<p>Delicious Fruit Baskets Near Me</p>",
+                    "enable_read_more": false,
+                    "read_more_label": "Read more",
+                    "read_less_label": "Read less",
+                    "characters_limit": 0,
+                    "width": "fit-content",
+                    "max_width": "normal",
+                    "alignment": "left",
+                    "type_preset": "body-regular",
+                    "type_preset_desktop": "",
+                    "weight": "600",
+                    "color": "var(--color-foreground)",
+                    "highlight_color": "var(--color-primary)",
+                    "custom_highlight_color": "#1d1d1d",
+                    "background": false,
+                    "background_color": "#00000026",
+                    "corner_radius": 0,
+                    "padding-block-start": 0,
+                    "padding-block-end": 0,
+                    "padding-inline-start": 0,
+                    "padding-inline-end": 0
+                  },
+                  "blocks": {}
+                },
+                "text_yQFecD": {
+                  "type": "text",
+                  "settings": {
+                    "text": "<p>Did you wait until last minute to pick up a gift? If you're in a bit of a time crunch, it is imperative that you find someone close by who can provide a gift. Luckily, with Edible Arrangements®...</p>",
+                    "enable_read_more": false,
+                    "read_more_label": "Read more",
+                    "read_less_label": "Read less",
+                    "characters_limit": 0,
+                    "width": "fit-content",
+                    "max_width": "normal",
+                    "alignment": "left",
+                    "type_preset": "body-small",
+                    "type_preset_desktop": "",
+                    "weight": "",
+                    "color": "var(--color-foreground)",
+                    "highlight_color": "var(--color-primary)",
+                    "custom_highlight_color": "#1d1d1d",
+                    "background": false,
+                    "background_color": "#00000026",
+                    "corner_radius": 0,
+                    "padding-block-start": 0,
+                    "padding-block-end": 0,
+                    "padding-inline-start": 0,
+                    "padding-inline-end": 0
+                  },
+                  "blocks": {}
+                },
+                "button_pNKTjW": {
+                  "type": "button",
+                  "settings": {
+                    "element_type": "link",
+                    "label": "Read More",
+                    "link": "#",
+                    "open_in_new_tab": false,
+                    "style_class": "link",
+                    "weight": "",
+                    "button_size": "medium",
+                    "button_size_mobile": "small",
+                    "width": "fit-content",
+                    "custom_width": 100,
+                    "width_mobile": "fit-content",
+                    "custom_width_mobile": 100
+                  },
+                  "blocks": {}
+                }
+              },
+              "block_order": [
+                "text_tAXzg9",
+                "text_yQFecD",
+                "button_pNKTjW"
+              ]
+            }
+          },
+          "block_order": [
+            "group_C4JM4q",
+            "group_kXkgce"
+          ]
+        }
+      },
+      "block_order": [
+        "text_6xULde",
+        "group_aM4Fm8",
+        "group_RVyaTg"
+      ],
+      "settings": {
+        "enable_on": "all",
+        "content_direction": "column",
+        "vertical_on_mobile": true,
+        "reverse_order_on_mobile": false,
+        "horizontal_alignment": "flex-start",
+        "vertical_alignment": "center",
+        "align_baseline": false,
+        "horizontal_alignment_flex_direction_column": "flex-start",
+        "vertical_alignment_flex_direction_column": "flex-start",
+        "gap": 36,
+        "section_width": "page-width",
+        "section_height": "",
+        "section_height_custom": 50,
+        "color_scheme": "scheme-19cc2e9b-d66e-417b-92ac-b1f465d6d5d8",
+        "background_media": "none",
+        "video": "shopify://files/videos/4334522-hd_1920_1080_24fps.mp4",
+        "video_position": "cover",
+        "background_image_position": "cover",
+        "border": "none",
+        "border_width": 1,
+        "border_opacity": 100,
+        "border_radius": 0,
+        "toggle_overlay": false,
+        "overlay_color": "#00000026",
+        "overlay_style": "solid",
+        "gradient_direction": "to top",
+        "overlay_end_color": "rgba(0,0,0,0)",
+        "gradient_position": 50,
+        "padding-block-start": 10,
+        "padding-block-end": 80
+      }
+    },
+    "faq_tqaCMk": {
+      "type": "faq",
+      "blocks": {
+        "heading": {
+          "type": "text",
+          "static": true,
+          "settings": {
+            "text": "<p>Frequently asked questions</p>",
+            "enable_read_more": false,
+            "read_more_label": "Read more",
+            "read_less_label": "Read less",
+            "characters_limit": 0,
+            "width": "fit-content",
+            "max_width": "normal",
+            "alignment": "left",
+            "type_preset": "h1",
+            "type_preset_desktop": "",
+            "weight": "600",
+            "color": "var(--color-foreground-heading)",
+            "highlight_color": "var(--color-primary)",
+            "custom_highlight_color": "#1d1d1d",
+            "background": false,
+            "background_color": "#00000026",
+            "corner_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {}
+        },
+        "faq-accordion": {
+          "type": "_faq-accordion",
+          "static": true,
+          "settings": {
+            "icon": "caret",
+            "dividers": true,
+            "open_first": true,
+            "type_preset": "body-regular",
+            "content_type_preset": "body-small",
+            "heading_color": "var(--color-foreground)",
+            "custom_heading_color": "#1d1d1d"
+          },
+          "blocks": {}
+        }
+      },
+      "name": "FAQ",
+      "settings": {
+        "faq_metaobject": "{{ collection.metafields.ediblearrangement.faq.value }}",
+        "section_width": "page-width",
+        "gap": 48,
+        "color_scheme": "",
+        "padding-block-start": 45,
+        "padding-block-end": 48
+      }
+    },
+    "plp_related_links_f3eKb7": {
+      "type": "plp-related-links",
+      "name": "PLP Related Links",
+      "settings": {
+        "heading": "Related Links",
+        "section_width": "page-width",
+        "color_scheme": "",
+        "padding-block-start": 24,
+        "padding-block-end": 84
+      }
+    }
+  },
+  "order": [
+    "collection_header",
+    "collection_viewer",
+    "blog_article_list_pgWUAa",
+    "section_cBm8kt",
+    "faq_tqaCMk",
+    "plp_related_links_f3eKb7"
+  ]
+}

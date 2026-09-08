@@ -1,0 +1,231 @@
+{%- liquid
+  assign products = article.metafields.blog_article.products.value
+-%}
+
+{%- if products.size > 0 -%}
+  <div class="section-background color-{{ section.settings.color_scheme }}"></div>
+  <div
+    class="section color-{{ section.settings.color_scheme }} blog-article-products spacing-style"
+    style="{% render 'spacing-style', settings: section.settings %}"
+  >
+    <div class="blog-article-products__inner">
+      {%- content_for 'block', id: 'products-heading', type: 'text' -%}
+      {%- content_for 'block', id: 'products-top-description', type: 'text' -%}
+
+      <div class="blog-article-products__list">
+        {%- assign visible_index = 0 -%}
+        {%- for product in products -%}
+          {%- unless product.metafields.seo.hidden.value == 1 -%}
+          {%- assign visible_index = visible_index | plus: 1 -%}
+          <div class="blog-article-products__card">
+            <div class="blog-article-products__image-wrapper">
+              {%- if product.featured_image -%}
+                {%- assign img_alt = product.featured_image.alt | default: product.title -%}
+                {{ product.featured_image | image_url: width: 600 | image_tag:
+                  loading: 'lazy',
+                  alt: img_alt,
+                  class: 'blog-article-products__image',
+                  sizes: '(min-width: 750px) 300px, 100vw',
+                  widths: '300,375,450,600'
+                }}
+              {%- else -%}
+                <div class="blog-article-products__image-placeholder"></div>
+              {%- endif -%}
+            </div>
+            <div class="blog-article-products__info">
+              <div class="blog-article-products__title-row">
+                <span class="blog-article-products__number">{{ visible_index }}.</span>
+                <a href="{{ product.url }}" class="blog-article-products__title-link">{{ product.title }}</a>
+              </div>
+              {%- if product.description != blank -%}
+                <p class="blog-article-products__text">{{ product.description | strip_html | truncatewords: 30 }}</p>
+              {%- endif -%}
+              <p class="blog-article-products__price">Cost {{ product.price | money }}</p>
+            </div>
+          </div>
+          {%- endunless -%}
+        {%- endfor -%}
+      </div>
+
+      <div class="blog-article-products__bottom-description">
+        {%- content_for 'block', id: 'products-bottom-description', type: 'text' -%}
+      </div>
+    </div>
+  </div>
+{%- endif -%}
+
+{% stylesheet %}
+  .blog-article-products__inner {
+    display: flex;
+    flex-direction: column;
+    max-width: var(--normal-content-width);
+    margin-inline: auto;
+    width: 100%;
+  }
+
+  .blog-article-products__bottom-description {
+    margin-top: 40px;
+  }
+
+  .blog-article-products__list {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    margin-top: 40px;
+  }
+
+  .blog-article-products__card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-lg);
+  }
+
+  @media screen and (min-width: 750px) {
+    .blog-article-products__card {
+      flex-direction: row;
+      gap: var(--gap-2xl);
+    }
+  }
+
+  .blog-article-products__image-wrapper {
+    flex-shrink: 0;
+    width: 100%;
+    aspect-ratio: 3 / 2;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  @media screen and (min-width: 750px) {
+    .blog-article-products__image-wrapper {
+      width: 300px;
+    }
+
+    .blog-article-products__list {
+      gap: 56px;
+    }
+  }
+
+  .blog-article-products__image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .blog-article-products__image-placeholder {
+    width: 100%;
+    height: 100%;
+    background-color: #D9D9D9;
+  }
+
+  .blog-article-products__info {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .blog-article-products__title-row {
+    display: flex;
+    flex-direction: row;
+    gap: var(--gap-xs);
+    align-items: top;
+  }
+
+  .blog-article-products__number {
+    font-size: var(--font-size--md);
+    font-weight: 600;
+    line-height: 1.375;
+    color: var(--color-primary-button-background);
+    flex-shrink: 0;
+  }
+
+  .blog-article-products__title-link {
+    font-size: var(--font-size--md);
+    font-weight: 600;
+    line-height: 1.375;
+    color: var(--color-primary-button-background);
+    text-decoration: underline;
+    text-underline-offset: 7px;
+  }
+
+  .blog-article-products__title-link:hover {
+    text-decoration: none;
+  }
+
+  .blog-article-products__text {
+    font-size: var(--font-size--md);
+    font-weight: 400;
+    line-height: 1.375;
+    color: var(--color-foreground);
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 6;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .blog-article-products__price {
+    font-size: var(--font-size--sm);
+    font-weight: 600;
+    line-height: 1.4286;
+    color: var(--color-black-light);
+    margin: 0;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Blog article products",
+  "class": "section-wrapper",
+  "enabled_on": {
+    "templates": ["article"]
+  },
+  "blocks": [
+    { "type": "@theme" },
+    { "type": "@app" }
+  ],
+  "settings": [
+    {
+      "type": "header",
+      "content": "Style"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "Spacing"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "Top padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "default": 0,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "Bottom padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "default": 40,
+      "unit": "px"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Blog article products"
+    }
+  ]
+}
+{% endschema %}

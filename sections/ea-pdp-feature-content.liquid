@@ -1,0 +1,204 @@
+{%- liquid
+  assign feature = product.metafields.ediblearrangement.feature_content.value
+  if feature == blank
+    assign feature = closest.product.metafields.ediblearrangement.feature_content.value
+  endif
+-%}
+
+{%- if feature != blank -%}
+  <div class="section-background color-{{ section.settings.color_scheme }}"></div>
+
+  <div
+    class="
+      section
+      section--{{ section.settings.section_width }}
+      color-{{ section.settings.color_scheme }}
+      spacing-style
+    "
+    style="
+      {%- render 'spacing-style', settings: section.settings -%}
+      {%- if section.settings.section_width == 'page-width' -%}
+        padding-inline: var(--page-margin);
+      {%- endif -%}
+    "
+  >
+    <div class="pdp-feature-content {% if section.settings.image_position == 'right' %}pdp-feature-content--image-right{% endif %}">
+      {%- if feature.image.value != blank -%}
+        <div class="pdp-feature-content__media">
+          {%- assign fc_image = feature.image.value -%}
+          {%- assign fc_sizes = '(min-width: 750px) 50vw, 100vw' -%}
+          {{
+            fc_image
+            | image_url: width: fc_image.width
+            | image_tag:
+              sizes: fc_sizes,
+              widths: '375,550,750,1100,1500',
+              loading: 'lazy',
+              class: 'pdp-feature-content__image'
+          }}
+        </div>
+      {%- endif -%}
+
+      <div class="pdp-feature-content__text">
+        {%- if feature.heading.value != blank -%}
+          <div class="pdp-feature-content__heading">
+            {{ feature.heading | metafield_tag }}
+          </div>
+        {%- endif -%}
+
+        {%- if feature.content.value != blank -%}
+          <div class="pdp-feature-content__body">
+            {{ feature.content | metafield_tag }}
+          </div>
+        {%- endif -%}
+      </div>
+    </div>
+  </div>
+{%- endif -%}
+
+{% stylesheet %}
+  .pdp-feature-content {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 32px;
+    width: 100%;
+    align-items: center;
+  }
+
+  @media screen and (min-width: 750px) {
+    .pdp-feature-content {
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+    }
+
+    .pdp-feature-content--image-right .pdp-feature-content__media {
+      order: 2;
+    }
+
+    .pdp-feature-content--image-right .pdp-feature-content__text {
+      order: 1;
+    }
+  }
+
+  .pdp-feature-content__media {
+    width: 100%;
+    overflow: hidden;
+    border-radius: 8px;
+  }
+
+  .pdp-feature-content__image {
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+
+  .pdp-feature-content__text {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .pdp-feature-content__heading {
+    color: var(--color-foreground-heading);
+  }
+
+  .pdp-feature-content__heading h1,
+  .pdp-feature-content__heading h2,
+  .pdp-feature-content__heading h3,
+  .pdp-feature-content__heading h4,
+  .pdp-feature-content__heading h5,
+  .pdp-feature-content__heading h6 {
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+
+  .pdp-feature-content__heading p {
+    margin: 0;
+  }
+
+  .pdp-feature-content__body {
+    color: var(--color-foreground);
+    line-height: 1.5;
+  }
+
+  .pdp-feature-content__body p {
+    margin: 0 0 0.75em;
+  }
+
+  .pdp-feature-content__body p:last-child {
+    margin-bottom: 0;
+  }
+
+  @media screen and (max-width: 749px) {
+    .pdp-feature-content {
+      gap: 24px;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Feature content",
+  "tag": "section",
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "select",
+      "id": "image_position",
+      "label": "Image position",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "right", "label": "Right" }
+      ],
+      "default": "left"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        { "value": "page-width", "label": "Page width" },
+        { "value": "full-width", "label": "Full width" }
+      ],
+      "default": "page-width"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "Top padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "default": 64,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "Bottom padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "default": 64,
+      "unit": "px"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Feature content"
+    }
+  ],
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  }
+}
+{% endschema %}

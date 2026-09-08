@@ -1,0 +1,34 @@
+{% liquid
+  assign product = closest.product
+  assign variant = product.selected_or_first_available_variant
+%}
+
+<div
+  data-add-to-cart
+  data-on-goody="{{ product.metafields.ediblearrangment.is_on_goody_product.value | default: 'false' }}"
+  data-wrap-available="{{ product.metafields.ediblearrangement.wrap_available }}"
+  data-addons-source="{% render 'addons-source-json', product: product %}"
+  data-variants-json="{% render 'personalization-variants-json', product: product %}"
+  data-marketplace-product-id="{{ product.metafields.ediblearrangement.ea_product_id }}"
+  data-marketplace-variant-id="{{ variant.metafields.custom.external_variant_id }}"
+  class="color-{{ block.settings.color_scheme }}"
+>
+  <input type="hidden" name="id" value="{{ variant.id }}">
+  <input type="hidden" name="quantity" value="1">
+  {% content_for 'block', type: 'button', id: 'button' %}
+</div>
+
+{% schema %}
+{
+  "name": "Product Card Add to Cart",
+  "tag": null,
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color theme",
+      "default": "scheme-1"
+    }
+  ]
+}
+{% endschema %}

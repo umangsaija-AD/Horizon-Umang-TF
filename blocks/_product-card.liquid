@@ -1,0 +1,81 @@
+{% liquid
+  assign product = closest.product
+  assign bb_cta_suppressed = false
+-%}
+{%- if template.suffix == 'bundle-builder' -%}
+  {%- comment -%}
+    Bundle Builder page: when the discount config metaobject is missing there's no
+    bundle to build, so suppress the ENTIRE product-card CTA — both the Bundle Builder
+    button and the Sold out fallback (an unavailable product must not show "Sold out").
+  {%- endcomment -%}
+  {%- capture bb_config_available -%}{%- render 'bundle-config-available' -%}{%- endcapture -%}
+  {%- assign bb_config_available = bb_config_available | strip -%}
+  {%- if bb_config_available != 'true' -%}
+    {%- assign bb_cta_suppressed = true -%}
+  {%- endif -%}
+{%- endif -%}
+
+{% capture children %}
+  <div class="product-card__body">
+    <div class="product-card__media">
+      {% content_for 'block', type: '_product-badge', id: 'product-badge', closest.product: product %}
+      {% content_for 'block', type: '_product-image-gallery', id: 'product-image-gallery', closest.product: product %}
+    </div>
+
+    <div>
+      {% content_for 'blocks', closest.product: product %}
+    </div>
+  </div>
+
+  {% unless bb_cta_suppressed %}
+    {% if product.available %}
+      {% if template.suffix == 'bundle-builder' %}
+        {%- comment -%}
+          Bundle Builder page: hide the native Add to Cart and use the Bundle Builder
+          button (cart-coupled via closest.product) instead. Native ATC block untouched.
+        {%- endcomment -%}
+        {% content_for 'block', type: '_bundle-builder-button', id: 'bundle-builder-cta', closest.product: product %}
+      {% elsif template.suffix == 'catering' %}
+        {% content_for 'block', type: 'catering-product-card-atc', id: 'product-card-atc', closest.product: product %}
+      {% else %}
+        {% content_for 'block', type: 'product-card-atc', id: 'product-card-atc', closest.product: product %}
+      {% endif %}
+    {% else %}
+      {% assign sold_out_text = 'products.product.sold_out' | t %}
+      {% render 'button',
+        element_type: 'button',
+        label: sold_out_text,
+        style_class: 'button',
+        width: 'fill',
+        aria_disabled: true
+      %}
+    {% endif %}
+  {% endunless %}
+{% endcapture %}
+
+{% render 'product-card', block: block, children: children, product: product %}
+
+{% schema %}
+{
+  "name": "t:names.product_card",
+  "blocks": [
+    {
+      "type": "product-title"
+    },
+    {
+      "type": "_delivery-availability"
+    },
+    {
+      "type": "_product-price-info"
+    },
+    {
+      "type": "_product-discount-info"
+    },
+    {
+      "type": "_product-options-count"
+    }
+  ],
+  "tag": null,
+  "settings": []
+}
+{% endschema %}

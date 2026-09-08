@@ -1,0 +1,125 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "context": {
+    "market": "us"
+  },
+  "parent": "page.rewards.json",
+  "sections": {
+    "hero": {
+      "settings": {
+        "gap": 40,
+        "section_height": "medium"
+      },
+      "blocks": {
+        "text_group": {
+          "blocks": {
+            "heading": {
+              "settings": {
+                "width": "100%",
+                "max_width": "normal",
+                "alignment": "left",
+                "padding-block-start": 100
+              }
+            },
+            "subtitle": {
+              "settings": {
+                "alignment": "left"
+              }
+            }
+          },
+          "settings": {}
+        },
+        "buttons_group": {
+          "blocks": {
+            "primary_button": {
+              "settings": {
+                "style_class": "button"
+              }
+            }
+          },
+          "settings": {}
+        }
+      }
+    },
+    "perks_chart": {
+      "settings": {},
+      "blocks": {
+        "perk_2": {
+          "settings": {
+            "tier_1_value": "icon"
+          }
+        },
+        "perk_7": {
+          "settings": {
+            "tier_2_value": ""
+          }
+        }
+      }
+    },
+    "app_download_desktop": {
+      "settings": {},
+      "blocks": {
+        "group_8zTMzQ": {
+          "blocks": {
+            "group_BU93FV": {
+              "blocks": {
+                "image_EEwiLB": {
+                  "settings": {
+                    "enable_parallax": true,
+                    "parallax_overflow": "top",
+                    "parallax_image_style": "cover"
+                  }
+                }
+              },
+              "settings": {}
+            }
+          },
+          "settings": {}
+        }
+      }
+    },
+    "app_download_mobile": {
+      "custom_css": [
+        ".app-dl-phonecard {background: #f2e7df; border-radius: 24px; padding: 24px; min-height: 338px;}",
+        ".app-dl-phonecard .image-block {max-width: 300px; margin-inline: auto; width: 100%;}",
+        ".app-dl-badges .image-block__image {height: 40px; width: auto;}",
+        ".redeem-app-content {z-index: 10; background: var(--color-background);}",
+        ".redeem-app-content h6 {color: #EDEDED !important;}"
+      ],
+      "settings": {},
+      "blocks": {
+        "phone_card": {
+          "blocks": {
+            "phone": {
+              "settings": {
+                "enable_parallax": true,
+                "parallax_overflow": "top"
+              }
+            }
+          },
+          "settings": {}
+        },
+        "txt_group": {
+          "blocks": {
+            "description": {
+              "settings": {
+                "text": "<h6>Download the app for faster, more convenient ordering, personalized gift recommendations, and exclusive offers you won't find anywhere else.</h6>"
+              }
+            }
+          },
+          "settings": {
+            "css_class": "redeem-app-content"
+          }
+        }
+      }
+    }
+  }
+}

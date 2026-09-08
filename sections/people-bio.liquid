@@ -1,0 +1,472 @@
+{% liquid
+  assign section_width = section.settings.section_width | default: 'page-width'
+  assign color_scheme = section.settings.color_scheme
+%}
+
+<div
+  class="section section--{{ section_width }}{% if color_scheme != blank %} color-{{ color_scheme }}{% endif %}"
+>
+  <div
+    class="people-bio spacing-style"
+    style="
+      {% render 'spacing-style', settings: section.settings %}
+      --people-bio-entries-gap: {{ section.settings.entries_gap }}px;
+    "
+  >
+    {% if section.settings.heading != blank %}
+      <h2 class="people-bio__heading">
+        {{ section.settings.heading | escape }}
+      </h2>
+    {% endif %}
+
+    {% if section.blocks.size > 0 %}
+      <div class="people-bio__entries">
+        {% for block in section.blocks %}
+          {% if block.type == 'leader' %}
+            <div
+              class="people-bio__entry{% if block.settings.image_position == 'right' %} people-bio__entry--image-right{% endif %}"
+              {{ block.shopify_attributes }}
+            >
+              <div class="people-bio__profile-card">
+                {% if block.settings.image != blank %}
+                  <div class="people-bio__profile-image">
+                    {{
+                      block.settings.image
+                      | image_url: width: block.settings.image.width
+                      | image_tag:
+                        sizes: '(min-width: 960px) 306px, 100vw',
+                        widths: '336,375,550,672,750',
+                        loading: 'lazy',
+                        alt: block.settings.name
+                    }}
+                  </div>
+                {% endif %}
+                <div class="people-bio__profile-details">
+                  {% if block.settings.name != blank %}
+                    <p class="people-bio__profile-name">{{ block.settings.name | escape }}</p>
+                  {% endif %}
+                  {% if block.settings.title != blank %}
+                    <p class="people-bio__profile-title">{{ block.settings.title | escape }}</p>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="people-bio__bio">
+                {% if block.settings.heading_text != blank %}
+                  <div class="people-bio__bio-heading">
+                    {{ block.settings.heading_text | escape }}
+                  </div>
+                {% endif %}
+
+                {% if block.settings.body_text != blank %}
+                  {% if block.settings.enable_read_more and block.settings.characters_limit > 0 %}
+                    <text-read-more
+                      class="text-read-more people-bio__bio-body"
+                      data-enabled="true"
+                      data-expanded="false"
+                      data-collapsed-text-length="{{ block.settings.characters_limit }}"
+                    >
+                      <div
+                        class="text-read-more__content"
+                        ref="content"
+                      >
+                        {{ block.settings.body_text }}
+                      </div>
+                      <button
+                        type="button"
+                        class="text-read-more__toggle people-bio__toggle"
+                        ref="toggle"
+                        on:click="/toggle"
+                        aria-expanded="false"
+                      >
+                        <span class="text-read-more__more">{{ block.settings.read_more_label | escape }}</span>
+                        <span class="text-read-more__less">{{ block.settings.read_less_label | escape }}</span>
+                      </button>
+                    </text-read-more>
+                  {% else %}
+                    <div class="people-bio__bio-body">
+                      {{ block.settings.body_text }}
+                    </div>
+                  {% endif %}
+                {% endif %}
+              </div>
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% stylesheet %}
+  .people-bio {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 48px;
+  }
+
+  .people-bio__heading {
+    text-align: center;
+    font-family: var(--font-heading--family);
+    font-weight: 600;
+    font-size: 48px;
+    line-height: 58px;
+    letter-spacing: -0.96px;
+    color: var(--color-primary);
+    margin: 0;
+  }
+
+  .people-bio__entries {
+    display: flex;
+    flex-direction: column;
+    gap: var(--people-bio-entries-gap, 48px);
+    width: 100%;
+    max-width: 1120px;
+  }
+
+  .people-bio__entry {
+    display: flex;
+    flex-direction: row;
+    gap: 40px;
+    align-items: flex-start;
+  }
+
+  .people-bio__entry--image-right {
+    flex-direction: row-reverse;
+  }
+
+  .people-bio__profile-card {
+    flex-shrink: 0;
+    width: 342px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #FBF7F5;
+  }
+
+  .people-bio__profile-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+    aspect-ratio: 336 / 337;
+    object-fit: cover;
+  }
+
+  .people-bio__profile-details {
+    background-color: #FBF7F5;
+    padding: 8px;
+    text-align: center;
+    border-radius: 0 0 8px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .people-bio__profile-name {
+    font-family: var(--font-body--family);
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 22px;
+    color: #1D1D1D;
+    margin: 0;
+  }
+
+  .people-bio__profile-title {
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    color: #464646;
+    margin: 0;
+  }
+
+  .people-bio__bio {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding-block-start: 80px;
+    min-width: 0;
+  }
+
+  .people-bio__bio-heading {
+    font-family: var(--font-heading--family);
+    font-weight: 600;
+    font-size: 24px;
+    line-height: 29px;
+    letter-spacing: -0.48px;
+    color: #1D1D1D;
+  }
+
+  .people-bio__bio-body {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .people-bio__bio-body p {
+    font-family: var(--font-body--family);
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 22px;
+    color: #464646;
+    margin-block: 6px;
+  }
+
+  .people-bio__bio-body p:first-child {
+    margin-block-start: 0;
+  }
+
+  .people-bio__bio-body p:last-child {
+    margin-block-end: 0;
+  }
+
+  .people-bio__toggle {
+    display: inline-flex;
+    align-self: flex-start;
+    align-items: center;
+    width: fit-content;
+    padding-block: 3px;
+    padding-inline: 0;
+    border: 0;
+    border-block-end: 1px solid currentcolor;
+    border-radius: 0;
+    appearance: none;
+    background: transparent;
+    color: #E10600;
+    cursor: pointer;
+    font-family: var(--font-body--family);
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 20px;
+    text-decoration: none;
+  }
+
+  @media screen and (max-width: 59.999em) {
+    .people-bio {
+      gap: 32px;
+    }
+
+    .people-bio__heading {
+      font-size: 32px;
+      line-height: 38px;
+      letter-spacing: -0.64px;
+    }
+
+    .people-bio__entry,
+    .people-bio__entry--image-right {
+      flex-direction: column;
+      gap: 24px;
+      align-items: center;
+    }
+
+    .people-bio__profile-card {
+      width: 100%;
+      max-width: 342px;
+    }
+
+    .people-bio__bio {
+      padding-block-start: 0;
+    }
+
+    .people-bio__bio-heading {
+      font-size: 20px;
+      line-height: 24px;
+      letter-spacing: 0;
+    }
+
+    .people-bio__entries {
+      gap: var(--people-bio-entries-gap, 48px);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "People Bio",
+  "tag": "section",
+  "class": "people-bio-section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Leadership"
+    },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        {
+          "value": "page-width",
+          "label": "Page width"
+        },
+        {
+          "value": "full-width",
+          "label": "Full width"
+        }
+      ],
+      "default": "page-width"
+    },
+    {
+      "type": "number",
+      "id": "entries_gap",
+      "label": "Gap between entries",
+      "default": 48
+    },
+    {
+      "type": "header",
+      "content": "Colors"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme"
+    },
+    {
+      "type": "header",
+      "content": "Spacing"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "Top padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "default": 80,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "Bottom padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "default": 80,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "leader",
+      "name": "Leader",
+      "settings": [
+        {
+          "type": "header",
+          "content": "Profile"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Photo"
+        },
+        {
+          "type": "text",
+          "id": "name",
+          "label": "Name",
+          "default": "Leader Name"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Title",
+          "default": "Title"
+        },
+        {
+          "type": "header",
+          "content": "Bio"
+        },
+        {
+          "type": "textarea",
+          "id": "heading_text",
+          "label": "Heading text"
+        },
+        {
+          "type": "richtext",
+          "id": "body_text",
+          "label": "Body text"
+        },
+        {
+          "type": "header",
+          "content": "Layout"
+        },
+        {
+          "type": "select",
+          "id": "image_position",
+          "label": "Image position",
+          "options": [
+            {
+              "value": "left",
+              "label": "Left"
+            },
+            {
+              "value": "right",
+              "label": "Right"
+            }
+          ],
+          "default": "left"
+        },
+        {
+          "type": "header",
+          "content": "Read more"
+        },
+        {
+          "type": "checkbox",
+          "id": "enable_read_more",
+          "label": "Enable read more",
+          "default": true
+        },
+        {
+          "type": "text",
+          "id": "read_more_label",
+          "label": "Read more label",
+          "default": "Read More"
+        },
+        {
+          "type": "text",
+          "id": "read_less_label",
+          "label": "Read less label",
+          "default": "Read Less"
+        },
+        {
+          "type": "number",
+          "id": "characters_limit",
+          "label": "Characters limit",
+          "default": 150
+        }
+      ]
+    }
+  ],
+  "max_blocks": 10,
+  "presets": [
+    {
+      "name": "People Bio",
+      "blocks": [
+        {
+          "type": "leader",
+          "settings": {
+            "name": "Leader Name",
+            "title": "Title",
+            "image_position": "left",
+            "enable_read_more": true,
+            "read_more_label": "Read More",
+            "read_less_label": "Read Less",
+            "characters_limit": 150
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

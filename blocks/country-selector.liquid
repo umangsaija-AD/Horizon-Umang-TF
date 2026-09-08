@@ -1,0 +1,449 @@
+{%- liquid
+  assign current_country = localization.country
+  assign sorted_countries = localization.available_countries | sort: 'name'
+  assign enable_on = block.settings.enable_on | default: 'all'
+  assign show_flag = block.settings.show_flag
+  assign show_currency_code = block.settings.show_currency_code
+  assign show_language_selector = block.settings.show_language_selector
+
+  assign trigger_meta = ''
+  if show_currency_code
+    assign trigger_meta = trigger_meta | append: current_country.currency.iso_code | append: ' ' | append: current_country.currency.symbol | append: ' '
+  endif
+  assign trigger_meta = trigger_meta | strip
+-%}
+
+<dropdown-localization-component
+  class="country-selector"
+  data-enable-on="{{ enable_on }}"
+  {{ block.shopify_attributes }}
+>
+  <button
+    type="button"
+    class="country-selector__trigger"
+    ref="button"
+    aria-expanded="false"
+    aria-controls="country-selector-panel-{{ block.id }}"
+    aria-label="Select country"
+    on:click="/toggleSelector"
+  >
+    <span class="country-selector__globe svg-wrapper" aria-hidden="true">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round">
+        <circle cx="8" cy="8" r="6.5"/>
+        <path d="M1.5 8h13"/>
+        <ellipse cx="8" cy="8" rx="2.8" ry="6.5"/>
+      </svg>
+    </span>
+    <span class="country-selector__trigger-text">
+      {{- current_country.name }}{% if trigger_meta != blank %} ({{ trigger_meta }}){% endif %}
+    </span>
+    <span class="country-selector__caret svg-wrapper" aria-hidden="true">
+      {{ 'icon-caret.svg' | inline_asset_content }}
+    </span>
+  </button>
+
+  <div
+    class="country-selector__panel"
+    id="country-selector-panel-{{ block.id }}"
+    ref="panel"
+    hidden
+  >
+    <localization-form-component ref="localizationForm">
+      {%- form 'localization',
+        id: 'CountrySelectorForm',
+        ref: 'form',
+        class: 'country-selector__form'
+      -%}
+        <ul class="country-selector__list" role="listbox">
+          {%- for country in sorted_countries -%}
+            <li
+              class="country-selector__item"
+              {% if country.iso_code == current_country.iso_code %}
+                aria-current="true"
+              {% endif %}
+              role="option"
+              data-value="{{ country.iso_code }}"
+              ref="countryListItems[]"
+              on:click="/selectCountry/{{ country.iso_code }}"
+            >
+              <span class="country-selector__item-check svg-wrapper">
+                {{ 'icon-checkmark.svg' | inline_asset_content }}
+              </span>
+              {% if show_flag %}
+                <span class="country-selector__item-flag" data-country-iso="{{ country.iso_code }}"></span>
+              {% endif %}
+              <span class="country-selector__item-name">
+                {{- country.name -}}
+              </span>
+            </li>
+          {%- endfor -%}
+        </ul>
+        <input
+          type="hidden"
+          name="country_code"
+          value="{{ current_country.iso_code }}"
+          ref="countryInput"
+        >
+
+        {%- if show_language_selector and localization.available_languages.size > 1 and current_country.iso_code != 'US' -%}
+          <div class="country-selector__language">
+            <span class="country-selector__language-label">Language</span>
+            <div class="country-selector__language-select-wrapper">
+              <select
+                class="country-selector__language-select"
+                name="language_code"
+                aria-label="Language"
+                ref="languageInput"
+                on:change="/changeLanguage"
+              >
+                {%- for language in localization.available_languages -%}
+                  <option
+                    value="{{ language.iso_code }}"
+                    lang="{{ language.iso_code }}"
+                    {% if language.iso_code == localization.language.iso_code %}
+                      selected
+                    {% endif %}
+                  >
+                    {{- language.endonym_name | capitalize -}}
+                  </option>
+                {%- endfor -%}
+              </select>
+              <span class="country-selector__language-caret svg-wrapper" aria-hidden="true">
+                {{ 'icon-caret.svg' | inline_asset_content }}
+              </span>
+            </div>
+          </div>
+        {%- endif -%}
+      {%- endform -%}
+    </localization-form-component>
+  </div>
+</dropdown-localization-component>
+
+<script>
+  (function() {
+    function isoToFlag(iso) {
+      return [...iso.toUpperCase()].map(function(c) {
+        return String.fromCodePoint(c.codePointAt(0) + 127397);
+      }).join('');
+    }
+    document.querySelectorAll('[data-country-iso]').forEach(function(el) {
+      el.textContent = isoToFlag(el.dataset.countryIso);
+    });
+  })();
+</script>
+
+{% stylesheet %}
+  .country-selector {
+    display: flex;
+    align-items: center;
+    position: relative;
+  }
+
+  @media screen and (max-width: 749px) {
+    .country-selector[data-enable-on="desktop"] {
+      display: none;
+    }
+  }
+
+  @media screen and (min-width: 750px) {
+    .country-selector[data-enable-on="mobile"] {
+      display: none;
+    }
+  }
+
+  .country-selector__trigger {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--color-foreground);
+    font-family: var(--font-body--family);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color var(--animation-speed) var(--animation-easing);
+  }
+
+  .country-selector__trigger:hover,
+  .country-selector__trigger[aria-expanded='true'] {
+    background-color: rgb(var(--color-foreground-rgb) / var(--opacity-8));
+  }
+
+  .country-selector__globe {
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .country-selector__trigger-text {
+    font-size: 13px;
+  }
+
+  .country-selector__caret {
+    width: 10px;
+    height: 10px;
+    flex-shrink: 0;
+    transition: transform var(--animation-speed) var(--animation-easing);
+  }
+
+  .country-selector__trigger[aria-expanded='true'] .country-selector__caret {
+    transform: rotate(180deg);
+  }
+
+  /* Panel */
+  .country-selector__panel {
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    z-index: var(--layer-heightened);
+    min-width: 280px;
+    background-color: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgb(0 0 0 / 0.08), 0 1px 4px rgb(0 0 0 / 0.04);
+  }
+
+  .country-selector__panel::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    right: 24px;
+    width: 10px;
+    height: 10px;
+    background: var(--color-background);
+    border-top: 1px solid var(--color-border);
+    border-left: 1px solid var(--color-border);
+    transform: rotate(45deg);
+  }
+
+  .country-selector__panel[hidden] {
+    display: none;
+  }
+
+  .country-selector__form {
+    width: 100%;
+  }
+
+  .country-selector__panel localization-form-component {
+    display: block;
+    width: 100%;
+  }
+
+  /* List */
+  .country-selector__list {
+    list-style: none;
+    margin: 0;
+    padding: 8px;
+    max-height: 420px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+
+  .country-selector__item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1.3;
+    color: var(--color-foreground);
+    transition: background-color var(--animation-speed) var(--animation-easing);
+  }
+
+  .country-selector__item:hover {
+    background-color: rgb(var(--color-foreground-rgb) / 0.04);
+  }
+
+  .country-selector__item[aria-current='true'] {
+    font-weight: 600;
+  }
+
+  /* Checkmark */
+  .country-selector__item-check {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    visibility: hidden;
+    color: var(--color-foreground);
+  }
+
+  .country-selector__item[aria-current='true'] .country-selector__item-check {
+    visibility: visible;
+  }
+
+  /* Flag */
+  .country-selector__item-flag {
+    font-size: 20px;
+    line-height: 1;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* Country name */
+  .country-selector__item-name {
+    white-space: nowrap;
+  }
+
+  /* Language selector */
+  .country-selector__language {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 16px;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .country-selector__language-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: rgb(var(--color-foreground-rgb) / 0.6);
+    flex-shrink: 0;
+  }
+
+  .country-selector__language-select-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .country-selector__language-select {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: var(--color-foreground);
+    font-family: var(--font-body--family);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 4px 22px 4px 8px;
+    cursor: pointer;
+    text-align: right;
+  }
+
+  .country-selector__language-select:focus-visible {
+    outline: 2px solid currentcolor;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  .country-selector__language-select:focus {
+    outline: none;
+  }
+
+  .country-selector__language-caret {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 10px;
+    height: 10px;
+    pointer-events: none;
+    color: var(--color-foreground);
+  }
+
+  /* Footer context: panel opens upward (desktop only — mobile uses bottom sheet) */
+  @media screen and (min-width: 750px) {
+    footer .country-selector__panel,
+    .footer .country-selector__panel {
+      top: auto;
+      bottom: calc(100% + 12px);
+    }
+
+    footer .country-selector__panel::before,
+    .footer .country-selector__panel::before {
+      top: auto;
+      bottom: -6px;
+      transform: rotate(225deg);
+    }
+  }
+
+  /* Fix footer-utilities grid when this block is hidden on desktop */
+  @media screen and (min-width: 750px) {
+    .utilities--blocks-3:has(> .country-selector[data-enable-on="mobile"]) {
+      grid-template-columns: 2fr 1fr;
+    }
+  }
+
+  /* Mobile bottom sheet */
+  @media screen and (max-width: 749px) {
+    .country-selector__panel {
+      position: fixed;
+      top: auto;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      max-height: 70vh;
+      border-radius: 16px 16px 0 0;
+    }
+
+    .country-selector__panel::before {
+      display: none;
+    }
+
+    .country-selector__list {
+      max-height: calc(70vh - 16px);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Country selector",
+  "tag": null,
+  "settings": [
+    {
+      "type": "select",
+      "id": "enable_on",
+      "label": "Show on",
+      "options": [
+        { "value": "all", "label": "All devices" },
+        { "value": "desktop", "label": "Desktop only" },
+        { "value": "mobile", "label": "Mobile only" }
+      ],
+      "default": "all"
+    },
+    {
+      "type": "header",
+      "content": "Trigger"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_currency_code",
+      "label": "Show currency code",
+      "info": "Show currency code and symbol in the trigger",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Dropdown"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_flag",
+      "label": "Show flag",
+      "info": "Show flag emoji next to each country in the dropdown",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_language_selector",
+      "label": "Show language selector",
+      "info": "Show the language switcher control inside the dropdown. Note: this is never shown on the United States storefront, which is English only.",
+      "default": true
+    }
+  ]
+}
+{% endschema %}

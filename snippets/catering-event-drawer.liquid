@@ -1,0 +1,871 @@
+{% doc %}
+  Catering Event Drawer
+
+  Right-side sliding drawer for the multi-step catering event flow.
+  Steps: 1) Event details (zip + date) → 2) Delivery details (pickup/delivery) → 3) Store selection
+         → 4) Time selection → 5) Instructions (+ curbside / vehicle details for pickup).
+
+  @example {% render 'catering-event-drawer' %}
+{% enddoc %}
+
+<!-- Overlay backdrop -->
+<div
+  data-catering-drawer-overlay
+  class="tw-fixed tw-inset-0 tw-hidden tw-bg-black/50 tw-transition-opacity catering-drawer-overlay"
+></div>
+
+<!-- Drawer panel -->
+<div
+  data-catering-drawer
+  class="tw-fixed tw-flex tw-translate-x-full tw-transform tw-flex-col tw-bg-white tw-transition-transform tw-duration-300 catering-drawer"
+>
+  <!-- Header -->
+  <div class="tw-flex tw-shrink-0 tw-items-center tw-justify-between tw-px-4 tw-py-6">
+    <h2 class="tw-m-0 tw-text-xl tw-font-semibold tw-leading-[1.2] catering-drawer__title">Tell us about your event</h2>
+    <button
+      data-catering-drawer-close
+      type="button"
+      class="tw-flex tw-h-8 tw-w-8 tw-cursor-pointer tw-items-center tw-justify-center tw-rounded-full tw-border-none tw-bg-transparent catering-drawer__close-btn"
+      aria-label="Close drawer"
+    >
+      <svg width="24" height="24" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M28.3326 11.6667L11.666 28.3333M11.6659 11.6667L28.3325 28.3333" stroke="#1D1D1D" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Scrollable content -->
+  <div class="tw-flex-1 tw-overflow-y-auto">
+
+    <!-- ── Steps 1 + 2 (stacked in same scroll area) ── -->
+    <div data-step-1 class="tw-flex tw-flex-col tw-gap-4 tw-px-6">
+
+      <!-- Section label -->
+      <p class="tw-m-0 tw-text-base tw-font-semibold catering-drawer__label">Event details</p>
+
+      <!-- Zip + Date: 2-col on desktop, stacked on mobile -->
+      <div class="tw-grid tw-grid-cols-1 tw-gap-4 catering-drawer__row-grid">
+
+        <!-- Zip input with location icon -->
+        <div class="tw-relative catering-drawer__zip-wrap">
+          <span class="tw-pointer-events-none tw-absolute tw-top-1/2 tw-flex tw-items-center tw-leading-none catering-drawer__location-icon">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7.32661 12.1454C7.13107 12.2849 6.86893 12.2849 6.67339 12.1454C3.85664 10.1367 0.866584 6.00664 3.88891 3.02241C4.71402 2.2077 5.83311 1.75 7 1.75C8.16689 1.75 9.28598 2.2077 10.1111 3.02241C13.1334 6.00664 10.1434 10.1367 7.32661 12.1454Z" stroke="#1D1D1D" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.00065 6.99996C7.64498 6.99996 8.16732 6.47763 8.16732 5.83329C8.16732 5.18896 7.64498 4.66663 7.00065 4.66663C6.35632 4.66663 5.83398 5.18896 5.83398 5.83329C5.83398 6.47763 6.35632 6.99996 7.00065 6.99996Z" stroke="#1D1D1D" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <input
+            data-drawer-zip
+            type="text"
+            name="catering_zip"
+            placeholder="Enter zip code"
+            inputmode="numeric"
+            autocomplete="postal-code"
+            class="tw-h-12 tw-w-full tw-rounded-lg tw-border tw-border-solid tw-pr-8 tw-text-xs catering-drawer__input catering-drawer__zip-input"
+          >
+          <button
+            data-zip-clear
+            type="button"
+            class="catering-drawer__zip-clear"
+            aria-label="Clear zip code"
+          >
+            <svg width="26" height="26" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M28.3326 11.6667L11.666 28.3333M11.6659 11.6667L28.3325 28.3333" stroke="#1D1D1D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Date input with custom calendar icon -->
+        {%- assign tomorrow = 'now' | date: '%s' | plus: 86400 | date: '%Y-%m-%d' -%}
+        <div class="tw-relative catering-drawer__date-wrap">
+          <input
+            data-drawer-date
+            type="date"
+            name="catering_date"
+            min="{{ tomorrow }}"
+            class="tw-h-12 tw-w-full tw-rounded-lg tw-border tw-border-solid tw-pl-4 tw-pr-10 tw-text-xs catering-drawer__input"
+          >
+          <span data-date-display class="catering-drawer__date-display"></span>
+          <span class="tw-pointer-events-none tw-absolute tw-right-0 tw-top-1/2 tw-flex tw-items-center tw-leading-none catering-drawer__calendar-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M2.5 10C2.5 6.46448 2.5 5.53004 3.59835 4.43169C4.6967 3.33334 6.46447 3.33334 10 3.33334C13.5355 3.33334 15.3033 3.33334 16.4016 4.43169C17.5 5.53004 17.5 6.46448 17.5 10C17.5 13.5355 17.5 15.3033 16.4016 16.4017C15.3033 17.5 13.5355 17.5 10 17.5C6.46447 17.5 4.6967 17.5 3.59835 16.4017C2.5 15.3033 2.5 13.5355 2.5 10Z" stroke="#1D1D1D" stroke-linejoin="round"/><path d="M2.70801 6.66666H17.2913" stroke="#1D1D1D" stroke-linejoin="round"/><path d="M13.75 4.16667V2.5" stroke="#1D1D1D" stroke-linejoin="round"/><path d="M6.25 4.16667V2.5" stroke="#1D1D1D" stroke-linejoin="round"/></svg>
+          </span>
+        </div>
+      </div>
+
+      <!-- Guest count -->
+      <input
+        data-drawer-guests
+        type="number"
+        name="catering_guests"
+        min="1"
+        placeholder="Guest count"
+        class="tw-h-12 tw-w-full tw-rounded-lg tw-border tw-border-solid tw-px-4 tw-text-xs catering-drawer__input"
+      >
+
+      <!-- ZIP validation feedback -->
+      <p data-zip-feedback class="tw-hidden tw-m-0 tw-text-xs"></p>
+    </div>
+
+    <!-- Step 2: Delivery details (hidden until zip+date filled) -->
+    <div data-step-2 class="tw-hidden tw-flex-col tw-gap-6 tw-overflow-hidden tw-px-6 catering-drawer__step-2">
+
+      <!-- Section label -->
+      <p data-delivery-label class="tw-m-0 tw-text-base tw-font-semibold catering-drawer__label">Delivery details</p>
+
+      <!-- Pickup / Delivery -->
+      <div class="tw-grid tw-grid-cols-1 tw-gap-4 catering-drawer__row-grid">
+        <label
+          class="tw-flex tw-h-12 tw-cursor-pointer tw-items-center tw-gap-2 tw-rounded-lg tw-border tw-border-solid tw-px-4 tw-transition-colors catering-drawer__order-label"
+          data-order-type-label="pickup"
+        >
+          <input type="radio" name="catering_order_type" value="Pickup" class="tw-accent-current" checked>
+          <span class="tw-text-xs tw-font-semibold catering-drawer__label">Pickup</span>
+        </label>
+        <label
+          class="tw-flex tw-h-12 tw-cursor-pointer tw-items-center tw-gap-2 tw-rounded-lg tw-border tw-border-solid tw-px-4 tw-transition-colors catering-drawer__order-label"
+          data-order-type-label="delivery"
+        >
+          <input type="radio" name="catering_order_type" value="Delivery" class="tw-accent-current">
+          <span class="tw-text-xs tw-font-normal catering-drawer__label">Delivery</span>
+        </label>
+      </div>
+
+      <!-- Select Store CTA: centered 280px on desktop, full-width on mobile -->
+      <div data-select-store-wrap class="tw-hidden tw-flex tw-justify-center">
+        <button
+          data-select-store-btn
+          type="button"
+          class="tw-h-10 tw-w-full tw-cursor-pointer tw-rounded-[24px] tw-border-none tw-text-sm tw-font-semibold tw-text-white tw-transition-colors hover:tw-bg-red-700 catering-drawer__btn-primary"
+        >
+          Select Store
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Step 3: Store selection ── -->
+    <div data-step-3 class="tw-hidden tw-flex-col tw-gap-6 tw-px-6">
+
+      <!-- Event details (filled display) -->
+      {% comment %} <div class="tw-flex tw-flex-col tw-gap-4">
+        <p class="tw-m-0 tw-text-base tw-font-semibold catering-drawer__label">Event details</p>
+
+        <!-- Zip pill + Date display: 2-col on desktop, stacked on mobile -->
+        <div class="tw-grid tw-grid-cols-1 tw-gap-4 lg:tw-grid-cols-2">
+
+          <!-- Zip filled pill -->
+          <div class="tw-flex tw-h-8 tw-items-center tw-justify-between tw-rounded-lg tw-border tw-border-solid tw-px-4 catering-drawer__field-pill">
+            <div class="tw-flex tw-items-center tw-gap-2">
+              <span class="tw-inline-flex tw-h-[14px] tw-w-[14px] tw-shrink-0 tw-items-center tw-justify-center">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7.32661 12.1454C7.13107 12.2849 6.86893 12.2849 6.67339 12.1454C3.85664 10.1367 0.866584 6.00664 3.88891 3.02241C4.71402 2.2077 5.83311 1.75 7 1.75C8.16689 1.75 9.28598 2.2077 10.1111 3.02241C13.1334 6.00664 10.1434 10.1367 7.32661 12.1454Z" stroke="#1D1D1D" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.00065 6.99996C7.64498 6.99996 8.16732 6.47763 8.16732 5.83329C8.16732 5.18896 7.64498 4.66663 7.00065 4.66663C6.35632 4.66663 5.83398 5.18896 5.83398 5.83329C5.83398 6.47763 6.35632 6.99996 7.00065 6.99996Z" stroke="#1D1D1D" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </span>
+              <span data-step3-zip-value class="tw-text-xs tw-font-medium catering-drawer__value"></span>
+            </div>
+            <button
+              data-edit-summary
+              type="button"
+              class="tw-flex tw-h-7 tw-w-7 tw-cursor-pointer tw-items-center tw-justify-center tw-rounded-full tw-border-none tw-bg-transparent tw-text-lg tw-leading-none catering-drawer__value"
+              aria-label="Clear location"
+            >&times;</button>
+          </div>
+
+          <!-- Date filled display (2-line: label + value) -->
+          <div class="tw-flex tw-h-8 tw-items-center tw-justify-between tw-rounded-lg tw-border tw-border-solid tw-px-4 catering-drawer__date-pill">
+            <div class="tw-flex tw-flex-col tw-justify-center">
+              <span class="tw-text-[10px] tw-leading-none catering-drawer__date-meta">Select Date</span>
+              <span data-step3-date-value class="tw-text-xs tw-leading-[1.4] catering-drawer__value"></span>
+            </div>
+            <span class="tw-inline-flex tw-h-5 tw-w-5 tw-shrink-0 tw-items-center tw-justify-center tw-opacity-50">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M2.5 10C2.5 6.46448 2.5 5.53004 3.59835 4.43169C4.6967 3.33334 6.46447 3.33334 10 3.33334C13.5355 3.33334 15.3033 3.33334 16.4016 4.43169C17.5 5.53004 17.5 6.46448 17.5 10C17.5 13.5355 17.5 15.3033 16.4016 16.4017C15.3033 17.5 13.5355 17.5 10 17.5C6.46447 17.5 4.6967 17.5 3.59835 16.4017C2.5 15.3033 2.5 13.5355 2.5 10Z" stroke="#1D1D1D" stroke-linejoin="round"/><path d="M2.70801 6.66666H17.2913" stroke="#1D1D1D" stroke-linejoin="round"/><path d="M13.75 4.16667V2.5" stroke="#1D1D1D" stroke-linejoin="round"/><path d="M6.25 4.16667V2.5" stroke="#1D1D1D" stroke-linejoin="round"/></svg>
+            </span>
+          </div>
+        </div>
+
+        <!-- Guest count (pre-filled by JS) -->
+        <input
+          data-step3-guests
+          type="number"
+          name="catering_guests"
+          min="1"
+          placeholder="Guest count"
+          class="tw-h-12 tw-w-full tw-rounded-lg tw-border tw-border-solid tw-px-4 tw-text-xs catering-drawer__input"
+        >
+      </div> {% endcomment %}
+
+      <!-- Store heading (text updated by JS based on order type) -->
+      <h3 data-store-heading class="tw-m-0 tw-text-base tw-font-semibold catering-drawer__label">Which store do you want to pick up from?</h3>
+
+      <!-- Store list (populated by JS) -->
+      <div data-store-list class="tw-flex tw-flex-col tw-gap-3"></div>
+    </div>
+
+    <!-- ── Step 4: Time selection (hidden until a store is selected) ── -->
+    <div data-step-4 class="tw-hidden tw-flex-col tw-gap-6 tw-px-6">
+
+      <!-- Time heading (text updated by JS based on order type) -->
+      <p data-time-heading class="tw-m-0 tw-text-base tw-font-semibold catering-drawer__label">Select a pickup time</p>
+
+      <!-- Time dropdown -->
+      <select
+        data-drawer-time
+        name="catering_time"
+        class="tw-h-12 tw-w-full tw-cursor-pointer tw-appearance-none tw-rounded-lg tw-border tw-border-solid tw-bg-white tw-px-4 tw-text-xs catering-drawer__input"
+      >
+        <option value="">Select Pickup Time</option>
+        <option value="9:00 AM - 10:00 AM">9:00 AM - 10:00 AM</option>
+        <option value="10:00 AM - 11:00 AM">10:00 AM - 11:00 AM</option>
+        <option value="11:00 AM - 12:00 PM">11:00 AM - 12:00 PM</option>
+        <option value="12:00 PM - 1:00 PM">12:00 PM - 1:00 PM</option>
+        <option value="1:00 PM - 2:00 PM">1:00 PM - 2:00 PM</option>
+        <option value="2:00 PM - 3:00 PM">2:00 PM - 3:00 PM</option>
+        <option value="3:00 PM - 4:00 PM">3:00 PM - 4:00 PM</option>
+        <option value="4:00 PM - 5:00 PM">4:00 PM - 5:00 PM</option>
+        <option value="5:00 PM - 6:00 PM">5:00 PM - 6:00 PM</option>
+        <option value="6:00 PM - 7:00 PM">6:00 PM - 7:00 PM</option>
+      </select>
+    </div>
+
+    <!-- ── Step 5: Instructions (hidden until a time is selected) ── -->
+    <div data-step-5 class="tw-hidden tw-flex-col tw-gap-6 tw-px-6">
+
+      <!-- Curbside pickup block (pickup only — hidden for delivery) -->
+      <div data-curbside-wrap class="tw-flex tw-flex-col tw-gap-6">
+        <label for="catering-curbside-toggle" class="tw-m-0 tw-flex tw-cursor-pointer tw-items-center tw-gap-4">
+          <span class="catering-drawer__switch">
+            <input
+              id="catering-curbside-toggle"
+              data-curbside-toggle
+              type="checkbox"
+              class="catering-drawer__switch-input"
+              aria-label="Curbside pickup"
+            >
+            <span class="catering-drawer__switch-track" aria-hidden="true">
+              <span class="catering-drawer__switch-knob"></span>
+            </span>
+          </span>
+          <span class="tw-text-base tw-font-semibold catering-drawer__label">Curbside pickup</span>
+        </label>
+
+        <!-- Vehicle details (hidden until curbside is enabled) -->
+        <div data-vehicle-fields class="tw-hidden tw-grid-cols-1 tw-gap-4 catering-drawer__row-grid">
+          <input
+            data-vehicle-model
+            type="text"
+            name="catering_vehicle_model"
+            placeholder="Vehicle model"
+            class="tw-h-12 tw-w-full tw-rounded-lg tw-border tw-border-solid tw-px-4 tw-text-xs catering-drawer__input"
+          >
+          <input
+            data-vehicle-color
+            type="text"
+            name="catering_vehicle_color"
+            placeholder="Vehicle color"
+            class="tw-h-12 tw-w-full tw-rounded-lg tw-border tw-border-solid tw-px-4 tw-text-xs catering-drawer__input"
+          >
+        </div>
+      </div>
+
+      <!-- Instruction (required) -->
+      <p data-instruction-heading class="tw-m-0 tw-text-base tw-font-semibold catering-drawer__label">Pickup instruction</p>
+      <div class="tw-flex tw-flex-col tw-gap-2">
+        <textarea
+          data-instruction
+          name="catering_instruction"
+          maxlength="250"
+          rows="4"
+          placeholder="Add pickup instructions"
+          class="tw-w-full tw-rounded-lg tw-border tw-border-solid tw-px-4 tw-py-3 tw-text-xs catering-drawer__input catering-drawer__textarea"
+        ></textarea>
+        <p data-instruction-hint class="catering-drawer__field-hint">Provide details to make your pickup as convenient as possible. (Ex: pickup timeframe, accessibility requirements, etc.)</p>
+        <span data-instruction-count class="catering-drawer__char-count">0/250</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Loading overlay (ZIP validation) -->
+  <div
+    data-drawer-loader
+    class="tw-absolute tw-inset-0 tw-z-20 tw-items-center tw-justify-center catering-drawer__loader"
+    style="display:none;"
+    aria-hidden="true"
+  >
+    <svg class="catering-drawer__spinner" width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="22" cy="22" r="18" stroke="#EDEDED" stroke-width="3.5"/>
+      <path d="M22 4 A18 18 0 0 1 40 22" stroke="#E10600" stroke-width="3.5" stroke-linecap="round"/>
+    </svg>
+  </div>
+
+  <!-- Sticky footer for step 3 -->
+  <div data-step3-footer class="tw-hidden tw-shrink-0 tw-border-t tw-border-solid tw-border-gray-200 tw-px-5 tw-py-4">
+    <div class="tw-flex tw-justify-center">
+      <button
+        data-start-adding-btn
+        type="button"
+        disabled
+        class="tw-h-10 tw-w-full tw-cursor-pointer tw-rounded-[24px] tw-border-none tw-text-sm tw-font-semibold tw-text-white tw-transition-colors disabled:tw-cursor-not-allowed catering-drawer__btn-primary"
+      >
+        Start Adding Products
+      </button>
+    </div>
+  </div>
+</div>
+
+{% stylesheet %}
+  @keyframes catering-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .catering-drawer__loader {
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    transition: opacity 0.2s ease;
+  }
+
+  .catering-drawer__spinner {
+    animation: catering-spin 0.8s linear infinite;
+  }
+
+  .catering-drawer-overlay {
+    z-index: 999;
+  }
+
+  .catering-drawer {
+    z-index: 1000;
+    top: 16px;
+    right: 16px;
+    bottom: 16px;
+    width: calc(100% - 32px);
+    max-width: 587px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+  }
+
+  .catering-drawer.tw-translate-x-full {
+    transform: translateX(calc(100% + 16px));
+  }
+
+  .catering-drawer__title,
+  .catering-drawer__label {
+    color: #464646;
+  }
+
+  .catering-drawer__input {
+    height: 48px;
+    font-size: 12px;
+    border-color: #DBDBDB;
+    color: #464646;
+    padding: 1rem;
+  }
+
+  .catering-drawer__input::placeholder {
+    color: #464646;
+  }
+
+  .catering-drawer__input:focus {
+    outline: none;
+    border-color: #1D1D1D;
+  }
+
+
+  select.catering-drawer__input {
+    background-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5 7.5L10 12.5L15 7.5' stroke='%231D1D1D' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    background-size: 20px 20px;
+    padding-right: 44px;
+  }
+
+  .catering-drawer__location-icon {
+    transform: translate(8px, -50%);
+  }
+
+  .catering-drawer__zip-input {
+    padding-left: 27px;
+  }
+
+  .catering-drawer__zip-input {
+    font-size: 12px;
+  }
+
+  @supports (-webkit-touch-callout: none) {
+    .catering-drawer__zip-input, .catering-drawer__input[type="number"],
+    [data-vehicle-model], [data-vehicle-color], [data-instruction] {
+      font-size: 16px;
+    }
+  }
+
+  .catering-drawer__zip-clear {
+    display: none;
+    position: absolute;
+    right: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    line-height: 0;
+  }
+
+  .catering-drawer__zip-wrap.has-value .catering-drawer__zip-clear {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .catering-drawer__calendar-icon {
+    transform: translate(-16px, -50%);
+  }
+
+  /* Always keep native date text invisible — we render our own formatted display */
+  .catering-drawer__input[type="date"] {
+    color: transparent;
+    caret-color: transparent;
+  }
+
+  .catering-drawer__date-display {
+    display: none;
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+    color: #464646;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .catering-drawer__date-wrap.has-value .catering-drawer__date-display {
+    display: block;
+  }
+
+  /* "Select date" via wrapper ::before — no extra HTML element needed */
+  .catering-drawer__date-wrap::before {
+    content: "Select date";
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+    color: #464646;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .catering-drawer__date-wrap:focus-within::before,
+  .catering-drawer__date-wrap.has-value::before {
+    display: none;
+  }
+
+  .catering-drawer__input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+  }
+
+  .catering-drawer__order-label {
+    border-color: #DBDBDB;
+    height: 48px;
+  }
+
+  .catering-drawer__order-label input[type="radio"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+    border: 1.5px solid #1D1D1D;
+    border-radius: 50%;
+    position: relative;
+    cursor: pointer;
+    margin: 0;
+  }
+
+  .catering-drawer__order-label input[type="radio"]:checked {
+    border-color: #1D1D1D;
+  }
+
+  .catering-drawer__order-label input[type="radio"]::after {
+    content: "";
+    display: block;
+    width: 10px;
+    height: 10px;
+    background: #1D1D1D;
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+  }
+
+  .catering-drawer__order-label input[type="radio"]:checked::after {
+    opacity: 1;
+  }
+
+  .catering-drawer__field-pill {
+    border-color: #DBDBDB;
+  }
+
+  .catering-drawer__date-pill {
+    border-color: #464646;
+  }
+
+  .catering-drawer__value {
+    color: #1D1D1D;
+  }
+
+  .catering-drawer__date-meta {
+    color: #6B6B6B;
+  }
+
+  .catering-drawer__close-btn {
+    font-size: 20px;
+  }
+
+  .catering-drawer__btn-primary {
+    background-color: #E10600;
+    height: 40px;
+    color: #fff;
+  }
+  .catering-drawer__btn-primary:disabled {
+    background-color: #EDEDED;
+    color: #999;
+    cursor: not-allowed;
+    opacity: 1;
+  }
+
+  .catering-drawer__step-2 {
+    max-height: 0;
+    transition: max-height 0.3s ease-out;
+    margin-top: 7px;
+  }
+
+  [data-step-1],
+  [data-step-2],
+  [data-step-3],
+  [data-step-4],
+  [data-step-5] {
+    padding-bottom: 1.5rem;
+  }
+
+  [data-step-3] {
+    padding-top: 1.5rem;
+  }
+
+  /* Instruction textarea — override the fixed 48px height from .catering-drawer__input */
+  .catering-drawer__textarea {
+    height: auto;
+    min-height: 96px;
+    padding: 12px 16px;
+    resize: vertical;
+    font-family: inherit;
+    line-height: 1.4;
+  }
+
+  /* Helper text under the instruction textarea */
+  .catering-drawer__field-hint {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.4;
+    color: #6B6B6B;
+  }
+
+  /* Character counter under the instruction textarea */
+  .catering-drawer__char-count {
+    align-self: flex-end;
+    font-size: 10px;
+    color: #6B6B6B;
+  }
+
+  /* Curbside pickup toggle switch */
+  .catering-drawer__switch {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    width: 40px;
+    min-width: 40px;
+    height: 22px;
+    min-height: 22px;
+  }
+  .catering-drawer__switch-input {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    border: none;
+    background: transparent;
+    border-radius: 999px;
+  }
+  .catering-drawer__switch-track {
+    display: block;
+    width: 40px;
+    height: 22px;
+    border-radius: 999px;
+    background: #DBDBDB;
+    transition: background 0.2s ease;
+    position: relative;
+    pointer-events: none;
+  }
+  .catering-drawer__switch-knob {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease;
+  }
+  .catering-drawer__switch-input:checked + .catering-drawer__switch-track {
+    background: #E10600;
+  }
+  .catering-drawer__switch-input:checked + .catering-drawer__switch-track .catering-drawer__switch-knob {
+    transform: translateX(18px);
+  }
+  .catering-drawer__switch-input:focus-visible + .catering-drawer__switch-track {
+    outline: 2px solid #1D1D1D;
+    outline-offset: 2px;
+  }
+
+  /* Store cards */
+  .catering-store-card {
+    border: 1px solid #EDEDED;
+    border-radius: 8px;
+    padding: 12px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .catering-store-card--selected {
+    border-color: #1D1D1D;
+  }
+  .catering-store-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .catering-store-card__name {
+    font-size: 14px;
+    font-weight: 500;
+    color: #1D1D1D;
+  }
+  .catering-store-card--selected .catering-store-card__name {
+    font-weight: 600;
+  }
+  .catering-store-card__distance {
+    font-size: 14px;
+    font-weight: 500;
+    color: #1D1D1D;
+    margin-left: 12px;
+    flex-shrink: 0;
+  }
+  .catering-store-card--selected .catering-store-card__distance {
+    font-weight: 600;
+  }
+  .catering-store-card__groups {
+    display: none;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  .catering-store-card__info {
+    width: 215px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .catering-store-card__days {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex-shrink: 0;
+  }
+  .catering-store-card__times {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex-shrink: 0;
+    margin-left: auto;
+    text-align: right;
+  }
+  .catering-store-card__text {
+    font-size: 14px;
+    color: #464646;
+  }
+  .catering-store-card__mobile {
+    display: block;
+    margin-top: 4px;
+  }
+  .catering-store-card__view-details {
+    font-size: 12px;
+    font-weight: 600;
+    color: #1D1D1D;
+    border-bottom: 1px solid #1D1D1D;
+  }
+
+  @media screen and (min-width: 1024px) {
+    .catering-drawer {
+      width: 587px;
+    }
+    .catering-drawer__row-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+    .catering-drawer__btn-primary {
+      width: 280px;
+    }
+    [data-step-1],
+    [data-step-2],
+    [data-step-3],
+    [data-step-4],
+    [data-step-5] {
+      gap: 24px;
+    }
+    .catering-store-card__groups {
+      display: flex;
+    }
+    .catering-store-card__mobile {
+      display: none;
+    }
+  }
+{% endstylesheet %}
+
+<script>
+  (function () {
+    function initDatePlaceholder() {
+      var input = document.querySelector('[data-drawer-date]');
+      if (!input) return;
+      var wrap = input.closest('.catering-drawer__date-wrap');
+      var display = wrap && wrap.querySelector('[data-date-display]');
+      if (!wrap) return;
+
+      function formatDate(val) {
+        // val is always YYYY-MM-DD from the browser
+        var parts = val.split('-');
+        if (parts.length !== 3) return val;
+        return parts[1] + '/' + parts[2] + '/' + parts[0];
+      }
+
+      function getMinDate() {
+        // Single source of truth: the server-rendered `min` (store timezone).
+        // Falls back to a browser-computed tomorrow only if `min` is absent.
+        var serverMin = input.getAttribute('min');
+        if (serverMin) return serverMin;
+        var d = new Date();
+        d.setDate(d.getDate() + 1);
+        var mm = String(d.getMonth() + 1).padStart(2, '0');
+        var dd = String(d.getDate()).padStart(2, '0');
+        return d.getFullYear() + '-' + mm + '-' + dd;
+      }
+
+      var lastValidValue = '';
+
+      function update() {
+        // iOS scroll-wheel picker doesn't enforce min — revert to last valid if before the allowed min
+        if (input.value && input.value < getMinDate()) {
+          input.value = lastValidValue;
+        } else {
+          lastValidValue = input.value;
+        }
+        var hasVal = !!input.value;
+        wrap.classList.toggle('has-value', hasVal);
+        if (display) display.textContent = hasVal ? formatDate(input.value) : '';
+      }
+
+      input.addEventListener('change', update);
+      input.addEventListener('input', update);
+      update();
+    }
+
+    function initZipClear() {
+      var input = document.querySelector('[data-drawer-zip]');
+      if (!input) return;
+      var wrap = input.closest('.catering-drawer__zip-wrap');
+      var clearBtn = document.querySelector('[data-zip-clear]');
+      if (!wrap || !clearBtn) return;
+
+      function updateClear() {
+        wrap.classList.toggle('has-value', input.value.length > 0);
+      }
+
+      input.addEventListener('input', updateClear);
+      clearBtn.addEventListener('click', function () {
+        input.value = '';
+        wrap.classList.remove('has-value');
+        input.focus();
+      });
+
+      updateClear();
+    }
+
+    function initOrderTypeLabel() {
+      var radios = document.querySelectorAll('[name="catering_order_type"]');
+      var deliveryLabel = document.querySelector('[data-delivery-label]');
+      var storeHeading = document.querySelector('[data-store-heading]');
+      var timeSelect = document.querySelector('[data-drawer-time]');
+
+      function updateLabels(value) {
+        var isDelivery = value === 'Delivery';
+        if (deliveryLabel) {
+          deliveryLabel.textContent = isDelivery ? 'How would you like to get it?' : 'Delivery details';
+        }
+        if (storeHeading) {
+          storeHeading.textContent = isDelivery
+            ? 'Which store do you want to deliver it?'
+            : 'Which store do you want to pick up from?';
+        }
+        if (timeSelect) {
+          var firstOpt = timeSelect.querySelector('option[value=""]');
+          if (firstOpt) firstOpt.textContent = isDelivery ? 'Select Delivery Time' : 'Select Pickup Time';
+        }
+      }
+
+      radios.forEach(function (radio) {
+        radio.addEventListener('change', function () {
+          updateLabels(this.value);
+        });
+      });
+
+      var checked = document.querySelector('[name="catering_order_type"]:checked');
+      if (checked) updateLabels(checked.value);
+    }
+
+    function initGuestsInput() {
+      var input = document.querySelector('[data-drawer-guests]');
+      if (!input) return;
+      input.addEventListener('input', function () {
+        if (this.value !== '' && parseInt(this.value, 10) < 1) {
+          this.value = 1;
+        }
+      });
+      input.addEventListener('change', function () {
+        if (this.value !== '' && parseInt(this.value, 10) < 1) {
+          this.value = 1;
+        }
+      });
+    }
+
+    function init() {
+      initDatePlaceholder();
+      initZipClear();
+      initOrderTypeLabel();
+      initGuestsInput();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  })();
+</script>

@@ -1,0 +1,294 @@
+{%- comment -%}
+  Hide the Bundle Builder CTA everywhere when the discount config metaobject is
+  missing — without it the drawer has no products/tiers, so it must not be openable.
+{%- endcomment -%}
+{%- capture bb_config_available -%}{%- render 'bundle-config-available' -%}{%- endcapture -%}
+{%- assign bb_config_available = bb_config_available | strip -%}
+{%- assign cta_product = closest.product -%}
+
+{% if bb_config_available != 'true' %}
+  {%- comment -%} Bundle config unavailable — render no CTA. {%- endcomment -%}
+{% elsif cta_product %}
+  {%- comment -%}
+    Inside a product card: a cart-coupled bundle CTA. bb-product-card-cta.js reads
+    data-product-id, mirrors cart status (renders the label as the "Add" state and
+    flips to "Remove" when in cart), routes Add through the Bundle Builder drawer
+    flow and Remove through the cart. The label text is whatever the merchant set.
+  {%- endcomment -%}
+  <span
+    data-bb-product-cta
+    data-product-id="{{ cta_product.id }}"
+    data-bb-add-label="{{ block.settings.label | escape }}"
+    {{ block.shopify_attributes }}
+  >
+    {% render 'button',
+      element_type: 'button',
+      label: block.settings.label,
+      style_class: 'button',
+      weight: block.settings.weight,
+      button_size: block.settings.button_size,
+      button_size_mobile: block.settings.button_size_mobile,
+      width: 'fill',
+      width_mobile: 'fill'
+    %}
+  </span>
+{% else %}
+  {%- comment -%} Standalone (e.g. homepage): just opens the Bundle Builder drawer. {%- endcomment -%}
+  <span data-bundle-builder-trigger {{ block.shopify_attributes }}>
+    {% render 'button',
+      element_type: 'button',
+      label: block.settings.label,
+      style_class: block.settings.style_class,
+      weight: block.settings.weight,
+      button_size: block.settings.button_size,
+      button_size_mobile: block.settings.button_size_mobile,
+      width: block.settings.width,
+      custom_width: block.settings.custom_width,
+      width_mobile: block.settings.width_mobile,
+      custom_width_mobile: block.settings.custom_width_mobile
+    %}
+  </span>
+{% endif %}
+
+{% stylesheet %}
+  /* Product-card bundle CTA: full card width. */
+  [data-bb-product-cta] {
+    display: block;
+    width: 100%;
+  }
+
+  [data-bb-product-cta] .button {
+    width: 100%;
+  }
+
+  /* Remove state: white background, light border, dark text (matches design).
+     Overrides the primary-button color vars consumed by base.css .button. */
+  [data-bb-product-cta] .button.bb-cta--remove {
+    --button-background-color: #ffffff;
+    --button-color: #1d1d1d;
+    --button-border-color: #ededed;
+    --button-border-width: 1px;
+  }
+
+  [data-bb-product-cta] .button.bb-cta--remove:hover {
+    --button-background-color: #f5f5f5;
+    --button-color: #1d1d1d;
+    --button-border-color: #ededed;
+  }
+
+  /* Loading state: hide the label and show a CSS spinner while the remove request runs.
+     The spinner inherits the button's text color (--button-color), so it's dark on the
+     white Remove button and white on the red Add button. */
+  [data-bb-product-cta] .button.bb-cta--loading {
+    color: transparent !important;
+    position: relative;
+    cursor: default;
+  }
+
+  [data-bb-product-cta] .button.bb-cta--loading::after {
+    content: "";
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    width: 16px;
+    height: 16px;
+    margin-block-start: -8px;
+    margin-inline-start: -8px;
+    border: 2px solid color-mix(in srgb, var(--button-color) 30%, transparent);
+    border-top-color: var(--button-color);
+    border-radius: 50%;
+    animation: bb-cta-spin 0.6s linear infinite;
+  }
+
+  @keyframes bb-cta-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-bb-product-cta] .button.bb-cta--loading::after {
+      animation-duration: 1.5s;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Bundle Builder Button",
+  "tag": null,
+  "settings": [
+    {
+      "type": "text",
+      "id": "label",
+      "label": "Label",
+      "info": "Rendered as-is. Standalone it opens the Bundle Builder drawer; inside a product card it becomes a cart-coupled CTA that flips to 'Remove' when that product is in the cart.",
+      "default": "Add"
+    },
+    {
+      "type": "select",
+      "id": "style_class",
+      "label": "Style",
+      "options": [
+        {
+          "value": "button",
+          "label": "Primary"
+        },
+        {
+          "value": "button-secondary",
+          "label": "Secondary"
+        },
+        {
+          "value": "link",
+          "label": "Link"
+        }
+      ],
+      "default": "button"
+    },
+    {
+      "type": "select",
+      "id": "weight",
+      "label": "Weight",
+      "options": [
+        {
+          "value": "",
+          "label": "Default"
+        },
+        {
+          "value": "400",
+          "label": "400"
+        },
+        {
+          "value": "500",
+          "label": "500"
+        },
+        {
+          "value": "600",
+          "label": "600"
+        },
+        {
+          "value": "700",
+          "label": "700"
+        }
+      ],
+      "default": ""
+    },
+    {
+      "type": "header",
+      "content": "Size"
+    },
+    {
+      "type": "select",
+      "id": "button_size",
+      "label": "Size (desktop)",
+      "options": [
+        {
+          "value": "theme",
+          "label": "Default"
+        },
+        {
+          "value": "small",
+          "label": "Small"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "large",
+          "label": "Large"
+        }
+      ],
+      "default": "theme"
+    },
+    {
+      "type": "select",
+      "id": "button_size_mobile",
+      "label": "Size (mobile)",
+      "options": [
+        {
+          "value": "theme",
+          "label": "Default"
+        },
+        {
+          "value": "small",
+          "label": "Small"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "large",
+          "label": "Large"
+        }
+      ],
+      "default": "theme"
+    },
+    {
+      "type": "select",
+      "id": "width",
+      "label": "Width (desktop)",
+      "options": [
+        {
+          "value": "fit-content",
+          "label": "Fit content"
+        },
+        {
+          "value": "custom",
+          "label": "Custom"
+        }
+      ],
+      "default": "fit-content"
+    },
+    {
+      "type": "range",
+      "id": "custom_width",
+      "label": "Custom width",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "default": 100,
+      "visible_if": "{{ block.settings.width == \"custom\" }}"
+    },
+    {
+      "type": "select",
+      "id": "width_mobile",
+      "label": "Width (mobile)",
+      "options": [
+        {
+          "value": "fit-content",
+          "label": "Fit content"
+        },
+        {
+          "value": "custom",
+          "label": "Custom"
+        }
+      ],
+      "default": "fit-content"
+    },
+    {
+      "type": "range",
+      "id": "custom_width_mobile",
+      "label": "Custom width (mobile)",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "default": 100,
+      "visible_if": "{{ block.settings.width_mobile == \"custom\" }}"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Bundle Builder Button",
+      "category": "Interactive",
+      "settings": {
+        "label": "Build Your Bundle",
+        "style_class": "button"
+      }
+    }
+  ]
+}
+{% endschema %}

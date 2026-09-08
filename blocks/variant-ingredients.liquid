@@ -1,0 +1,101 @@
+{% liquid
+  assign product_resource = closest.product
+  if request.visual_preview_mode and product_resource == blank
+    assign product_resource = collections.all.products.first
+  endif
+
+  assign selected_variant = product_resource.selected_or_first_available_variant
+  assign ingredients = selected_variant.metafields.ediblearrangement.ingredients
+%}
+
+<variant-rich-text-metafield
+  class="variant-rich-text-metafield spacing-style text-block rich-list body-regular"
+  style="{% render 'spacing-padding', settings: block.settings %}"
+  data-block-id="{{ block.id }}"
+  data-product-id="{{ product_resource.id }}"
+  {% if ingredients == blank %}
+    hidden
+  {% endif %}
+  {{ block.shopify_attributes }}
+>
+  {% if ingredients != blank %}
+    <div class="rte variant-rich-text-metafield__content">
+      {{ ingredients | metafield_tag }}
+    </div>
+  {% endif %}
+</variant-rich-text-metafield>
+
+{% stylesheet %}
+  .variant-rich-text-metafield {
+    width: 100%;
+    color: var(--color-foreground);
+  }
+
+  .variant-rich-text-metafield[hidden] {
+    display: none;
+  }
+
+  .variant-rich-text-metafield__content,
+  .variant-rich-text-metafield__content > * {
+    margin-block: 0;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Variant ingredients",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:content.padding"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "t:settings.top",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "t:settings.bottom",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-start",
+      "label": "t:settings.left",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-end",
+      "label": "t:settings.right",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    }
+  ],
+  "presets": [
+    {
+      "name": "Variant ingredients",
+      "category": "t:categories.product"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,33 @@
+{% liquid
+  assign product = closest.product
+  assign badge = product.metafields.ediblearrangement.badge.value
+%}
+
+{% if badge %}
+  <div
+    {{ block.shopify_attributes }}
+    class="product-badge tw-absolute tw-left-0 tw-top-2 tw-flex tw-items-center tw-rounded-r-full tw-bg-white tw-px-2 tw-py-[1.5px] tw-text-label"
+  >
+    <span class="tw-font-regular tw-text-label">{{ badge }}</span>
+  </div>
+{% endif %}
+
+{% stylesheet %}
+  .product-badge {
+    z-index: 10;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Product Badge",
+  "tag": null,
+  "settings": [],
+  "presets": [
+    {
+      "name": "Product Badge",
+      "category": "Product"
+    }
+  ]
+}
+{% endschema %}

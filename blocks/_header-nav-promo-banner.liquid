@@ -1,0 +1,71 @@
+{% render 'header-nav-promo-banner',
+  block: block,
+  label: block.settings.label,
+  title: block.settings.title,
+  image: block.settings.image,
+  link: block.settings.link
+%}
+
+{% assign block_id = block.id %}
+{% if request.design_mode %}
+  <script>
+    document.addEventListener('shopify:block:select', function (e) {
+      if (e.detail.blockId !== '{{ block_id }}') return;
+
+      const headerComponent = e.target.closest('header-component');
+      if (!headerComponent) return;
+
+      const $desktopMenu = document.getElementById('desktop-menu-{{ block_id }}');
+      const $mobileMenu = document.getElementById('mobile-menu-{{ block_id }}');
+
+      const breakpoint = window.matchMedia('(min-width: 1024px)');
+      const [isDesktop, isMobile] = [breakpoint.matches, !breakpoint.matches];
+
+      if (isDesktop) {
+        if (!$desktopMenu) return;
+        headerComponent.handleNavTriggerMouseEnter({ target: e.target.querySelector('.js-nav-trigger') });
+        return;
+      }
+
+      if (isMobile) {
+        if (!$mobileMenu) return;
+        headerComponent.openMobileNav({ currentTarget: $mobileMenu });
+      }
+    });
+  </script>
+{% endif %}
+
+{% schema %}
+{
+  "name": "t:names.nav_promo_banner",
+  "tag": null,
+  "settings": [
+    {
+      "type": "text",
+      "id": "label",
+      "label": "t:settings.label"
+    },
+    {
+      "type": "richtext",
+      "id": "title",
+      "label": "t:settings.title"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "t:settings.image"
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "t:settings.link"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:names.nav_promo_banner",
+      "category": "t:categories.header"
+    }
+  ]
+}
+{% endschema %}

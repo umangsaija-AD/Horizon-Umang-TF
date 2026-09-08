@@ -1,0 +1,125 @@
+{%- if article.tags.size > 0 -%}
+  <div class="section-background color-{{ section.settings.color_scheme }}"></div>
+  <div
+    class="section color-{{ section.settings.color_scheme }} blog-article-tags spacing-style"
+    style="{% render 'spacing-style', settings: section.settings %}"
+  >
+    <div class="blog-article-tags__inner">
+      <span class="blog-article-tags__title">{{ 'blog.tags' | t }}</span>
+      <div class="blog-article-tags__list">
+        {%- for tag in article.tags -%}
+          <span class="blog-article-tags__badge">{{ tag }}</span>
+        {%- endfor -%}
+      </div>
+    </div>
+  </div>
+{%- endif -%}
+
+{% stylesheet %}
+  .blog-article-tags {
+    --page-content-width: var(--narrow-page-width);
+    --page-width: calc(var(--page-content-width) + (var(--page-margin) * 2));
+  }
+
+  .blog-article-tags__inner {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: var(--normal-content-width);
+    margin-inline: auto;
+    width: 100%;
+  }
+
+  .blog-article-tags__title {
+    font-family: var(--font-body--family);
+    font-size: var(--font-size--2xs);
+    font-weight: 500;
+    color: var(--color-black-light);
+  }
+
+  .blog-article-tags__list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .blog-article-tags__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 12px;
+    background-color: var(--color-white);
+    color: var(--color-foreground);
+    border: 1px solid var(--color-gray-light);
+    border-radius: var(--style-border-radius-pills);
+    font-family: var(--font-body--family);
+    font-weight: 500;
+    font-size: var(--font-body-small--size);
+    line-height: 1.4;
+    letter-spacing: 0.12px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .blog-article-tags {
+    padding-block-end: 48px;
+  }
+
+  @media screen and (min-width: 750px) {
+    .blog-article-tags {
+      padding-block-end: 80px;
+    }
+  }
+
+  @media screen and (min-width: 1024px) {
+    .blog-article-tags__badge {
+      font-size: var(--font-size--md);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Blog article tags",
+  "class": "section-wrapper",
+  "enabled_on": {
+    "templates": ["article"]
+  },
+  "settings": [
+    {
+      "type": "header",
+      "content": "Style"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "Spacing"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "Top padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "default": 0,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "Bottom padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "default": 0,
+      "unit": "px"
+    }
+  ]
+}
+{% endschema %}

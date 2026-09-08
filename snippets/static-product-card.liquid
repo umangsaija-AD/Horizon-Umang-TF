@@ -1,0 +1,184 @@
+{%- liquid
+  assign sa_badge = product.metafields.ediblearrangement.badge.value
+  assign sa_images = product.images
+  assign sa_url = product.url
+  assign sa_variant = product.selected_or_first_available_variant
+
+  # Delivery availability — metafield string first, then variant metaobject fallback
+  assign sa_da_msg = product.metafields.ediblearrangement.non_promotional_message.value
+  if sa_da_msg == blank and sa_variant
+    assign sa_da_msg = sa_variant.metafields.ediblearrangement.delivery_availability.value
+  endif
+
+  # Price calculations
+  assign sa_min_price = product.price
+  assign sa_max_price = product.price
+  assign sa_has_price_range = false
+  if product.variants.size > 1
+    for sa_v in product.variants
+      if sa_v.price < sa_min_price
+        assign sa_min_price = sa_v.price
+      endif
+      if sa_v.price > sa_max_price
+        assign sa_max_price = sa_v.price
+      endif
+    endfor
+    if sa_min_price != sa_max_price
+      assign sa_has_price_range = true
+    endif
+  endif
+  assign sa_display_price = sa_min_price
+  assign sa_has_discount = false
+  if product.compare_at_price and product.compare_at_price > product.price
+    assign sa_has_discount = true
+  endif
+
+  # Discount info
+  assign sa_discount_info = product.metafields.ediblearrangement.discount_info.value
+-%}
+
+<div data-product-id="{{ product.id }}" data-product-handle="{{ product.handle }}" class="product-card">
+  <div class="product-card__body">
+    {%- comment -%} Media area: badge overlay + image gallery {%- endcomment -%}
+    <div class="product-card__media">
+      {% if sa_badge != blank %}
+        <div
+          class="product-badge tw-absolute tw-left-0 tw-top-2 tw-z-10 tw-flex tw-items-center tw-rounded-r-full tw-bg-white tw-px-2 tw-py-[1.5px] tw-text-label"
+        >
+          <span class="tw-font-regular tw-text-label">{{ sa_badge }}</span>
+        </div>
+      {% endif %}
+
+      <product-image-gallery class="tw-relative tw-block tw-aspect-1">
+        {% if sa_images.size > 1 %}
+          <div class="swiper tw-h-full tw-w-full">
+            <div class="swiper-wrapper">
+              {% for image in sa_images %}
+                <div class="swiper-slide">
+                  <a href="{{ sa_url }}" class="tw-block tw-h-full">
+                    <img
+                      src="{{ image | image_url: width: 600 }}"
+                      alt="{{ image.alt | escape }}"
+                      loading="lazy"
+                      width="{{ image.width }}"
+                      height="{{ image.height }}"
+                      class="tw-block tw-aspect-1 tw-h-full tw-w-full tw-object-cover"
+                    >
+                  </a>
+                </div>
+              {% endfor %}
+            </div>
+            <div
+              class="product-card-pagination tw-absolute !tw-bottom-4 tw-left-0 tw-right-0 tw-z-10 tw-flex tw-justify-center tw-gap-2"
+            ></div>
+          </div>
+        {% elsif sa_images.size == 1 %}
+          <a href="{{ sa_url }}" class="tw-block tw-h-full">
+            <img
+              src="{{ sa_images.first | image_url: width: 600 }}"
+              alt="{{ sa_images.first.alt | escape }}"
+              loading="lazy"
+              width="{{ sa_images.first.width }}"
+              height="{{ sa_images.first.height }}"
+              class="tw-block tw-aspect-1 tw-h-full tw-w-full tw-object-cover"
+            >
+          </a>
+        {% else %}
+          <a href="{{ sa_url }}" class="tw-flex tw-h-full tw-w-full tw-items-center tw-justify-center tw-text-gray-400">
+            {{ 'collection.product_card.no_image' | t }}
+          </a>
+        {% endif %}
+      </product-image-gallery>
+    </div>
+
+    {%- comment -%} Details area: delivery, title, options, price, discount {%- endcomment -%}
+    <div class="product-card__details">
+      {% if sa_da_msg != blank %}
+        <div class="product-card__delivery tw-flex tw-items-center tw-gap-1 tw-text-label tw-font-medium">
+          {% if sa_da_msg.icon %}
+            {%- assign sa_da_icon_url = sa_da_msg.icon.value | image_url: width: 64 -%}
+            <img
+              src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+              alt="{{ sa_da_msg.name | escape }}"
+              width="16"
+              height="16"
+              style="--mask-image-url: url('{{ sa_da_icon_url }}')"
+              class="tw-bg-brand-green tw-h-4 tw-w-4 tw-object-contain [mask-image:var(--mask-image-url)]"
+            >
+          {% endif %}
+          {% if sa_da_msg.name %}
+            <span class="tw-text-brand-green">
+              {{ sa_da_msg.name }}
+            </span>
+          {% elsif sa_da_msg %}
+            <span style="color: #E10600;">
+              {{ sa_da_msg }}
+            </span>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      <a
+        href="{{ sa_url }}"
+        class="product-card__title product-title-link tw-block tw-text-body-small tw-font-semibold tw-text-inherit tw-no-underline hover:tw-text-inherit md:tw-text-body-regular"
+      >
+        {{ product.title }}
+      </a>
+
+      {% if product.variants.size > 1 %}
+        <div class="product-card__styles tw-text-brand-darkest-grey tw-text-body-small tw-font-normal">
+          {{ 'collection.product_card.styles_available' | t: count: product.variants.size }}
+        </div>
+      {% endif %}
+
+      <div class="product-card__price tw-flex tw-items-center tw-gap-1.5 tw-text-body-small tw-font-medium">
+        <span>
+          {% if sa_has_price_range %}{{ 'collection.product_card.starting_at' | t }}{% endif %}
+          {{ sa_display_price | money }}
+        </span>
+        {% if sa_has_discount %}
+          <span class="tw-line-through">
+            {{ product.compare_at_price | money }}
+          </span>
+        {% endif %}
+      </div>
+
+      {% if sa_discount_info != blank %}
+        <div class="product-card__discount tw-text-body-small tw-font-medium" style="color: #A00400;">
+          {{ sa_discount_info }}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {%- comment -%} Add to Cart / Sold Out {%- endcomment -%}
+  {% if product.available %}
+    <form action="/cart/add" method="post">
+      <div
+        data-add-to-cart
+        data-on-goody="{{ product.metafields.ediblearrangment.is_on_goody_product.value | default: 'false' }}"
+        data-wrap-available="{{ product.metafields.ediblearrangement.wrap_available }}"
+        data-addons-source="{% render 'addons-source-json', product: product %}"
+        data-variants-json="{% render 'personalization-variants-json', product: product %}"
+      >
+        <input type="hidden" name="id" value="{{ sa_variant.id }}">
+        <input type="hidden" name="quantity" value="1">
+        {%- assign atc_label = 'collection.product_card.add_to_cart' | t -%}
+        <div class="product-card__atc product-card__atc--mobile">
+          {% render 'button', element_type: 'button', label: atc_label, style_class: 'button', width: 'fill', button_size: 'small' %}
+        </div>
+        <div class="product-card__atc product-card__atc--desktop">
+          {% render 'button', element_type: 'button', label: atc_label, style_class: 'button', width: 'fill', button_size: 'medium' %}
+        </div>
+      </div>
+    </form>
+  {% else %}
+    {%- assign sold_out_label = 'collection.product_card.sold_out' | t -%}
+    <div class="product-card__atc product-card__atc--mobile">
+      {% render 'button', element_type: 'button', label: sold_out_label, style_class: 'button', width: 'fill', button_size: 'small', aria_disabled: true %}
+    </div>
+    <div class="product-card__atc product-card__atc--desktop">
+      {% render 'button', element_type: 'button', label: sold_out_label, style_class: 'button', width: 'fill', button_size: 'medium', aria_disabled: true %}
+    </div>
+  {% endif %}
+</div>
