@@ -56,9 +56,6 @@
             <span class="shop-by-craving__category-name">
               {{- block.settings.category_name | default: 'Category' | escape -}}
             </span>
-            <span class="shop-by-craving__trigger-icon" aria-hidden="true">
-              {{- 'icon-caret.svg' | inline_asset_content -}}
-            </span>
           </button>
 
           {%- comment -%} Revealed content — tagline + CTA {%- endcomment -%}
@@ -92,11 +89,10 @@
 {% stylesheet %}
 /* ============================================================
    Shop by Craving — section styles
-   Mobile-first: panels stack vertically (flex-column).
-   Desktop (≥750px): panels expand horizontally (flex-row).
-   Panel expansion uses flex (flex-grow) transitions.
-   Collapsed trigger row height: 64px — this constant is
-   intentionally hardcoded to match the trigger button height.
+   Mobile-first: panels stack vertically, tap trigger to expand.
+   Desktop (≥750px): panels expand horizontally on hover.
+   The trigger button covers the full tile on desktop so any
+   hover anywhere on the tile activates it.
    ============================================================ */
 
 .shop-by-craving {
@@ -127,20 +123,15 @@
 .shop-by-craving__panel {
   position: relative;
   overflow: hidden;
-  /*
-   * Mobile: collapsed height = 64px (trigger row only).
-   * Matches .shop-by-craving__trigger height below.
-   */
   max-height: 64px;
-  transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), flex-grow 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .shop-by-craving__panel[data-open="true"] {
-  /* Mobile: expand to show content */
   max-height: 320px;
 }
 
-/* ---- Background image ---- */
+/* ---- Background image — scales up on active panel ---- */
 .shop-by-craving__media {
   position: absolute;
   inset: 0;
@@ -153,6 +144,12 @@
   object-fit: cover;
   object-position: center;
   display: block;
+  transform: scale(1);
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.shop-by-craving__panel[data-open="true"] .shop-by-craving__image {
+  transform: scale(1.03);
 }
 
 .shop-by-craving__image-placeholder {
@@ -161,36 +158,38 @@
   background-color: var(--color-border);
 }
 
-/* ---- Overlay — gradient scrim for text legibility ---- */
+/* ---- Gradient scrim — present on every panel for consistent legibility ---- */
 .shop-by-craving__overlay {
   position: absolute;
   inset: 0;
   z-index: 1;
-  /* Bottom-weighted gradient so label text is always readable */
   background: linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.28) 50%, rgba(0,0,0,0.06) 100%);
   transition: background 0.35s ease;
 }
 
 .shop-by-craving__panel[data-open="true"] .shop-by-craving__overlay {
-  background: linear-gradient(to top, rgba(0,0,0,0.68) 0%, rgba(0,0,0,0.22) 50%, rgba(0,0,0,0.06) 100%);
+  background: linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.05) 100%);
 }
 
-/* ---- Trigger button ---- */
+/* ---- Trigger button — mobile: 64px tap bar ---- */
 .shop-by-craving__trigger {
   position: relative;
   z-index: 2;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  justify-content: flex-start;
   width: 100%;
-  height: 64px; /* matches collapsed max-height constant above */
+  height: 64px;
   padding-inline: 20px;
   background: transparent;
   border: none;
   cursor: pointer;
-  color: var(--color-background);
   text-align: start;
+}
+
+.shop-by-craving__trigger:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.9);
+  outline-offset: -4px;
 }
 
 .shop-by-craving__category-name {
@@ -199,44 +198,20 @@
   font-weight: 600;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: var(--color-background);
-}
-
-.shop-by-craving__trigger-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-  color: var(--color-background);
-  transition: transform 0.3s ease;
-}
-
-.shop-by-craving__trigger-icon svg {
-  width: 100%;
-  height: 100%;
-  fill: currentColor;
-}
-
-.shop-by-craving__panel[data-open="true"] .shop-by-craving__trigger-icon {
-  transform: rotate(180deg);
+  color: #ffffff;
 }
 
 /* ---- Revealed content (tagline + CTA) ---- */
 .shop-by-craving__content {
   position: relative;
-  z-index: 2;
+  /* z-index 3 so CTA links sit above the full-panel trigger on desktop */
+  z-index: 3;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 16px;
   padding-inline: 20px;
   padding-block-end: 24px;
-  /*
-   * Hidden by default: opacity 0 with transition.
-   * Delay of 0.1s lets the panel expand slightly before content fades in.
-   */
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.25s ease 0.08s;
@@ -249,7 +224,7 @@
 
 /* ---- Tagline ---- */
 .shop-by-craving__tagline {
-  color: var(--color-background);
+  color: #ffffff;
   margin: 0;
   font-size: 0.9375rem;
   line-height: 1.5;
@@ -263,8 +238,7 @@
 }
 
 /* ============================================================
-   Desktop (≥750px): horizontal flex-row panel expansion
-   Uses flex-grow transition for smooth width change.
+   Desktop (≥750px): horizontal flex-row, hover-to-expand
    ============================================================ */
 @media screen and (min-width: 750px) {
   .shop-by-craving__panels {
@@ -273,36 +247,31 @@
   }
 
   .shop-by-craving__panel {
-    /* Reset mobile max-height; desktop uses flex-grow for expansion */
     max-height: none;
     flex: 1;
     transition: flex-grow 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .shop-by-craving__panel[data-open="true"] {
-    /* Expanded panel gets 3× the width of collapsed panels */
     flex: 3;
     max-height: none;
   }
 
-  /* On desktop the trigger is anchored to the panel bottom */
+  /* Full-tile hit zone — trigger covers the entire panel on desktop */
   .shop-by-craving__trigger {
     position: absolute;
-    inset-block-end: 0;
-    inset-inline-start: 0;
-    inset-inline-end: 0;
+    inset: 0;
     height: auto;
-    min-height: 64px;
-    padding-block: 16px;
+    align-items: flex-end;
+    padding-block-end: 20px;
     padding-inline: 24px;
     justify-content: flex-start;
-    gap: 12px;
   }
 
-  /* Content sits above the trigger bar on desktop */
+  /* Content sits above the label row */
   .shop-by-craving__content {
     position: absolute;
-    inset-block-end: 80px; /* clear of trigger bar */
+    inset-block-end: 72px;
     inset-inline-start: 0;
     inset-inline-end: 0;
     padding-inline: 24px;
@@ -311,6 +280,22 @@
 
   .shop-by-craving__category-name {
     font-size: 1.25rem;
+  }
+}
+
+/* ============================================================
+   Reduced motion — disable scale, auto-rotate paused in JS
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .shop-by-craving__panel,
+  .shop-by-craving__image,
+  .shop-by-craving__overlay,
+  .shop-by-craving__content {
+    transition: none;
+  }
+
+  .shop-by-craving__panel[data-open="true"] .shop-by-craving__image {
+    transform: scale(1);
   }
 }
 {% endstylesheet %}
