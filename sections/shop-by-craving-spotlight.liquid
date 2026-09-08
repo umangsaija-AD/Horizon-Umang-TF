@@ -1,0 +1,546 @@
+{%- liquid
+  assign overlay_frac = section.settings.spotlight_overlay_opacity | divided_by: 100.0
+-%}
+
+<shop-by-craving-spotlight
+  id="SbcSpotlight-{{ section.id }}"
+  class="sbc-spotlight color-{{ section.settings.color_scheme }} spacing-style"
+  style="--sbc-scrim: {{ overlay_frac }};"
+  {% render 'spacing-style', settings: section.settings %}
+>
+  <div class="sbc-spotlight__inner page-width">
+
+    {%- if section.settings.heading != blank -%}
+      <h2 class="sbc-spotlight__heading tw-text-{{ section.settings.heading_type_preset }}">
+        {{- section.settings.heading | escape -}}
+      </h2>
+    {%- endif -%}
+
+    {%- comment -%} ——— Spotlight card: slides stack absolutely, crossfade via opacity ——— {%- endcomment -%}
+    <div class="sbc-spotlight__card">
+      {%- assign cat_index = 0 -%}
+      {%- for block in section.blocks -%}
+        {%- if block.type == 'craving-category' -%}
+          {%- liquid
+            if cat_index == 0
+              assign img_loading = 'eager'
+            else
+              assign img_loading = 'lazy'
+            endif
+          -%}
+          <div
+            id="sbc-slide-{{ section.id }}-{{ cat_index }}"
+            class="sbc-spotlight__slide"
+            role="tabpanel"
+            data-sbc-slide
+            data-active="{% if cat_index == 0 %}true{% else %}false{% endif %}"
+            {% if cat_index != 0 %}inert aria-hidden="true"{% endif %}
+            {{ block.shopify_attributes }}
+          >
+            <div class="sbc-spotlight__media">
+              {%- if block.settings.image != blank -%}
+                {{
+                  block.settings.image
+                  | image_url: width: 1600
+                  | image_tag:
+                    class: 'sbc-spotlight__img',
+                    loading: img_loading,
+                    alt: block.settings.label,
+                    widths: '750,1000,1200,1600',
+                    sizes: '(min-width: 1200px) 1200px, 100vw'
+                }}
+              {%- else -%}
+                <div class="sbc-spotlight__img-placeholder"></div>
+              {%- endif -%}
+            </div>
+
+            <div class="sbc-spotlight__scrim" aria-hidden="true"></div>
+
+            <div class="sbc-spotlight__content">
+              {%- if block.settings.tagline != blank -%}
+                <p
+                  class="sbc-spotlight__tagline tw-text-{{ block.settings.tagline_type_preset }}"
+                  {%- unless block.settings.tagline_color == blank -%}
+                    style="color: {{ block.settings.tagline_color }};"
+                  {%- endunless -%}
+                >
+                  {{- block.settings.tagline | escape -}}
+                </p>
+              {%- endif -%}
+              {%- if block.settings.cta_label != blank -%}
+                <a
+                  class="sbc-spotlight__cta button"
+                  href="{{ block.settings.cta_url | default: '#' }}"
+                >
+                  {{- block.settings.cta_label | escape -}}
+                </a>
+              {%- endif -%}
+            </div>
+          </div>
+          {%- assign cat_index = cat_index | plus: 1 -%}
+        {%- endif -%}
+      {%- endfor -%}
+    </div>
+
+    {%- comment -%} ——— Circular thumbnail rail ——— {%- endcomment -%}
+    <div
+      class="sbc-spotlight__rail"
+      data-sbc-rail
+      role="tablist"
+      aria-label="{{ section.settings.heading | default: 'Categories' | escape }}"
+    >
+      {%- assign cat_index = 0 -%}
+      {%- for block in section.blocks -%}
+        {%- if block.type == 'craving-category' -%}
+          <button
+            class="sbc-spotlight__thumb"
+            data-sbc-thumb
+            role="tab"
+            aria-selected="{% if cat_index == 0 %}true{% else %}false{% endif %}"
+            aria-controls="sbc-slide-{{ section.id }}-{{ cat_index }}"
+            type="button"
+          >
+            <span class="sbc-spotlight__thumb-circle">
+              {%- if block.settings.image != blank -%}
+                {{
+                  block.settings.image
+                  | image_url: width: 200
+                  | image_tag:
+                    class: 'sbc-spotlight__thumb-img',
+                    loading: 'lazy',
+                    alt: block.settings.label,
+                    widths: '72,144',
+                    sizes: '72px'
+                }}
+              {%- else -%}
+                <div class="sbc-spotlight__thumb-img-placeholder"></div>
+              {%- endif -%}
+            </span>
+            <span
+              class="sbc-spotlight__thumb-label tw-text-{{ block.settings.label_type_preset }}"
+              {%- unless block.settings.label_color == blank -%}
+                style="color: {{ block.settings.label_color }};"
+              {%- endunless -%}
+            >
+              {{- block.settings.label | default: 'Category' | escape -}}
+            </span>
+          </button>
+          {%- assign cat_index = cat_index | plus: 1 -%}
+        {%- endif -%}
+      {%- endfor -%}
+    </div>
+
+  </div>
+</shop-by-craving-spotlight>
+
+<script src="{{ 'shop-by-craving-spotlight.js' | asset_url }}" type="module" defer></script>
+
+{% stylesheet %}
+/* ============================================================
+   Shop by Craving: Spotlight
+   ============================================================ */
+
+.sbc-spotlight__inner {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ---- Heading ---- */
+.sbc-spotlight__heading {
+  text-align: center;
+  color: var(--color-foreground);
+  margin: 0;
+}
+
+/* ============================================================
+   Spotlight card
+   ============================================================ */
+.sbc-spotlight__card {
+  position: relative;
+  aspect-ratio: 16 / 7;
+  overflow: hidden;
+  border-radius: 8px;
+  background-color: var(--color-border);
+}
+
+/* Each slide sits absolutely on top of each other; crossfade via opacity */
+.sbc-spotlight__slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.28s ease;
+}
+
+.sbc-spotlight__slide[data-active="true"] {
+  opacity: 1;
+}
+
+/* ---- Slide: background image ---- */
+.sbc-spotlight__media {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.sbc-spotlight__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+.sbc-spotlight__img-placeholder {
+  width: 100%;
+  height: 100%;
+  background-color: var(--color-border);
+}
+
+/* ---- Gradient scrim for text legibility ---- */
+.sbc-spotlight__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, var(--sbc-scrim, 0.55)) 0%,
+    rgba(0, 0, 0, calc(var(--sbc-scrim, 0.55) * 0.3)) 55%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+
+/* ---- Slide content: tagline + CTA ---- */
+.sbc-spotlight__content {
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline-start: 0;
+  inset-inline-end: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 36px 40px;
+}
+
+.sbc-spotlight__tagline {
+  color: white;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.sbc-spotlight__cta {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+/* ============================================================
+   Thumbnail rail
+   ============================================================ */
+.sbc-spotlight__rail {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px 24px;
+}
+
+/* ---- Individual thumbnail button ---- */
+.sbc-spotlight__thumb {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  /* Fixed width constrains label so it truncates with ellipsis */
+  width: 84px;
+}
+
+.sbc-spotlight__thumb-circle {
+  display: block;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  overflow: hidden;
+  /* Two-layer ring: outer transparent outline (keyboard focus), inner border (hover/active) */
+  border: 2.5px solid transparent;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  transition: border-color 0.2s ease, outline-color 0.2s ease, transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.sbc-spotlight__thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+.sbc-spotlight__thumb-img-placeholder {
+  width: 100%;
+  height: 100%;
+  background-color: var(--color-border);
+}
+
+/* Active (committed) and previewed (hover) states */
+.sbc-spotlight__thumb[aria-selected="true"] .sbc-spotlight__thumb-circle,
+.sbc-spotlight__thumb[data-preview="true"] .sbc-spotlight__thumb-circle {
+  border-color: var(--color-primary);
+  transform: scale(1.1);
+}
+
+/* Keyboard focus ring */
+.sbc-spotlight__thumb:focus-visible .sbc-spotlight__thumb-circle {
+  outline-color: var(--color-primary);
+}
+
+/* Label: single line, truncate with ellipsis */
+.sbc-spotlight__thumb-label {
+  display: block;
+  color: var(--color-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  text-align: center;
+  line-height: 1.3;
+}
+
+/* ============================================================
+   Mobile
+   ============================================================ */
+@media screen and (max-width: 749px) {
+  .sbc-spotlight__card {
+    aspect-ratio: 4 / 3;
+    border-radius: 4px;
+  }
+
+  .sbc-spotlight__content {
+    padding: 20px 20px;
+    gap: 12px;
+  }
+
+  .sbc-spotlight__inner {
+    gap: 16px;
+  }
+
+  .sbc-spotlight__thumb {
+    width: 68px;
+  }
+
+  .sbc-spotlight__thumb-circle {
+    width: 56px;
+    height: 56px;
+  }
+
+  .sbc-spotlight__rail {
+    gap: 10px 16px;
+  }
+}
+
+/* ============================================================
+   Reduced motion — disable transitions; keep state changes instant
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .sbc-spotlight__slide,
+  .sbc-spotlight__thumb-circle {
+    transition: none;
+  }
+}
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Shop by Craving: Spotlight",
+  "tag": "section",
+  "class": "section",
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Shop by Craving"
+    },
+    {
+      "type": "select",
+      "id": "heading_type_preset",
+      "label": "Heading style",
+      "options": [
+        { "value": "display", "label": "Display" },
+        { "value": "h1", "label": "H1" },
+        { "value": "h2", "label": "H2" },
+        { "value": "h3", "label": "H3" },
+        { "value": "h4", "label": "H4" },
+        { "value": "h5", "label": "H5" },
+        { "value": "h6", "label": "H6" }
+      ],
+      "default": "h2"
+    },
+    {
+      "type": "range",
+      "id": "spotlight_overlay_opacity",
+      "label": "Spotlight overlay opacity",
+      "min": 0,
+      "max": 90,
+      "step": 5,
+      "unit": "%",
+      "default": 55
+    },
+    {
+      "type": "header",
+      "content": "Padding"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "Padding top",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 40
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "Padding bottom",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 40
+    }
+  ],
+  "blocks": [
+    {
+      "type": "craving-category",
+      "name": "Category",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "info": "Keep under 20 characters for best appearance.",
+          "default": "Category"
+        },
+        {
+          "type": "select",
+          "id": "label_type_preset",
+          "label": "Label style",
+          "options": [
+            { "value": "display", "label": "Display" },
+            { "value": "h1", "label": "H1" },
+            { "value": "h2", "label": "H2" },
+            { "value": "h3", "label": "H3" },
+            { "value": "h4", "label": "H4" },
+            { "value": "h5", "label": "H5" },
+            { "value": "h6", "label": "H6" },
+            { "value": "body-regular", "label": "Body regular" },
+            { "value": "body-small", "label": "Body small" },
+            { "value": "label", "label": "Label" },
+            { "value": "tag", "label": "Tag" }
+          ],
+          "default": "label"
+        },
+        {
+          "type": "color",
+          "id": "label_color",
+          "label": "Label color override"
+        },
+        {
+          "type": "text",
+          "id": "tagline",
+          "label": "Tagline (optional)"
+        },
+        {
+          "type": "select",
+          "id": "tagline_type_preset",
+          "label": "Tagline style",
+          "options": [
+            { "value": "display", "label": "Display" },
+            { "value": "h1", "label": "H1" },
+            { "value": "h2", "label": "H2" },
+            { "value": "h3", "label": "H3" },
+            { "value": "h4", "label": "H4" },
+            { "value": "h5", "label": "H5" },
+            { "value": "h6", "label": "H6" },
+            { "value": "body-regular", "label": "Body regular" },
+            { "value": "body-small", "label": "Body small" },
+            { "value": "label", "label": "Label" },
+            { "value": "tag", "label": "Tag" }
+          ],
+          "default": "body-regular"
+        },
+        {
+          "type": "color",
+          "id": "tagline_color",
+          "label": "Tagline color override"
+        },
+        {
+          "type": "text",
+          "id": "cta_label",
+          "label": "Button label",
+          "default": "Shop Now"
+        },
+        {
+          "type": "url",
+          "id": "cta_url",
+          "label": "Button link"
+        }
+      ]
+    }
+  ],
+  "max_blocks": 8,
+  "presets": [
+    {
+      "name": "Shop by Craving: Spotlight",
+      "blocks": [
+        {
+          "type": "craving-category",
+          "settings": {
+            "label": "Chocolate",
+            "tagline": "Rich, velvety chocolate treats.",
+            "cta_label": "Shop Chocolate"
+          }
+        },
+        {
+          "type": "craving-category",
+          "settings": {
+            "label": "Fresh Fruit",
+            "tagline": "Bright, fresh fruit arrangements.",
+            "cta_label": "Shop Fruit"
+          }
+        },
+        {
+          "type": "craving-category",
+          "settings": {
+            "label": "Savory",
+            "tagline": "Savory bites for every occasion.",
+            "cta_label": "Shop Savory"
+          }
+        }
+      ]
+    }
+  ],
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  }
+}
+{% endschema %}
