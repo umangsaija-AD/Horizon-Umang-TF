@@ -111,6 +111,14 @@
       </button>
     {%- endform -%}
   </product-form-component>
+  <button
+    type="button"
+    class="quick-add__button quick-add__button--quick-view"
+    on:click="quick-add-component/handleClick"
+    aria-label="Quick view {{ product.title | escape }}"
+  >
+    Quick view
+  </button>
 </quick-add-component>
 
 {% render 'quick-add-styles' %}

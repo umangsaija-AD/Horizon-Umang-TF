@@ -202,4 +202,71 @@
       }
     }
   }
+
+  /* Ensure add / choose icon-buttons stack above the Quick view bar */
+  .quick-add__button--add,
+  .quick-add__button--choose {
+    z-index: 3;
+  }
+
+  /* Quick View button — full-width translucent bar at bottom of card image */
+  .quick-add__button--quick-view {
+    /* Reset the circular icon-button positioning from base .quick-add__button */
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: auto;
+    border-radius: 0;
+    border: none;
+    border-top: 1px solid hsl(0 0% 0% / 0.08);
+
+    /* Full-width bar layout */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-block: var(--padding-sm);
+    padding-inline: var(--padding-md);
+
+    /* Translucent appearance — solid fallback, enhanced with backdrop-filter */
+    background-color: var(--color-background);
+    backdrop-filter: blur(4px) saturate(120%);
+    color: var(--color-foreground);
+    font-size: var(--font-body--size, 0.875rem);
+    font-family: inherit;
+
+    /* Sits above card image content, below icon buttons */
+    z-index: 2;
+
+    /* Scale override: no grow-on-hover for a full-width bar */
+    scale: 1;
+
+    &:hover {
+      scale: 1;
+    }
+
+    /* Touch / no-hover devices: always visible */
+    opacity: 1;
+    translate: 0 0;
+
+    @media (prefers-reduced-motion: no-preference) {
+      transition-property: opacity, translate;
+      transition-duration: var(--animation-speed-fast, 150ms);
+      transition-timing-function: var(--ease-out-cubic, ease-out);
+    }
+
+    /* Hover-capable devices (desktop): hidden by default, revealed on card hover */
+    @media (hover: hover) {
+      opacity: 0;
+      translate: 0 4px;
+    }
+  }
+
+  /* Reveal quick-view bar when card is hovered/focused on hover-capable devices */
+  @media (hover: hover) {
+    product-card:is(:hover, :focus-within) .quick-add__button--quick-view {
+      opacity: 1;
+      translate: 0 0;
+    }
+  }
 {% endstylesheet %}
