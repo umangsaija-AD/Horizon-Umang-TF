@@ -1,0 +1,195 @@
+{% liquid
+  assign has_story = false
+  assign story_html = ''
+%}
+
+{% if closest.product %}
+  {%- capture story_html -%}
+    {{- closest.product.metafields.custom.product_story | metafield_tag -}}
+  {%- endcapture -%}
+  {%- assign story_text = story_html | strip_html | strip -%}
+  {% if story_text != blank %}
+    {% assign has_story = true %}
+  {% endif %}
+{% endif %}
+
+{% if has_story or request.visual_preview_mode %}
+  <div
+    class="product-story color-{{ block.settings.color_scheme }}"
+    style="--padding-block-start: {{ block.settings['padding-block-start'] }}px; --padding-block-end: {{ block.settings['padding-block-end'] }}px; --padding-inline-start: {{ block.settings['padding-inline-start'] }}px; --padding-inline-end: {{ block.settings['padding-inline-end'] }}px; --text-align: {{ block.settings.text_alignment }};"
+    {{ block.shopify_attributes }}
+  >
+    {% if block.settings.show_heading %}
+      <p class="product-story__heading {{ block.settings.heading_type_preset }}">
+        {{- block.settings.heading -}}
+      </p>
+    {% endif %}
+
+    {% if has_story %}
+      <div class="product-story__body {{ block.settings.body_type_preset }}">
+        {{ story_html }}
+      </div>
+    {% elsif request.visual_preview_mode %}
+      <div class="product-story__placeholder">
+        <p>No product story found. To add one, go to <strong>Products → [Product] → Metafields → Product Story</strong> in your Shopify admin.</p>
+      </div>
+    {% endif %}
+  </div>
+{% endif %}
+
+{% stylesheet %}
+.product-story {
+  padding-block-start: var(--padding-block-start, 16px);
+  padding-block-end: var(--padding-block-end, 16px);
+  padding-inline-start: var(--padding-inline-start, 0px);
+  padding-inline-end: var(--padding-inline-end, 0px);
+  text-align: var(--text-align, left);
+}
+
+.product-story__heading {
+  margin-block-end: 0.5em;
+}
+
+.product-story__body > * + * {
+  margin-block-start: 0.75em;
+}
+
+.product-story__placeholder {
+  border: 2px dashed currentColor;
+  border-radius: 4px;
+  padding: 1.5rem;
+  opacity: 0.6;
+  text-align: center;
+}
+
+.product-story__placeholder p {
+  margin: 0;
+}
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Product Story",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Heading"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_heading",
+      "label": "Show heading",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Our story"
+    },
+    {
+      "type": "select",
+      "id": "heading_type_preset",
+      "label": "Heading style",
+      "options": [
+        { "value": "h1", "label": "H1" },
+        { "value": "h2", "label": "H2" },
+        { "value": "h3", "label": "H3" },
+        { "value": "h4", "label": "H4" },
+        { "value": "h5", "label": "H5" },
+        { "value": "h6", "label": "H6" },
+        { "value": "display", "label": "Display" }
+      ],
+      "default": "h3"
+    },
+    {
+      "type": "header",
+      "content": "Body"
+    },
+    {
+      "type": "select",
+      "id": "body_type_preset",
+      "label": "Body style",
+      "options": [
+        { "value": "body-regular", "label": "Body regular" },
+        { "value": "body-small", "label": "Body small" }
+      ],
+      "default": "body-regular"
+    },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "select",
+      "id": "text_alignment",
+      "label": "Text alignment",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" }
+      ],
+      "default": "left"
+    },
+    {
+      "type": "header",
+      "content": "Appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "Padding"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "Padding top",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "Padding bottom",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-start",
+      "label": "Padding left",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-end",
+      "label": "Padding right",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    }
+  ],
+  "presets": [
+    {
+      "name": "Product Story"
+    }
+  ]
+}
+{% endschema %}
